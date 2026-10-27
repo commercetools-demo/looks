@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "look-value.schema.json",
+  "title": "Look definition (Custom Object value, container \"look\", key \"look-<lookKey>\")",
+  "type": "object",
+  "required": ["componentProductIds", "setPrice"],
+  "additionalProperties": false,
+  "properties": {
+    "componentProductIds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Product ids, in look order."
+    },
+    "setPrice": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Z]{3}$" },
+      "additionalProperties": { "type": "integer", "exclusiveMinimum": 0 },
+      "description": "Cent amount per project currency, each below the live sum of the pieces in that currency."
+    },
+    "image": {
+      "type": "object",
+      "required": ["path", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^looks/[A-Za-z0-9._-]+\\.(webp|jpg|png)$" },
+        "width": { "type": "integer", "exclusiveMinimum": 0 },
+        "height": { "type": "integer", "exclusiveMinimum": 0 }
+      },
+      "description": "Optional portrait look photo, path relative to the shop origin."
+    },
+    "endedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set when the look is switched off, removed when switched on."
+    }
+  }
+}

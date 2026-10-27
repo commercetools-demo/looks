@@ -1,0 +1,6 @@
+fragment LookObjectFragment on CustomObject {
+  id
+  version
+  key
+  value
+}

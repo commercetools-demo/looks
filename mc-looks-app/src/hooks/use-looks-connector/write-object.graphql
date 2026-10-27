@@ -1,0 +1,7 @@
+#import "./fragments/look-object.graphql"
+
+mutation WriteLookObject($draft: CustomObjectDraft!) {
+  createOrUpdateCustomObject(draft: $draft) {
+    ...LookObjectFragment
+  }
+}

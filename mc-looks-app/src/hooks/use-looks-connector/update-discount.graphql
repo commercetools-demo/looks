@@ -1,0 +1,11 @@
+#import "./fragments/look-discount.graphql"
+
+mutation UpdateLookDiscount(
+  $id: String!
+  $version: Long!
+  $actions: [CartDiscountUpdateAction!]!
+) {
+  updateCartDiscount(id: $id, version: $version, actions: $actions) {
+    ...LookDiscountFragment
+  }
+}

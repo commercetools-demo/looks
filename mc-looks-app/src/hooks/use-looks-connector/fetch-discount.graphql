@@ -1,0 +1,7 @@
+#import "./fragments/look-discount.graphql"
+
+query FetchLookDiscount($id: String, $key: String) {
+  cartDiscount(id: $id, key: $key) {
+    ...LookDiscountFragment
+  }
+}

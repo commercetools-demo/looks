@@ -1,0 +1,44 @@
+fragment LookDiscountFragment on CartDiscount {
+  id
+  version
+  key
+  isActive
+  sortOrder
+  createdAt
+  nameAllLocales {
+    locale
+    value
+  }
+  descriptionAllLocales {
+    locale
+    value
+  }
+  value {
+    type
+    ... on AbsoluteDiscountValue {
+      money {
+        currencyCode
+        centAmount
+      }
+    }
+    ... on AbsoluteCartDiscountValue {
+      applicationMode
+      money {
+        currencyCode
+        centAmount
+      }
+    }
+  }
+  target {
+    type
+    ... on CartDiscountPatternTarget {
+      targetPattern {
+        ... on CountOnLineItemUnits {
+          predicate
+          minCount
+          maxCount
+        }
+      }
+    }
+  }
+}

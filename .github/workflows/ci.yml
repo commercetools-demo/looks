@@ -1,0 +1,49 @@
+name: Build, lint, typecheck and test on PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_lint_and_test:
+    runs-on: ubuntu-latest
+
+    env:
+      CLOUD_IDENTIFIER: gcp-eu
+      CUSTOM_APPLICATION_ID: TODO
+      APPLICATION_URL: https://your_app_hostname.com
+      INITIAL_PROJECT_KEY: todo
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (uses version in .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: './mc-looks-app/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: './mc-looks-app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./mc-looks-app
+        run: npm ci
+
+      - name: Build
+        working-directory: ./mc-looks-app
+        run: npm run build
+
+      - name: Lint
+        working-directory: ./mc-looks-app
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: ./mc-looks-app
+        run: npm run typecheck
+
+      - name: Run tests
+        working-directory: ./mc-looks-app
+        run: npm run test
+        env:
+          CI: true

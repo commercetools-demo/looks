@@ -1,0 +1,7 @@
+#import "./fragments/look-object.graphql"
+
+query FetchLookObject($key: String!) {
+  customObject(container: "look", key: $key) {
+    ...LookObjectFragment
+  }
+}

@@ -1,0 +1,10 @@
+#import "./fragments/look-discount.graphql"
+
+query FetchCartDiscounts($limit: Int!, $offset: Int!) {
+  cartDiscounts(limit: $limit, offset: $offset, sort: ["id asc"]) {
+    total
+    results {
+      ...LookDiscountFragment
+    }
+  }
+}

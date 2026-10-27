@@ -1,0 +1,43 @@
+fragment PieceVariantFragment on ProductVariant {
+  sku
+  images {
+    url
+  }
+  prices {
+    value {
+      currencyCode
+      centAmount
+    }
+    country
+    customerGroup {
+      id
+    }
+    channel {
+      id
+    }
+  }
+  attributesRaw {
+    name
+    value
+  }
+  availability {
+    noChannel {
+      availableQuantity
+    }
+  }
+}
+
+fragment PieceProductFragment on Product {
+  id
+  masterData {
+    current {
+      name(acceptLanguage: $acceptLanguage)
+      masterVariant {
+        ...PieceVariantFragment
+      }
+      variants {
+        ...PieceVariantFragment
+      }
+    }
+  }
+}

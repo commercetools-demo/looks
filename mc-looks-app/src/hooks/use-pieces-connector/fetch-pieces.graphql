@@ -1,0 +1,9 @@
+#import "./fragments/piece-product.graphql"
+
+query FetchPieces($where: String!, $acceptLanguage: [Locale!]) {
+  products(where: $where, limit: 100) {
+    results {
+      ...PieceProductFragment
+    }
+  }
+}

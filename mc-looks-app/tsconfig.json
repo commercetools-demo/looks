@@ -1,0 +1,9 @@
+{
+  "extends": "@commercetools-frontend/application-config/tsconfig-mc-app.json",
+  "compilerOptions": {
+    "typeRoots": ["@types", "@types-extensions", "node_modules/@types"],
+    "preserveSymlinks": false,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

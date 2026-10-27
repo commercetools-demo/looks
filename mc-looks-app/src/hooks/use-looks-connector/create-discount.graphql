@@ -1,0 +1,7 @@
+#import "./fragments/look-discount.graphql"
+
+mutation CreateLookDiscount($draft: CartDiscountDraft!) {
+  createCartDiscount(draft: $draft) {
+    ...LookDiscountFragment
+  }
+}

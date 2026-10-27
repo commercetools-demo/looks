@@ -1,0 +1,19 @@
+/* Narrower cells than the DataTable's own 24 px, so status and switch fit
+   the content area of a 1200 px window without scrolling. */
+.looks-table .nimbus-data-table__cell,
+.looks-table .nimbus-data-table__column-container {
+  padding-inline: 12px;
+}
+
+.looks-table .nimbus-data-table__column {
+  padding-inline: 0;
+}
+
+/* A column header stays on one line: Nimbus lets the header text break
+   anywhere, which turned "Active" into "Activ e". The fixed widths in
+   LOOK_TABLE_COLUMN_WIDTHS leave room for every header in de and en. */
+.looks-table .nimbus-data-table__header span[data-multiline-header],
+.looks-table .nimbus-data-table__header th {
+  white-space: nowrap;
+  word-break: normal;
+}

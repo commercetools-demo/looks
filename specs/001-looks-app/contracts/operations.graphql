@@ -1,0 +1,143 @@
+# GraphQL operations of the Looks app, run through the Merchant Center `ctp` proxy.
+# Each operation was validated against the public commercetools schema with the
+# Knowledge MCP (`commercetools-graphql-validate`) on 2026-10-27. The project's
+# own schema is not checked by that tool; `schemas/ctp.json` in the app is.
+#
+# Fragment convention (constitution): a base fragment for the list, a detail
+# fragment extending it; mutations return the detail shape so the Apollo cache
+# updates in place.
+
+fragment LookDiscountBase on CartDiscount {
+  id
+  version
+  key
+  isActive
+  sortOrder
+  createdAt
+  nameAllLocales { locale value }
+  descriptionAllLocales { locale value }
+  value {
+    type
+    ... on AbsoluteDiscountValue { money { currencyCode centAmount } }
+    ... on AbsoluteCartDiscountValue { applicationMode money { currencyCode centAmount } }
+  }
+  target { type ... on CartDiscountPatternTarget { targetPattern { ... on CountOnLineItemUnits { predicate minCount maxCount } } } }
+}
+
+fragment LookObjectBase on CustomObject {
+  id
+  version
+  key
+  value
+}
+
+# --- Project -----------------------------------------------------------------
+
+query FetchProjectCurrencies {
+  project { currencies }
+}
+
+# --- Looks (tier 1) ----------------------------------------------------------
+
+# Paged by the client in blocks of 500 until a page returns fewer rows.
+query FetchLookObjects($limit: Int!, $offset: Int!) {
+  customObjects(container: "look", limit: $limit, offset: $offset, sort: ["key asc"]) {
+    total
+    results { ...LookObjectBase }
+  }
+}
+
+# Filtered by the key prefix "look-" in the client (see research R3).
+query FetchCartDiscounts($limit: Int!, $offset: Int!) {
+  cartDiscounts(limit: $limit, offset: $offset, sort: ["id asc"]) {
+    total
+    results { ...LookDiscountBase }
+  }
+}
+
+query FetchLookDiscount($id: String, $key: String) {
+  cartDiscount(id: $id, key: $key) { ...LookDiscountBase }
+}
+
+query FetchLookObject($key: String!) {
+  customObject(container: "look", key: $key) { ...LookObjectBase }
+}
+
+# --- Pieces (tier 2 and search) ---------------------------------------------
+
+fragment PieceVariant on ProductVariant {
+  sku
+  images { url }
+  prices {
+    value { currencyCode centAmount }
+    country
+    customerGroup { id }
+    channel { id }
+  }
+  attributesRaw { name value }
+  availability { noChannel { availableQuantity } }
+}
+
+fragment PieceProduct on Product {
+  id
+  masterData {
+    current {
+      name(acceptLanguage: $acceptLanguage)
+      masterVariant { ...PieceVariant }
+      variants { ...PieceVariant }
+    }
+  }
+}
+
+query FetchPieces($where: String!, $acceptLanguage: [Locale!]) {
+  products(where: $where, limit: 100) { results { ...PieceProduct } }
+}
+
+# `query` is a SearchQueryInput; for text `*term*` in the data locale:
+# { wildcard: { field: "name", language: $language, value: $pattern, caseInsensitive: true } }
+query SearchPieces($query: SearchQueryInput, $acceptLanguage: [Locale!]) {
+  productsSearch(query: $query, limit: 20, offset: 0) {
+    total
+    results { id product { ...PieceProduct } }
+  }
+}
+
+# Fallback if availability.noChannel is empty for a project (research R4).
+query FetchDefaultInventory($where: String!) {
+  inventoryEntries(where: $where, limit: 500) { results { sku availableQuantity } }
+}
+
+# --- Writes ------------------------------------------------------------------
+
+mutation CreateLookDiscount($draft: CartDiscountDraft!) {
+  createCartDiscount(draft: $draft) { ...LookDiscountBase }
+}
+
+mutation UpdateLookDiscount($id: String!, $version: Long!, $actions: [CartDiscountUpdateAction!]!) {
+  updateCartDiscount(id: $id, version: $version, actions: $actions) { ...LookDiscountBase }
+}
+
+# Create (no version) or update (with the object's current version).
+mutation WriteLookObject($draft: CustomObjectDraft!) {
+  createOrUpdateCustomObject(draft: $draft) { ...LookObjectBase }
+}
+
+# --- Sales of past looks -----------------------------------------------------
+
+# Up to 4 pages of 500, newest first, orders of the last 90 days.
+query FetchRecentOrders($where: String!, $limit: Int!, $offset: Int!) {
+  orders(where: $where, sort: ["createdAt desc"], limit: $limit, offset: $offset) {
+    results {
+      id
+      lineItems {
+        discountedPricePerQuantity {
+          quantity
+          discountedPrice {
+            value { currencyCode centAmount }
+            includedDiscounts { discount { id } }
+          }
+        }
+      }
+    }
+  }
+}

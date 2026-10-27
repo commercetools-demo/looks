@@ -1,0 +1,13 @@
+#import "./fragments/piece-product.graphql"
+
+query SearchPieces($query: SearchQueryInput, $acceptLanguage: [Locale!]) {
+  productsSearch(query: $query, limit: 20, offset: 0) {
+    total
+    results {
+      id
+      product {
+        ...PieceProductFragment
+      }
+    }
+  }
+}

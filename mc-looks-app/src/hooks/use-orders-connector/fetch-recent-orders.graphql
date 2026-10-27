@@ -1,0 +1,28 @@
+query FetchRecentOrders($where: String!, $limit: Int!, $offset: Int!) {
+  orders(
+    where: $where
+    sort: ["createdAt desc"]
+    limit: $limit
+    offset: $offset
+  ) {
+    results {
+      id
+      lineItems {
+        discountedPricePerQuantity {
+          quantity
+          discountedPrice {
+            value {
+              currencyCode
+              centAmount
+            }
+            includedDiscounts {
+              discount {
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

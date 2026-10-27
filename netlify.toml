@@ -1,0 +1,17 @@
+[build]
+  base    = "mc-looks-app"
+  command = "npm run build"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

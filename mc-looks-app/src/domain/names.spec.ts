@@ -1,0 +1,46 @@
+import {
+  buildLookDescription,
+  buildLookDiscountName,
+  lookNameFromDiscount,
+  lookNameFromSetName,
+} from './names';
+
+describe('names', () => {
+  it('builds readable discount names without a brand', () => {
+    expect(
+      buildLookDiscountName({ de: 'Kontrast-Look', en: 'Contrast look' })
+    ).toEqual({
+      de: 'Look-Set: Kontrast-Look',
+      en: 'Look set: Contrast look',
+    });
+    expect(buildLookDescription({ de: 'A', en: 'B' })).toEqual({
+      de: 'A',
+      en: 'B',
+    });
+  });
+
+  it('reads the look name from the set name form', () => {
+    expect(lookNameFromSetName('Look-Set: Cozy in Grey')).toBe('Cozy in Grey');
+    expect(lookNameFromSetName('Look set: Cozy')).toBe('Cozy');
+    expect(lookNameFromSetName('Something else')).toBeUndefined();
+  });
+
+  it('reads both name forms, falling back to the description', () => {
+    expect(
+      lookNameFromDiscount({
+        name: { de: 'Look-Set: Cozy in Grey' },
+        description: { de: 'Cozy in Grey' },
+      })
+    ).toEqual({ de: 'Cozy in Grey' });
+    expect(
+      lookNameFromDiscount({
+        name: { de: 'Anything' },
+        description: { de: 'Jacken-Set' },
+      })
+    ).toEqual({
+      de: 'Jacken-Set',
+    });
+    expect(lookNameFromDiscount(undefined)).toBeUndefined();
+    expect(lookNameFromDiscount({ name: {}, description: {} })).toBeUndefined();
+  });
+});

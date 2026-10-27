@@ -1,0 +1,15 @@
+#import "./fragments/look-object.graphql"
+
+query FetchLookObjects($limit: Int!, $offset: Int!) {
+  customObjects(
+    container: "look"
+    limit: $limit
+    offset: $offset
+    sort: ["key asc"]
+  ) {
+    total
+    results {
+      ...LookObjectFragment
+    }
+  }
+}
