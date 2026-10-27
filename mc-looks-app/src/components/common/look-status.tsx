@@ -46,7 +46,11 @@ export function LookStatusSwitch({
   onChange,
 }: {
   row: LookRow;
-  onChange: (discount: LookDiscount, object?: LookObject) => void;
+  onChange: (
+    discount: LookDiscount,
+    object?: LookObject,
+    more?: LookDiscount[]
+  ) => void;
 }) {
   const api = useLookApi();
   const intl = useIntl();
@@ -62,8 +66,9 @@ export function LookStatusSwitch({
     try {
       const result = await switchLook(api, discount, next, {
         objectKey: row.objectKey,
+        countryDiscounts: row.countryDiscounts,
       });
-      onChange(result.discount, result.object);
+      onChange(result.discount, result.object, result.countryDiscounts);
       if (result.outcome === 'conflict') {
         toast.warning({ title: intl.formatMessage(messages.switchConflict) });
       } else {

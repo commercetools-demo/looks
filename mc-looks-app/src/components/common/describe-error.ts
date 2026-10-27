@@ -10,6 +10,8 @@ const operationMessages: Record<Operation, keyof typeof messages> = {
   searchProducts: 'opSearchProducts',
   readOrders: 'opReadOrders',
   createDiscount: 'opCreateDiscount',
+  createDiscountGroup: 'opCreateDiscountGroup',
+  switchDiscountGroup: 'opSwitchDiscountGroup',
   activateDiscount: 'opActivateDiscount',
   switchDiscount: 'opSwitchDiscount',
   changeDiscountValue: 'opChangeDiscountValue',

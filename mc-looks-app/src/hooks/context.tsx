@@ -10,6 +10,8 @@ import { createLookApi } from './use-looks-connector/look-api';
 interface LookContextValue {
   api: LookApi;
   currencies: string[];
+  /** Project languages, in the order of the project settings. */
+  languages: string[];
   dataLocale: string;
 }
 
@@ -17,10 +19,12 @@ const LookContext = createContext<LookContextValue | null>(null);
 
 export function LookProvider({
   currencies,
+  languages,
   children,
   api,
 }: {
   currencies: string[];
+  languages: string[];
   children: ReactNode;
   /** Tests inject a fake. */
   api?: LookApi;
@@ -33,9 +37,10 @@ export function LookProvider({
     () => ({
       api: api ?? createLookApi(client, { currencies, dataLocale, config }),
       currencies,
+      languages,
       dataLocale,
     }),
-    [api, client, currencies, dataLocale]
+    [api, client, currencies, languages, dataLocale]
   );
   return <LookContext.Provider value={value}>{children}</LookContext.Provider>;
 }
@@ -48,6 +53,7 @@ function useLookContext(): LookContextValue {
 
 export const useLookApi = (): LookApi => useLookContext().api;
 export const useCurrencies = (): string[] => useLookContext().currencies;
+export const useLanguages = (): string[] => useLookContext().languages;
 export const useDataLocale = (): string => useLookContext().dataLocale;
 
 /** Manage permission: every write control is disabled without it (never hidden). */

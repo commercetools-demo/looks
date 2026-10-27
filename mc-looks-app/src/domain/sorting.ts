@@ -70,15 +70,15 @@ export function sortRows(
         return sign * byName(a, b);
       case 'setPrice':
         result = compareOptional(
-          a.setPrice?.[first],
-          b.setPrice?.[first],
+          a.referenceSetPrice?.[first],
+          b.referenceSetPrice?.[first],
           sort.direction
         );
         break;
       case 'sum':
         result = compareOptional(
-          a.liveSum[first],
-          b.liveSum[first],
+          a.referenceSum[first],
+          b.referenceSum[first],
           sort.direction
         );
         break;

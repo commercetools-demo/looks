@@ -1,14 +1,31 @@
 import type {
   CartDiscountUpdateActionInput,
-  buildLookCartDiscountDraft,
+  buildLookCartDiscountDrafts,
 } from './look-actions';
 import type { Operation } from './errors';
-import type { LookDiscount, LookObject, LookValue, Piece } from './types';
+import type {
+  LookDiscount,
+  LookDiscountGroup,
+  LookObject,
+  LookValue,
+  Piece,
+} from './types';
 import type { SalesOrder } from './past-looks';
 
 export type CartDiscountDraftInput = ReturnType<
-  typeof buildLookCartDiscountDraft
->;
+  typeof buildLookCartDiscountDrafts
+>[number];
+
+export interface DiscountGroupDraftInput {
+  key: string;
+  sortOrder: string;
+  name: Array<{ locale: string; value: string }>;
+  isActive: boolean;
+}
+
+export type DiscountGroupUpdateActionInput = {
+  setIsActive: { isActive: boolean };
+};
 
 export interface LookObjectDraft {
   container: string;
@@ -34,6 +51,17 @@ export interface LookApi {
   getCartDiscount(id: string): Promise<LookDiscount>;
   getCartDiscountByKey(key: string): Promise<LookDiscount | undefined>;
   getLookObject(key: string): Promise<LookObject | undefined>;
+  fetchDiscountGroups(): Promise<LookDiscountGroup[]>;
+  getDiscountGroupByKey(key: string): Promise<LookDiscountGroup | undefined>;
+  createDiscountGroup(
+    draft: DiscountGroupDraftInput
+  ): Promise<LookDiscountGroup>;
+  updateDiscountGroup(
+    id: string,
+    version: number,
+    actions: DiscountGroupUpdateActionInput[],
+    operation: Extract<Operation, 'switchDiscountGroup'>
+  ): Promise<LookDiscountGroup>;
   createCartDiscount(draft: CartDiscountDraftInput): Promise<LookDiscount>;
   updateCartDiscount(
     id: string,

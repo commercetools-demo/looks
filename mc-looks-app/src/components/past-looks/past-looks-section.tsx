@@ -41,7 +41,11 @@ export function PastLooksSection({
 }: {
   rows: LookRow[];
   onOpen: (lookKey: string) => void;
-  onDiscountChange: (discount: LookDiscount, object?: LookObject) => void;
+  onDiscountChange: (
+    discount: LookDiscount,
+    object?: LookObject,
+    more?: LookDiscount[]
+  ) => void;
 }) {
   const intl = useIntl();
   const dataLocale = useDataLocale();

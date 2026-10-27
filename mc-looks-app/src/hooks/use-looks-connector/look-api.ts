@@ -6,7 +6,12 @@ import type { LookApi, RecentOrders } from '../../domain/look-api';
 import { lookKeyFromObjectKey } from '../../domain/keys';
 import type { SalesOrder } from '../../domain/past-looks';
 import { toPiece, type RawProduct } from '../../domain/pieces';
-import type { LookDiscount, LookObject, Piece } from '../../domain/types';
+import type {
+  LookDiscount,
+  LookDiscountGroup,
+  LookObject,
+  Piece,
+} from '../../domain/types';
 import type { AppConfig } from '../../config';
 import { mcApiContext } from '../shared/mc-api-context';
 import {
@@ -19,6 +24,10 @@ import FetchLookObjectsQuery from './fetch-look-objects.graphql';
 import FetchCartDiscountsQuery from './fetch-cart-discounts.graphql';
 import FetchDiscountQuery from './fetch-discount.graphql';
 import FetchObjectQuery from './fetch-object.graphql';
+import FetchDiscountGroupQuery from './fetch-discount-group.graphql';
+import FetchDiscountGroupsQuery from './fetch-discount-groups.graphql';
+import CreateDiscountGroupMutation from './create-discount-group.graphql';
+import UpdateDiscountGroupMutation from './update-discount-group.graphql';
 import CreateDiscountMutation from './create-discount.graphql';
 import UpdateDiscountMutation from './update-discount.graphql';
 import WriteObjectMutation from './write-object.graphql';
@@ -34,7 +43,7 @@ export interface LookApiContext {
   dataLocale?: string;
   config: Pick<
     AppConfig,
-    'sizeAttribute' | 'colorNameAttribute' | 'colorAttribute'
+    'variantAttributes' | 'colorNameAttribute' | 'colorAttribute'
   >;
 }
 
@@ -176,6 +185,41 @@ export function createLookApi(
         { key }
       );
       return data.customObject ? toLookObject(data.customObject) : undefined;
+    },
+
+    async fetchDiscountGroups() {
+      return paged<LookDiscountGroup>(
+        'readLooks',
+        FetchDiscountGroupsQuery,
+        'discountGroups'
+      );
+    },
+
+    async getDiscountGroupByKey(key) {
+      const data = await read<{ discountGroup: LookDiscountGroup | null }>(
+        'readLooks',
+        FetchDiscountGroupQuery,
+        { key }
+      );
+      return data.discountGroup ?? undefined;
+    },
+
+    async createDiscountGroup(draft) {
+      const data = await write<{ createDiscountGroup: LookDiscountGroup }>(
+        'createDiscountGroup',
+        CreateDiscountGroupMutation,
+        { draft }
+      );
+      return data.createDiscountGroup;
+    },
+
+    async updateDiscountGroup(id, version, actions, operation) {
+      const data = await write<{ updateDiscountGroup: LookDiscountGroup }>(
+        operation,
+        UpdateDiscountGroupMutation,
+        { id, version, actions }
+      );
+      return data.updateDiscountGroup;
     },
 
     async createCartDiscount(draft) {

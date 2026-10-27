@@ -1,18 +1,28 @@
 import { isConflict, LookApiError } from './errors';
-import { lookObjectKey } from './keys';
+import { lookDiscountKey, lookObjectKey } from './keys';
+import { priceKey } from './prices';
 import {
-  buildLookCartDiscountDraft,
+  buildCountryDiscountDraft,
+  buildLookCartDiscountDrafts,
   changeIsActiveAction,
   changeValueAction,
-  discountAmounts,
+  groupAmounts,
+  groupPriceKeys,
   nameActions,
+  setGroupActiveAction,
 } from './look-actions';
+import { ensureLookGroup } from './look-group';
 import type { LookApi } from './look-api';
 import { LOOK_CONTAINER } from './limits';
 import { buildLookValue } from './look-value';
 import type { LookRow } from './look-rows';
-import { nextSortOrder } from './sort-order';
-import type { LookDiscount, LookImage, LookObject, Money } from './types';
+import type {
+  LocalizedValue,
+  LookDiscount,
+  LookImage,
+  LookObject,
+  Money,
+} from './types';
 
 /**
  * Records or clears the end date of a look in its Custom Object: `endedAt`
@@ -37,41 +47,108 @@ export async function recordLookEnd(
 }
 
 /**
- * Switches a look on or off: `changeIsActive` on the discount with its
- * current `version`. On a conflict the discount is re-read and returned as
- * it is now; the write is not retried blindly. After a successful switch,
- * when `objectKey` is given, the object records the end date (set when
- * switched off, cleared when switched on). That second write is best
- * effort and never fails the switch.
+ * Switches a look on or off: `changeIsActive` on its discounts with their
+ * current `version`s. The main discount decides the status, so it goes on
+ * last and off first; the country discounts follow or lead. On a conflict on
+ * the main discount it is re-read and returned as it is now; the write is not
+ * retried blindly. After a successful switch, when `objectKey` is given, the
+ * object records the end date (set when switched off, cleared when switched
+ * on). That second write is best effort and never fails the switch.
  */
 export async function switchLook(
   api: LookApi,
   discount: Pick<LookDiscount, 'id' | 'version'>,
   isActive: boolean,
-  options: { objectKey?: string; now?: Date } = {}
+  options: {
+    objectKey?: string;
+    now?: Date;
+    countryDiscounts?: Array<Pick<LookDiscount, 'id' | 'version'>>;
+  } = {}
 ): Promise<{
   outcome: 'updated' | 'conflict';
   discount: LookDiscount;
+  /** The country discounts as written, to replace the stale ones. */
+  countryDiscounts: LookDiscount[];
   object?: LookObject;
 }> {
-  let updated: LookDiscount;
-  try {
-    updated = await api.updateCartDiscount(
-      discount.id,
-      discount.version,
-      [changeIsActiveAction(isActive)],
-      'switchDiscount'
-    );
-  } catch (error) {
-    if (isConflict(error)) {
-      return {
-        outcome: 'conflict',
-        discount: await api.getCartDiscount(discount.id),
-      };
+  const written: LookDiscount[] = [];
+  const switchCountry = async (entry: Pick<LookDiscount, 'id' | 'version'>) => {
+    try {
+      written.push(
+        await api.updateCartDiscount(
+          entry.id,
+          entry.version,
+          [changeIsActiveAction(isActive)],
+          'switchDiscount'
+        )
+      );
+    } catch (error) {
+      if (!isConflict(error)) throw error;
+      // The country discount moved on: read its version and write once more.
+      const current = await api.getCartDiscount(entry.id);
+      written.push(
+        current.isActive === isActive
+          ? current
+          : await api.updateCartDiscount(
+              current.id,
+              current.version,
+              [changeIsActiveAction(isActive)],
+              'switchDiscount'
+            )
+      );
     }
-    throw error;
+  };
+  const switchMain = async (): Promise<LookDiscount | 'conflict'> => {
+    try {
+      return await api.updateCartDiscount(
+        discount.id,
+        discount.version,
+        [changeIsActiveAction(isActive)],
+        'switchDiscount'
+      );
+    } catch (error) {
+      if (isConflict(error)) return 'conflict';
+      throw error;
+    }
+  };
+
+  // The look's Discount Group goes first in both directions: switched on
+  // before the (still inactive) discounts nothing applies yet, switched off
+  // the look stops applying at once. A look without a group (created before
+  // groups) has nothing to switch here.
+  if (options.objectKey) {
+    const group = await api.getDiscountGroupByKey(options.objectKey);
+    if (group && group.isActive !== isActive) {
+      await api.updateDiscountGroup(
+        group.id,
+        group.version,
+        [setGroupActiveAction(isActive)],
+        'switchDiscountGroup'
+      );
+    }
   }
-  if (!options.objectKey) return { outcome: 'updated', discount: updated };
+
+  const countries = options.countryDiscounts ?? [];
+  let updated: LookDiscount | 'conflict';
+  if (isActive) {
+    for (const entry of countries) await switchCountry(entry);
+    updated = await switchMain();
+  } else {
+    updated = await switchMain();
+    if (updated !== 'conflict') {
+      for (const entry of countries) await switchCountry(entry);
+    }
+  }
+  if (updated === 'conflict') {
+    return {
+      outcome: 'conflict',
+      discount: await api.getCartDiscount(discount.id),
+      countryDiscounts: written,
+    };
+  }
+  if (!options.objectKey) {
+    return { outcome: 'updated', discount: updated, countryDiscounts: written };
+  }
   try {
     const endedAt = isActive
       ? undefined
@@ -80,10 +157,11 @@ export async function switchLook(
     return {
       outcome: 'updated',
       discount: updated,
+      countryDiscounts: written,
       ...(object ? { object } : {}),
     };
   } catch {
-    return { outcome: 'updated', discount: updated };
+    return { outcome: 'updated', discount: updated, countryDiscounts: written };
   }
 }
 
@@ -105,19 +183,30 @@ const sameMoney = (a: Money, b: Money): boolean =>
   JSON.stringify(Object.entries(b).sort());
 
 /**
- * Changes a look's set price: first `changeValue` on the discount with the
- * amount recomputed from today's live sum, then the object's `setPrice` with
- * the object's current `version`. `discountChanged` retries only step 2.
- * Makes no call when nothing changes (set price and amounts already match).
+ * Changes a look's set prices: first the discounts (`changeValue` per country
+ * with the amount recomputed from today's live sum, a missing country
+ * discount is created), then the object's `setPrice` with the object's
+ * current `version`. `discountChanged` retries only step 2. Makes no call
+ * when nothing changes (set prices and amounts already match).
  */
 export async function changeSetPrice(
   api: LookApi,
-  row: Pick<LookRow, 'objectKey' | 'discount' | 'object'>,
+  row: Pick<
+    LookRow,
+    | 'objectKey'
+    | 'lookKey'
+    | 'discount'
+    | 'countryDiscounts'
+    | 'object'
+    | 'name'
+  >,
   setPrice: Money,
   liveSum: Money,
   options: { discountChanged?: boolean } = {}
 ): Promise<{
   discount?: LookDiscount;
+  /** Every discount written (main and country), to replace the stale ones. */
+  discounts: LookDiscount[];
   object: LookObject;
   unchanged: boolean;
 }> {
@@ -126,35 +215,96 @@ export async function changeSetPrice(
       'changeSetPrice needs a complete look (object and discount).'
     );
   }
-  const wanted = discountAmounts(liveSum, setPrice);
+  const main = row.discount;
+  const known = [main, ...row.countryDiscounts];
+  const groups = groupPriceKeys(Object.keys(setPrice));
+  const knownFor = (country: string) =>
+    known.find((discount) => discount.country === country);
+  const discountsMatch = groups.every((group) => {
+    const current = knownFor(group.country);
+    return (
+      !!current &&
+      sameMoney(current.amount, groupAmounts(group, liveSum, setPrice))
+    );
+  });
   if (
     !options.discountChanged &&
     sameMoney(row.object.value.setPrice, setPrice) &&
-    sameMoney(row.discount.amount, wanted)
+    discountsMatch
   ) {
-    return { object: row.object, unchanged: true };
+    return { discounts: [], object: row.object, unchanged: true };
   }
 
   let discount: LookDiscount | undefined;
-  if (!options.discountChanged && !sameMoney(row.discount.amount, wanted)) {
+  const discounts: LookDiscount[] = [];
+  if (!options.discountChanged && !discountsMatch) {
     try {
-      // The row can be older than the last write, so the version is read now.
-      const current = await api.getCartDiscount(row.discount.id);
-      discount = await api.updateCartDiscount(
-        current.id,
-        current.version,
-        [changeValueAction(liveSum, setPrice)],
-        'changeDiscountValue'
-      );
+      for (const group of groups) {
+        const wanted = groupAmounts(group, liveSum, setPrice);
+        let current: LookDiscount | undefined = knownFor(group.country);
+        if (current && sameMoney(current.amount, wanted)) continue;
+        if (current) {
+          // The row can be older than the last write: read the version now.
+          current = await api.getCartDiscount(current.id);
+        } else {
+          current = await api.getCartDiscountByKey(
+            lookDiscountKey(row.lookKey, group.country, false)
+          );
+        }
+        let written: LookDiscount;
+        if (current) {
+          written = sameMoney(current.amount, wanted)
+            ? current
+            : await api.updateCartDiscount(
+                current.id,
+                current.version,
+                [changeValueAction(wanted)],
+                'changeDiscountValue'
+              );
+        } else {
+          // The look's group (created now for a look from before groups).
+          await ensureLookGroup(
+            api,
+            { key: row.lookKey, label: row.name ?? {} },
+            main.isActive
+          );
+          written = await api.createCartDiscount(
+            buildCountryDiscountDraft(
+              {
+                key: row.lookKey,
+                label: row.name ?? {},
+                componentProductIds: row.object.value.componentProductIds,
+                setPrice,
+                sum: liveSum,
+              },
+              group,
+              { isActive: main.isActive, isMain: false }
+            )
+          );
+        }
+        discounts.push(written);
+        if (written.id === main.id) discount = written;
+      }
     } catch (error) {
       // A lost response may still have been applied: read again and say so,
       // so the retry only writes the object.
       let applied = false;
       try {
-        applied = sameMoney(
-          (await api.getCartDiscount(row.discount.id)).amount,
-          wanted
-        );
+        applied = true;
+        for (const group of groups) {
+          const current = knownFor(group.country);
+          const read = current
+            ? await api.getCartDiscount(current.id)
+            : await api.getCartDiscountByKey(
+                lookDiscountKey(row.lookKey, group.country, false)
+              );
+          if (
+            !read ||
+            !sameMoney(read.amount, groupAmounts(group, liveSum, setPrice))
+          ) {
+            applied = false;
+          }
+        }
       } catch {
         applied = false;
       }
@@ -171,7 +321,7 @@ export async function changeSetPrice(
       value: buildLookValue({ ...current.value, setPrice }),
       version: current.version,
     });
-    return { discount, object, unchanged: false };
+    return { discount, discounts, object, unchanged: false };
   } catch (error) {
     throw new SetPriceStepError('object', true, error);
   }
@@ -209,18 +359,21 @@ export async function changePhoto(
 export async function completeLook(
   api: LookApi,
   row: LookRow,
-  input: { liveSum: Money; label?: { de: string; en: string } }
+  input: { liveSum: Money; label?: LocalizedValue }
 ): Promise<void> {
   if (row.completeness === 'missing-object' && row.discount) {
     const setPrice: Money = {};
-    for (const [currency, amount] of Object.entries(row.discount.amount)) {
-      const sum = input.liveSum[currency];
-      if (sum === undefined) {
-        throw new LookApiError('completeDiscount', 'unknown', undefined, {
-          message: `No live sum in ${currency}`,
-        });
+    for (const discount of [row.discount, ...row.countryDiscounts]) {
+      for (const [currency, amount] of Object.entries(discount.amount)) {
+        const key = priceKey(currency, discount.country);
+        const sum = input.liveSum[key];
+        if (sum === undefined) {
+          throw new LookApiError('completeDiscount', 'unknown', undefined, {
+            message: `No live sum in ${key}`,
+          });
+        }
+        setPrice[key] = sum - amount;
       }
-      setPrice[currency] = sum - amount;
     }
     await api.writeLookObject({
       container: LOOK_CONTAINER,
@@ -233,23 +386,19 @@ export async function completeLook(
     return;
   }
   if (row.completeness === 'missing-discount' && row.object && input.label) {
-    const discounts = await api.fetchCartDiscounts();
-    const lookKey = row.lookKey;
-    await api.createCartDiscount(
-      buildLookCartDiscountDraft(
-        {
-          key: lookKey,
-          label: input.label,
-          componentProductIds: row.object.value.componentProductIds,
-          setPrice: row.object.value.setPrice,
-          sum: input.liveSum,
-        },
-        {
-          sortOrder: nextSortOrder(discounts.map((d) => d.sortOrder)),
-          isActive: false,
-        }
-      )
-    );
+    await ensureLookGroup(api, { key: row.lookKey, label: input.label }, false);
+    const have = new Set(row.countryDiscounts.map((d) => d.key));
+    const look = {
+      key: row.lookKey,
+      label: input.label,
+      componentProductIds: row.object.value.componentProductIds,
+      setPrice: row.object.value.setPrice,
+      sum: input.liveSum,
+    };
+    const drafts = buildLookCartDiscountDrafts(look, {
+      isActive: false,
+    }).filter((draft) => !have.has(draft.key));
+    for (const draft of drafts) await api.createCartDiscount(draft);
     return;
   }
   throw new Error('This look cannot be completed.');

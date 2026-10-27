@@ -1,0 +1,7 @@
+#import "./fragments/look-group.graphql"
+
+query FetchLookDiscountGroup($id: String, $key: String) {
+  discountGroup(id: $id, key: $key) {
+    ...LookGroupFragment
+  }
+}

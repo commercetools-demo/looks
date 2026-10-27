@@ -1,3 +1,4 @@
+import { fillLookName } from '../../test-utils/names';
 import userEvent from '@testing-library/user-event';
 import { config } from '../../config';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
@@ -6,7 +7,7 @@ import {
   buildObject,
   buildPiece,
 } from '../../test-utils/fixtures';
-import { waitFor } from '@testing-library/react';
+import { waitFor, within } from '@testing-library/react';
 import { renderLooks, screen } from '../../test-utils';
 import { measureImage } from './measure-image';
 
@@ -15,6 +16,13 @@ const measure = measureImage as jest.MockedFunction<typeof measureImage>;
 
 const ids = ['p1', 'p2', 'p3', 'p4', 'p5'];
 const pieces = ids.map((id) => buildPiece(id));
+
+/** A look discount without country (the app's default cart condition). */
+const discount = (
+  key: string,
+  pieceIds: string[],
+  overrides: Parameters<typeof buildDiscount>[2] = {}
+) => buildDiscount(key, pieceIds, { country: '', ...overrides });
 
 function seed(
   options: {
@@ -34,25 +42,60 @@ function seed(
       }),
     ],
     discounts: [
-      buildDiscount(
-        'a',
-        pieceIds,
-        options.amount ? { amount: options.amount } : {}
-      ),
+      discount('a', pieceIds, options.amount ? { amount: options.amount } : {}),
     ],
     pieces: options.pieces ?? pieces,
   });
 }
 
-const eur = () => screen.findByRole('textbox', { name: 'Setpreis in EUR' });
+/** Pieces priced in EUR for DE and FR and in GBP for GB; a look at
+ *  180/190/160 with one discount per country. */
+function seedCountries(options: { gbPrice?: number } = {}) {
+  const prices = { 'EUR/DE': 10000, 'EUR/FR': 10000, 'GBP/GB': 9000 };
+  const fake = createFakeLookApi({
+    objects: [
+      buildObject('a', ['p1', 'p2'], {
+        setPrice: { 'EUR/DE': 18000, 'EUR/FR': 19000, 'GBP/GB': 16000 },
+      }),
+    ],
+    discounts: [
+      buildDiscount('a', ['p1', 'p2'], {
+        country: 'DE',
+        amount: { EUR: 2000 },
+      }),
+      buildDiscount('a-FR', ['p1', 'p2'], {
+        country: 'FR',
+        amount: { EUR: 1000 },
+      }),
+      buildDiscount('a-GB', ['p1', 'p2'], {
+        country: 'GB',
+        amount: { GBP: 2000 },
+      }),
+    ],
+    pieces: [
+      buildPiece('p1', {
+        prices: { ...prices, 'GBP/GB': options.gbPrice ?? 9000 },
+      }),
+      buildPiece('p2', { prices }),
+    ],
+  });
+  return { api: fake.api, fake };
+}
+
+/** The set-price text field of a table row: `EUR` or `EUR DE`. */
+const cell = async (label: string) =>
+  within(
+    await screen.findByRole('group', { name: `Setpreis ${label}` })
+  ).getByRole('textbox');
+const percent = (label: string) =>
+  screen.getByRole('textbox', { name: `Ersparnis in Prozent ${label}` });
 
 async function enterPrices(values: Record<string, string>) {
-  for (const [currency, text] of Object.entries(values)) {
-    const input = await screen.findByRole('textbox', {
-      name: `Setpreis in ${currency}`,
-    });
+  for (const [label, text] of Object.entries(values)) {
+    const input = await cell(label);
     await userEvent.clear(input);
     await userEvent.type(input, text);
+    await userEvent.tab();
   }
 }
 
@@ -225,24 +268,31 @@ describe('look detail', () => {
   });
 
   describe('set price', () => {
-    it('prefills the stored set price and shows sum and saving', async () => {
+    it('prefills the stored set price and shows sum and saving per row', async () => {
       renderLooks({ api: seed().api, path: '/a' });
-      expect(await eur()).toHaveValue('180,00');
-      expect(
-        screen.getByRole('textbox', { name: 'Setpreis in CHF' })
-      ).toHaveValue('198,00');
-      expect(
-        screen.getByText(/Summe der Einzelpreise: 200,00\s€/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Ersparnis: 20,00\s€ \(10 %\)/)
-      ).toBeInTheDocument();
+      expect(await cell('EUR')).toHaveValue('180,00');
+      expect(await cell('CHF')).toHaveValue('198,00');
+      expect(percent('EUR')).toHaveValue('10');
+      expect(percent('CHF')).toHaveValue('10');
+      const row = within(screen.getByTestId('price-row-EUR'));
+      expect(row.getAllByText(/100,00\s€/)).toHaveLength(2);
+      expect(row.getByText(/200,00\s€/)).toBeInTheDocument();
+    });
+
+    it('typing a saving in percent writes the set price', async () => {
+      renderLooks({ api: seed().api, path: '/a' });
+      await cell('EUR');
+      const field = percent('EUR');
+      await userEvent.clear(field);
+      await userEvent.type(field, '25');
+      await userEvent.tab();
+      expect(await cell('EUR')).toHaveValue('150,00');
     });
 
     it('US5.3: recomputes the discount first, then the definition, and confirms', async () => {
       const fake = seed();
       renderLooks({ api: fake.api, path: '/a' });
-      await enterPrices({ EUR: '170,00', CHF: '187.00' });
+      await enterPrices({ EUR: '170,00', CHF: '187,00' });
       await savePrice();
       expect(
         await screen.findAllByText('Setpreis gespeichert')
@@ -259,26 +309,28 @@ describe('look detail', () => {
         EUR: 17000,
         CHF: 18700,
       });
-      expect(await eur()).toHaveValue('170,00');
+      expect(await cell('EUR')).toHaveValue('170,00');
     });
 
     it('writes nothing and says "Keine Änderung" when the price is unchanged', async () => {
       const fake = seed();
       renderLooks({ api: fake.api, path: '/a' });
-      await eur();
+      await cell('EUR');
       await savePrice();
       expect(await screen.findByText('Keine Änderung')).toBeInTheDocument();
       expect(fake.callsTo('updateCartDiscount')).toHaveLength(0);
       expect(fake.callsTo('writeLookObject')).toHaveLength(0);
     });
 
-    it('refuses a set price that is not below the sum', async () => {
+    it('refuses a set price that is not below the sum, under the row', async () => {
       const fake = seed();
       renderLooks({ api: fake.api, path: '/a' });
       await enterPrices({ EUR: '200', CHF: '100' });
       await savePrice();
       expect(
-        await screen.findByText(/muss unter der Summe der Einzelpreise liegen/)
+        await within(screen.getByTestId('price-row-EUR')).findByText(
+          /muss unter der Summe der Einzelpreise liegen/
+        )
       ).toBeInTheDocument();
       expect(fake.callsTo('updateCartDiscount')).toHaveLength(0);
       expect(fake.callsTo('writeLookObject')).toHaveLength(0);
@@ -363,23 +415,23 @@ describe('look detail', () => {
       expect(
         await screen.findByText('Setpreis fehlt in einer Währung')
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole('textbox', { name: 'Setpreis in CHF' })
-      ).toHaveValue('');
+      expect(await cell('CHF')).toHaveValue('');
     });
 
     it('works with a single project currency', async () => {
+      const eurOnly = { EUR: 10000 };
       const fake = createFakeLookApi({
         objects: [buildObject('a', ['p1', 'p2'], { setPrice: { EUR: 18000 } })],
-        discounts: [
-          buildDiscount('a', ['p1', 'p2'], { amount: { EUR: 2000 } }),
+        discounts: [discount('a', ['p1', 'p2'], { amount: { EUR: 2000 } })],
+        pieces: [
+          buildPiece('p1', { prices: eurOnly }),
+          buildPiece('p2', { prices: eurOnly }),
         ],
-        pieces,
       });
       renderLooks({ api: fake.api, path: '/a', currencies: ['EUR'] });
       await enterPrices({ EUR: '150' });
       expect(
-        screen.queryByRole('textbox', { name: 'Setpreis in CHF' })
+        screen.queryByRole('textbox', { name: 'Setpreis CHF' })
       ).not.toBeInTheDocument();
       await savePrice();
       expect(
@@ -397,7 +449,7 @@ describe('look detail', () => {
           }),
         ],
         discounts: [
-          buildDiscount('a', ['p1', 'p2'], {
+          discount('a', ['p1', 'p2'], {
             amount: { EUR: 2000, CHF: 2200, USD: 2400 },
           }),
         ],
@@ -409,9 +461,7 @@ describe('look detail', () => {
         currencies: ['EUR', 'CHF', 'USD'],
       });
       await enterPrices({ USD: '200' });
-      expect(
-        screen.getByRole('textbox', { name: 'Setpreis in USD' })
-      ).toHaveValue('200');
+      expect(await cell('USD')).toHaveValue('200,00');
       await savePrice();
       expect(
         await screen.findAllByText('Setpreis gespeichert')
@@ -421,6 +471,216 @@ describe('look detail', () => {
         CHF: 19800,
         USD: 20000,
       });
+    });
+
+    it('shows no row for a cell where a piece has no price', async () => {
+      const fake = seed({
+        pieces: [
+          buildPiece('p1'),
+          buildPiece('p2', { prices: { EUR: 10000 } }),
+        ],
+      });
+      renderLooks({ api: fake.api, path: '/a' });
+      expect(await cell('EUR')).toBeEnabled();
+      expect(screen.queryByTestId('price-row-CHF')).not.toBeInTheDocument();
+    });
+
+    it('cannot empty a stored set price: row error, nothing written', async () => {
+      const fake = seed();
+      renderLooks({ api: fake.api, path: '/a' });
+      const input = await cell('EUR');
+      await userEvent.clear(input);
+      await userEvent.tab();
+      await savePrice();
+      expect(
+        await within(screen.getByTestId('price-row-EUR')).findByText(
+          'Bitte einen Setpreis über 0 eingeben'
+        )
+      ).toBeInTheDocument();
+      expect(fake.callsTo('writeLookObject')).toHaveLength(0);
+    });
+  });
+
+  describe('set price per country', () => {
+    it('shows one row per currency and country with its sum', async () => {
+      const { api } = seedCountries();
+      renderLooks({ api, path: '/a', currencies: ['EUR', 'GBP'] });
+      expect(await cell('EUR DE')).toHaveValue('180,00');
+      expect(await cell('EUR FR')).toHaveValue('190,00');
+      expect(await cell('GBP GB')).toHaveValue('160,00');
+      const rows = screen
+        .getAllByTestId(/^price-row-/)
+        .map((row) => row.getAttribute('data-testid'));
+      expect(rows).toEqual([
+        'price-row-EUR/DE',
+        'price-row-EUR/FR',
+        'price-row-GBP/GB',
+      ]);
+      expect(
+        within(screen.getByTestId('price-row-EUR/DE')).getByText(/200,00\s€/)
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('price-row-GBP/GB')).getByText(/180,00\s£/)
+      ).toBeInTheDocument();
+      expect(percent('EUR DE')).toHaveValue('10');
+      expect(percent('EUR FR')).toHaveValue('5');
+      expect(percent('GBP GB')).toHaveValue('11,1');
+      expect(screen.queryByText('Setpreis weicht ab')).not.toBeInTheDocument();
+    });
+
+    it('editing the percent of one row changes only that price input', async () => {
+      const { api } = seedCountries();
+      renderLooks({ api, path: '/a', currencies: ['EUR', 'GBP'] });
+      await cell('EUR DE');
+      const field = percent('EUR DE');
+      await userEvent.clear(field);
+      await userEvent.type(field, '20');
+      await userEvent.tab();
+      expect(await cell('EUR DE')).toHaveValue('160,00');
+      expect(await cell('EUR FR')).toHaveValue('190,00');
+      expect(await cell('GBP GB')).toHaveValue('160,00');
+    });
+
+    it('writes changeValue only for the changed country discount, then the object', async () => {
+      const fake = seedCountries().fake;
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR', 'GBP'] });
+      await enterPrices({ 'EUR DE': '160' });
+      await savePrice();
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      const updates = fake.callsTo('updateCartDiscount');
+      expect(updates.map((call) => call.args[0])).toEqual(['disc-a']);
+      expect(updates[0].args[2]).toEqual([
+        expect.objectContaining({ changeValue: expect.anything() }),
+      ]);
+      expect(fake.discounts.get('disc-a')?.amount).toEqual({ EUR: 4000 });
+      expect(fake.discounts.get('disc-a-FR')?.amount).toEqual({ EUR: 1000 });
+      expect(fake.discounts.get('disc-a-GB')?.amount).toEqual({ GBP: 2000 });
+      expect(fake.objects.get('look-a')?.value.setPrice).toEqual({
+        'EUR/DE': 16000,
+        'EUR/FR': 19000,
+        'GBP/GB': 16000,
+      });
+      const order = fake.calls
+        .map((c) => c.method)
+        .filter((m) => m === 'updateCartDiscount' || m === 'writeLookObject');
+      expect(order).toEqual(['updateCartDiscount', 'writeLookObject']);
+    });
+
+    it('updates one discount per changed country, then the object', async () => {
+      const fake = seedCountries().fake;
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR', 'GBP'] });
+      await enterPrices({ 'EUR FR': '170', 'GBP GB': '150' });
+      await savePrice();
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      expect(
+        fake.callsTo('updateCartDiscount').map((call) => call.args[0])
+      ).toEqual(['disc-a-FR', 'disc-a-GB']);
+      expect(fake.callsTo('writeLookObject')).toHaveLength(1);
+      expect(fake.discounts.get('disc-a')?.amount).toEqual({ EUR: 2000 });
+      expect(fake.discounts.get('disc-a-FR')?.amount).toEqual({ EUR: 3000 });
+      expect(fake.discounts.get('disc-a-GB')?.amount).toEqual({ GBP: 3000 });
+    });
+
+    it('writes nothing when no country price changed', async () => {
+      const fake = seedCountries().fake;
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR', 'GBP'] });
+      await cell('EUR DE');
+      await savePrice();
+      expect(await screen.findByText('Keine Änderung')).toBeInTheDocument();
+      expect(fake.callsTo('updateCartDiscount')).toHaveLength(0);
+      expect(fake.callsTo('writeLookObject')).toHaveLength(0);
+    });
+
+    it('shows an error under the row of a country price that is not below its sum', async () => {
+      const fake = seedCountries().fake;
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR', 'GBP'] });
+      await enterPrices({ 'GBP GB': '200' });
+      await savePrice();
+      expect(
+        await within(screen.getByTestId('price-row-GBP/GB')).findByText(
+          /muss unter der Summe der Einzelpreise liegen/
+        )
+      ).toBeInTheDocument();
+      expect(fake.callsTo('updateCartDiscount')).toHaveLength(0);
+    });
+
+    it('drift in one country row shows the alert and recalculates only that discount', async () => {
+      const fake = seedCountries({ gbPrice: 9500 }).fake;
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR', 'GBP'] });
+      expect(await screen.findByText('Setpreis weicht ab')).toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Setpreis neu berechnen' })
+      );
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      expect(
+        fake.callsTo('updateCartDiscount').map((call) => call.args[0])
+      ).toEqual(['disc-a-GB']);
+      expect(fake.discounts.get('disc-a-GB')?.amount).toEqual({ GBP: 2500 });
+      expect(fake.discounts.get('disc-a')?.amount).toEqual({ EUR: 2000 });
+      expect(fake.discounts.get('disc-a-FR')?.amount).toEqual({ EUR: 1000 });
+      expect(fake.objects.get('look-a')?.value.setPrice).toEqual({
+        'EUR/DE': 18000,
+        'EUR/FR': 19000,
+        'GBP/GB': 16000,
+      });
+      // Known gap: the row is not refreshed with the written country
+      // discount, so the alert stays until the page is reloaded.
+    });
+
+    it('a row without a stored set price starts empty, gets no discount while empty and creates one when filled', async () => {
+      const prices = { 'EUR/DE': 10000, 'EUR/FR': 10000 };
+      const fake = createFakeLookApi({
+        objects: [
+          buildObject('a', ['p1', 'p2'], { setPrice: { 'EUR/DE': 18000 } }),
+        ],
+        discounts: [
+          buildDiscount('a', ['p1', 'p2'], {
+            country: 'DE',
+            amount: { EUR: 2000 },
+          }),
+        ],
+        pieces: [buildPiece('p1', { prices }), buildPiece('p2', { prices })],
+      });
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR'] });
+      expect(await cell('EUR FR')).toHaveValue('');
+      await savePrice();
+      expect(await screen.findByText('Keine Änderung')).toBeInTheDocument();
+      expect(fake.callsTo('createCartDiscount')).toHaveLength(0);
+
+      await enterPrices({ 'EUR FR': '170' });
+      await savePrice();
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      expect(fake.callsTo('createCartDiscount')).toHaveLength(1);
+      expect(fake.discounts.get('disc-a')?.amount).toEqual({ EUR: 2000 });
+      const created = [...fake.discounts.values()].find(
+        (d) => d.key === 'look-a-FR'
+      );
+      expect(created?.amount).toEqual({ EUR: 3000 });
+      expect(fake.objects.get('look-a')?.value.setPrice).toEqual({
+        'EUR/DE': 18000,
+        'EUR/FR': 17000,
+      });
+    });
+
+    it('disables every price and percent field without Manage', async () => {
+      const { api } = seedCountries();
+      renderLooks({
+        api,
+        path: '/a',
+        currencies: ['EUR', 'GBP'],
+        canManage: false,
+      });
+      expect(await cell('EUR DE')).toBeDisabled();
+      expect(await cell('GBP GB')).toBeDisabled();
+      expect(percent('EUR FR')).toBeDisabled();
     });
   });
 
@@ -440,6 +700,92 @@ describe('look detail', () => {
       expect(
         await screen.findByRole('switch', { name: 'a de aktiv' })
       ).not.toBeChecked();
+    });
+
+    it('switches the country discounts too: main first when off, main last when on', async () => {
+      const { api, fake } = seedCountries();
+      renderLooks({ api, path: '/a', currencies: ['EUR', 'GBP'] });
+      const toggle = await screen.findByRole('switch', { name: 'a de aktiv' });
+      await userEvent.click(toggle);
+      await waitFor(() =>
+        expect([...fake.discounts.values()].every((d) => !d.isActive)).toBe(
+          true
+        )
+      );
+      expect(
+        fake.callsTo('updateCartDiscount').map((call) => call.args[0])
+      ).toEqual(['disc-a', 'disc-a-FR', 'disc-a-GB']);
+
+      const before = fake.callsTo('updateCartDiscount').length;
+      await userEvent.click(
+        await screen.findByRole('switch', { name: 'a de aktiv' })
+      );
+      await waitFor(() =>
+        expect([...fake.discounts.values()].every((d) => d.isActive)).toBe(true)
+      );
+      // The row keeps the country discounts' old versions, so each one is
+      // written again after a conflict: compare the order of first writes.
+      const ids = fake
+        .callsTo('updateCartDiscount')
+        .slice(before)
+        .map((call) => call.args[0]);
+      expect([...new Set(ids)]).toEqual(['disc-a-FR', 'disc-a-GB', 'disc-a']);
+    });
+
+    it('switches the look group first when off and on again, then the discounts', async () => {
+      const { api, fake } = seedCountries();
+      fake.groups.set('grp-a', {
+        id: 'grp-a',
+        version: 1,
+        key: 'look-a',
+        sortOrder: '0.7',
+        isActive: true,
+      });
+      renderLooks({ api, path: '/a', currencies: ['EUR', 'GBP'] });
+      await userEvent.click(
+        await screen.findByRole('switch', { name: 'a de aktiv' })
+      );
+      await waitFor(() =>
+        expect([...fake.discounts.values()].every((d) => !d.isActive)).toBe(
+          true
+        )
+      );
+      expect(fake.groups.get('grp-a')?.isActive).toBe(false);
+      const switchCalls = () =>
+        fake.calls
+          .filter((call) =>
+            ['updateDiscountGroup', 'updateCartDiscount'].includes(call.method)
+          )
+          .map((call) => call.method);
+      expect(switchCalls()[0]).toBe('updateDiscountGroup');
+
+      const before = fake.calls.length;
+      await userEvent.click(
+        await screen.findByRole('switch', { name: 'a de aktiv' })
+      );
+      await waitFor(() =>
+        expect([...fake.discounts.values()].every((d) => d.isActive)).toBe(true)
+      );
+      expect(fake.groups.get('grp-a')?.isActive).toBe(true);
+      expect(
+        fake.calls
+          .slice(before)
+          .filter((call) =>
+            ['updateDiscountGroup', 'updateCartDiscount'].includes(call.method)
+          )[0].method
+      ).toBe('updateDiscountGroup');
+    });
+
+    it('switches a legacy look without a group and makes no group call', async () => {
+      const fake = seed();
+      renderLooks({ api: fake.api, path: '/a' });
+      await userEvent.click(
+        await screen.findByRole('switch', { name: 'a de aktiv' })
+      );
+      await waitFor(() =>
+        expect(fake.discounts.get('disc-a')?.isActive).toBe(false)
+      );
+      expect(fake.callsTo('updateDiscountGroup')).toHaveLength(0);
     });
   });
 
@@ -528,12 +874,9 @@ describe('look detail', () => {
       renderLooks({ api: fake.api, path: '/a', canManage: false });
       expect(await screen.findByText('Nur Lesezugriff')).toBeInTheDocument();
       expect(screen.getByRole('switch', { name: 'a de aktiv' })).toBeDisabled();
-      expect(
-        screen.getByRole('textbox', { name: 'Setpreis in EUR' })
-      ).toBeDisabled();
-      expect(
-        screen.getByRole('textbox', { name: 'Setpreis in CHF' })
-      ).toBeDisabled();
+      expect(await cell('EUR')).toBeDisabled();
+      expect(await cell('CHF')).toBeDisabled();
+      expect(percent('EUR')).toBeDisabled();
       expect(
         screen.getByRole('button', { name: 'Setpreis speichern' })
       ).toBeDisabled();
@@ -571,7 +914,7 @@ describe('look detail', () => {
       expect(screen.getByText(/fehlt die Look-Definition/)).toBeInTheDocument();
       expect(screen.queryByRole('switch')).not.toBeInTheDocument();
       expect(
-        screen.queryByRole('textbox', { name: 'Setpreis in EUR' })
+        screen.queryByRole('textbox', { name: 'Setpreis EUR' })
       ).not.toBeInTheDocument();
       await userEvent.click(
         screen.getByRole('button', { name: 'Vervollständigen' })
@@ -599,14 +942,10 @@ describe('look detail', () => {
         name: 'Vervollständigen',
       });
       expect(complete).toBeDisabled();
-      await userEvent.type(
-        screen.getByRole('textbox', { name: 'Name (Deutsch)' }),
-        'Neuer Look'
-      );
-      await userEvent.type(
-        screen.getByRole('textbox', { name: 'Name (Englisch)' }),
-        'New look'
-      );
+      await fillLookName(userEvent.setup(), {
+        de: 'Neuer Look',
+        en: 'New look',
+      });
       await userEvent.click(complete);
       expect(
         await screen.findAllByText('Look vervollständigt')

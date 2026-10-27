@@ -24,7 +24,7 @@ const createApi = () =>
       currencies: ['EUR', 'CHF'],
       dataLocale: 'de',
       config: {
-        sizeAttribute: 'size',
+        variantAttributes: ['size'],
         colorNameAttribute: 'color-name',
         colorAttribute: 'color',
       },
@@ -49,6 +49,7 @@ const rawDiscount = (
   key: `look-k${index}`,
   isActive: true,
   sortOrder: '0.7',
+  cartPredicate: 'country = "DE"',
   createdAt: '2026-09-30T08:00:00.000Z',
   nameAllLocales: [
     { __typename: 'LocalizedString', locale: 'de', value: 'Look-Set: Büro' },
@@ -83,6 +84,16 @@ const rawDiscount = (
       },
     ],
   },
+  ...overrides,
+});
+
+const rawGroup = (index: number, overrides: Record<string, unknown> = {}) => ({
+  __typename: 'DiscountGroup',
+  id: `g${index}`,
+  version: 2,
+  key: `look-k${index}`,
+  sortOrder: '0.7',
+  isActive: false,
   ...overrides,
 });
 
@@ -173,6 +184,7 @@ describe('createLookApi', () => {
       name: { de: 'Look-Set: Büro' },
       description: { de: 'Büro' },
       amount: { EUR: 2000, CHF: 2200 },
+      country: 'DE',
       pieceIds: ['a', 'b'],
     });
   });
@@ -288,6 +300,171 @@ describe('createLookApi', () => {
     expect(count).toBe(2);
     expect(result.orders).toHaveLength(PAGE + 7);
     expect(result.truncated).toBe(false);
+  });
+
+  it('pages the discount groups by 500 and returns them as LookDiscountGroups', async () => {
+    const offsets: number[] = [];
+    server.use(
+      graphql.query('FetchLookDiscountGroups', (req, res, ctx) => {
+        const { offset } = req.variables as { offset: number };
+        offsets.push(offset);
+        return res(
+          ctx.data({
+            discountGroups: {
+              __typename: 'DiscountGroupQueryResult',
+              results: pageOf(offset === 0 ? PAGE : 1, rawGroup, offset),
+            },
+          })
+        );
+      })
+    );
+    const groups = await createApi().fetchDiscountGroups();
+    expect(groups).toHaveLength(PAGE + 1);
+    expect(offsets).toEqual([0, PAGE]);
+    expect(groups[0]).toMatchObject({
+      id: 'g0',
+      version: 2,
+      key: 'look-k0',
+      sortOrder: '0.7',
+      isActive: false,
+    });
+  });
+
+  it('reads one discount group by key, undefined when there is none', async () => {
+    const variables: unknown[] = [];
+    server.use(
+      graphql.query('FetchLookDiscountGroup', (req, res, ctx) => {
+        variables.push(req.variables);
+        const { key } = req.variables as { key: string };
+        return res(
+          ctx.data({
+            discountGroup: key === 'look-k1' ? rawGroup(1) : null,
+          })
+        );
+      })
+    );
+    const api = createApi();
+    expect(await api.getDiscountGroupByKey('look-k1')).toMatchObject({
+      id: 'g1',
+      key: 'look-k1',
+    });
+    expect(await api.getDiscountGroupByKey('look-none')).toBeUndefined();
+    expect(variables).toEqual([{ key: 'look-k1' }, { key: 'look-none' }]);
+  });
+
+  it('sends the draft of CreateLookDiscountGroup and returns the group', async () => {
+    let received: unknown;
+    server.use(
+      graphql.mutation('CreateLookDiscountGroup', (req, res, ctx) => {
+        received = req.variables;
+        return res(
+          ctx.data({ createDiscountGroup: rawGroup(1, { version: 1 }) })
+        );
+      })
+    );
+    const draft = {
+      key: 'look-k1',
+      sortOrder: '0.7',
+      name: [{ locale: 'de', value: 'Look-Set: Büro' }],
+      isActive: false,
+    };
+    const created = await createApi().createDiscountGroup(draft);
+    expect(received).toEqual({ draft });
+    expect(created).toMatchObject({ id: 'g1', version: 1, key: 'look-k1' });
+  });
+
+  it('sends id, version and actions for UpdateLookDiscountGroup', async () => {
+    let received: unknown;
+    server.use(
+      graphql.mutation('UpdateLookDiscountGroup', (req, res, ctx) => {
+        received = req.variables;
+        return res(
+          ctx.data({
+            updateDiscountGroup: rawGroup(1, { isActive: true, version: 3 }),
+          })
+        );
+      })
+    );
+    const actions = [{ setIsActive: { isActive: true } }];
+    const updated = await createApi().updateDiscountGroup(
+      'g1',
+      2,
+      actions,
+      'switchDiscountGroup'
+    );
+    expect(received).toEqual({ id: 'g1', version: 2, actions });
+    expect(updated).toMatchObject({ isActive: true, version: 3 });
+  });
+
+  it('maps a failed group create (duplicate key or rank) to a duplicate LookApiError', async () => {
+    server.use(
+      graphql.mutation('CreateLookDiscountGroup', (_req, res, ctx) =>
+        res(
+          ctx.errors([
+            {
+              message: 'duplicate',
+              extensions: { code: 'DuplicateField' },
+            },
+          ])
+        )
+      )
+    );
+    const error = await createApi()
+      .createDiscountGroup({
+        key: 'look-k1',
+        sortOrder: '0.7',
+        name: [],
+        isActive: false,
+      })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(LookApiError);
+    expect(error).toMatchObject({
+      kind: 'duplicate',
+      operation: 'createDiscountGroup',
+    });
+  });
+
+  it('maps ConcurrentModification on a group switch to a conflict naming switchDiscountGroup', async () => {
+    server.use(
+      graphql.mutation('UpdateLookDiscountGroup', (_req, res, ctx) =>
+        res(
+          ctx.errors([
+            {
+              message: 'different version',
+              extensions: { code: 'ConcurrentModification' },
+            },
+          ])
+        )
+      )
+    );
+    const error = await createApi()
+      .updateDiscountGroup(
+        'g1',
+        1,
+        [{ setIsActive: { isActive: true } }],
+        'switchDiscountGroup'
+      )
+      .catch((e: unknown) => e);
+    expect(error).toMatchObject({
+      kind: 'conflict',
+      operation: 'switchDiscountGroup',
+      statusCode: 409,
+    });
+  });
+
+  it('maps a failed group read to a LookApiError of readLooks', async () => {
+    server.use(
+      graphql.query('FetchLookDiscountGroup', (_req, res, ctx) =>
+        res(
+          ctx.errors([
+            { message: 'no scope', extensions: { code: 'InsufficientScope' } },
+          ])
+        )
+      )
+    );
+    await expect(
+      createApi().getDiscountGroupByKey('look-k1')
+    ).rejects.toMatchObject({ kind: 'forbidden', operation: 'readLooks' });
   });
 
   it('maps ConcurrentModification to a conflict LookApiError naming the operation', async () => {

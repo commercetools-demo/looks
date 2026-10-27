@@ -1,8 +1,10 @@
 import { isConflict, isDuplicate, LookApiError } from './errors';
-import { deriveLookKey, lookObjectKey } from './keys';
+import { deriveLookKey, keySourceName, lookObjectKey } from './keys';
 import {
-  buildLookCartDiscountDraft,
+  buildLookCartDiscountDrafts,
+  buildLookDiscountGroupDraft,
   changeIsActiveAction,
+  setGroupActiveAction,
 } from './look-actions';
 import type { LookApi } from './look-api';
 import { LOOK_CONTAINER } from './limits';
@@ -13,6 +15,7 @@ import type { LookInput, LookValue, NewLook } from './types';
 
 export interface SavePlan {
   look: LookInput;
+  /** The rank of the look's Discount Group. */
   sortOrder: string;
 }
 
@@ -20,7 +23,12 @@ export type SaveStep = 'discount' | 'object' | 'activation';
 
 /** How far a save got; passed back in to resume after a failed step. */
 export interface SaveProgress {
+  /** The look's Discount Group `look-<key>`. */
+  group?: { id: string; version: number };
+  /** The main discount `look-<key>`. */
   discount?: { id: string; version: number };
+  /** The country discounts written so far, by key. */
+  countryDiscounts?: Record<string, { id: string; version: number }>;
   objectWritten: boolean;
   activated: boolean;
 }
@@ -70,31 +78,57 @@ export async function planNewLook(
   api: LookApi,
   input: NewLook
 ): Promise<SavePlan> {
-  const [objects, discounts] = await Promise.all([
+  const [objects, discounts, groups] = await Promise.all([
     api.fetchLookObjects(),
     api.fetchCartDiscounts(),
+    api.fetchDiscountGroups(),
   ]);
-  const key = deriveLookKey(input.label.en, takenLookKeys(objects, discounts));
-  const sortOrder = nextSortOrder(discounts.map((d) => d.sortOrder));
-  return { look: { key, ...input }, sortOrder };
+  const taken = takenLookKeys(objects, discounts);
+  // A key the user chose is never changed silently: a taken one is an error.
+  const chosen = input.key?.trim();
+  if (chosen && taken.has(chosen)) {
+    throw new LookKeyTakenError('discount', lookObjectKey(chosen));
+  }
+  const key = chosen || deriveLookKey(keySourceName(input.label), taken);
+  // The rank is unique among all Cart Discounts and Discount Groups.
+  const sortOrder = nextSortOrder([
+    ...discounts.map((d) => d.sortOrder),
+    ...groups.map((g) => g.sortOrder),
+  ]);
+  return { look: { ...input, key }, sortOrder };
 }
 
-async function refreshDiscount(
+/** Re-reads the group and every written discount (versions may have moved,
+ *  a lost response may already have switched one on). */
+async function refreshDiscounts(
   api: LookApi,
-  progress: SaveProgress
+  progress: SaveProgress,
+  groupKey: string
 ): Promise<void> {
-  const current = await api.getCartDiscount(
-    (progress.discount as { id: string }).id
-  );
-  progress.discount = { id: current.id, version: current.version };
-  progress.activated = current.isActive;
+  let allActive = true;
+  const read = async (entry: { id: string }) => {
+    const current = await api.getCartDiscount(entry.id);
+    allActive = allActive && current.isActive;
+    return { id: current.id, version: current.version };
+  };
+  const group = await api.getDiscountGroupByKey(groupKey);
+  if (group) {
+    progress.group = { id: group.id, version: group.version };
+    allActive = allActive && group.isActive;
+  }
+  const others = progress.countryDiscounts ?? {};
+  for (const key of Object.keys(others)) others[key] = await read(others[key]);
+  if (progress.discount) progress.discount = await read(progress.discount);
+  progress.activated = allActive;
 }
 
 /**
  * Writes a planned look in the order that never leaves a half look live:
- * 1. the set-price Cart Discount, inactive;
- * 2. the Custom Object;
- * 3. `changeIsActive: true` on the discount, only when `options.activate`.
+ * 1. the look's Discount Group, inactive;
+ * 2. the set-price Cart Discounts of its countries, inactive, in the group;
+ * 3. the Custom Object;
+ * 4. only when `options.activate`: the group on, then the country discounts,
+ *    the main discount last.
  * Each step checks by key first, so a retry with the returned progress
  * continues where it stopped and never creates a duplicate.
  */
@@ -108,31 +142,58 @@ export async function runSave(
   const progress: SaveProgress = { ...start };
   const key = lookObjectKey(plan.look.key);
 
-  if (!progress.discount) {
+  let groupActive = false;
+  if (!progress.group) {
     try {
-      const existing = await api.getCartDiscountByKey(key);
-      if (existing) {
-        const same =
-          JSON.stringify(existing.pieceIds) ===
-          JSON.stringify(plan.look.componentProductIds);
-        if (!same) throw new LookKeyTakenError('discount', key);
-        progress.discount = { id: existing.id, version: existing.version };
-        progress.activated = existing.isActive;
-      } else {
-        const created = await api.createCartDiscount(
-          buildLookCartDiscountDraft(plan.look, {
+      const existing = await api.getDiscountGroupByKey(key);
+      const group =
+        existing ??
+        (await api.createDiscountGroup(
+          buildLookDiscountGroupDraft(plan.look, {
             sortOrder: plan.sortOrder,
             isActive: false,
           })
-        );
-        progress.discount = { id: created.id, version: created.version };
-      }
+        ));
+      groupActive = group.isActive;
+      progress.group = { id: group.id, version: group.version };
     } catch (error) {
-      if (error instanceof LookKeyTakenError) throw error;
       if (isDuplicate(error)) throw new LookKeyTakenError('discount', key);
       throw new SaveStepError('discount', progress, error);
     }
   }
+
+  const drafts = buildLookCartDiscountDrafts(plan.look, { isActive: false });
+  progress.countryDiscounts = { ...(start.countryDiscounts ?? {}) };
+  let allActive = groupActive;
+  for (const [index, draft] of drafts.entries()) {
+    const written =
+      index === 0 ? progress.discount : progress.countryDiscounts[draft.key];
+    if (written) continue;
+    try {
+      const existing = await api.getCartDiscountByKey(draft.key);
+      let entry: { id: string; version: number };
+      if (existing) {
+        const same =
+          JSON.stringify(existing.pieceIds) ===
+          JSON.stringify(plan.look.componentProductIds);
+        if (!same) throw new LookKeyTakenError('discount', draft.key);
+        entry = { id: existing.id, version: existing.version };
+        allActive = allActive && existing.isActive;
+      } else {
+        const created = await api.createCartDiscount(draft);
+        entry = { id: created.id, version: created.version };
+        allActive = false;
+      }
+      if (index === 0) progress.discount = entry;
+      else progress.countryDiscounts[draft.key] = entry;
+    } catch (error) {
+      if (error instanceof LookKeyTakenError) throw error;
+      if (isDuplicate(error))
+        throw new LookKeyTakenError('discount', draft.key);
+      throw new SaveStepError('discount', progress, error);
+    }
+  }
+  if (drafts.length > 0 && !start.discount) progress.activated = allActive;
 
   if (!progress.objectWritten) {
     try {
@@ -159,14 +220,33 @@ export async function runSave(
 
   if (activate && !progress.activated) {
     try {
-      // A resumed activation re-reads the discount first (its version may
-      // have moved, or a lost response may already have switched it on).
-      if (start.discount) await refreshDiscount(api, progress);
+      // A resumed activation re-reads the group and the discounts first.
+      if (start.discount) await refreshDiscounts(api, progress, key);
       if (!progress.activated) {
-        const discount = progress.discount as { id: string; version: number };
+        // The group goes on first (with inactive discounts nothing applies
+        // yet); the main discount decides the look's status and goes last.
+        const group = progress.group as { id: string; version: number };
+        const switched = await api.updateDiscountGroup(
+          group.id,
+          group.version,
+          [setGroupActiveAction(true)],
+          'switchDiscountGroup'
+        );
+        progress.group = { id: switched.id, version: switched.version };
+        const countries = progress.countryDiscounts ?? {};
+        for (const countryKey of Object.keys(countries)) {
+          const updated = await api.updateCartDiscount(
+            countries[countryKey].id,
+            countries[countryKey].version,
+            [changeIsActiveAction(true)],
+            'activateDiscount'
+          );
+          countries[countryKey] = { id: updated.id, version: updated.version };
+        }
+        const main = progress.discount as { id: string; version: number };
         const updated = await api.updateCartDiscount(
-          discount.id,
-          discount.version,
+          main.id,
+          main.version,
           [changeIsActiveAction(true)],
           'activateDiscount'
         );
@@ -175,7 +255,7 @@ export async function runSave(
       }
     } catch (error) {
       if (isConflict(error))
-        await refreshDiscount(api, progress).catch(() => undefined);
+        await refreshDiscounts(api, progress, key).catch(() => undefined);
       throw new SaveStepError('activation', progress, error);
     }
   }
@@ -187,8 +267,10 @@ export async function runSave(
  *  entered now, so resuming it writes exactly that look. */
 export function planMatches(plan: SavePlan, input: NewLook): boolean {
   const { key: _key, ...planned } = plan.look;
+  const { key: _chosen, ...entered } = input;
   void _key;
-  return JSON.stringify(planned) === JSON.stringify({ ...input });
+  void _chosen;
+  return JSON.stringify(planned) === JSON.stringify(entered);
 }
 
 function attachPlan(error: unknown, plan: SavePlan): unknown {
@@ -211,6 +293,8 @@ export async function saveNewLook(
     return { plan, progress: await runSave(api, plan, NO_PROGRESS, options) };
   } catch (error) {
     if (!(error instanceof LookKeyTakenError)) throw attachPlan(error, plan);
+    // A key the user chose is not replaced behind their back.
+    if (input.key?.trim()) throw error;
     plan = await planNewLook(api, input);
     try {
       return { plan, progress: await runSave(api, plan, NO_PROGRESS, options) };

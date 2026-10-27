@@ -33,7 +33,7 @@ Same key `look-<lookKey>`. Written once at create; afterwards only `changeIsActi
 | `value` | absolute, `money[]` per project currency = live sum − set price; `applicationMode: ProportionateDistribution` |
 | `target` | pattern target, one `CountOnLineItemUnits` per piece, `minCount = maxCount = 1` |
 | `sortOrder` | unique among all Cart Discounts; app range `0.7`–`0.799`, no trailing zero |
-| `name` | de `Look-Set: <name>`, en `Look set: <name>` |
+| `name` | per language the look has a name in: de `Look-Set: <name>`, every other language `Look set: <name>` |
 | `description` | `<name>` (per language) |
 
 ## Derived (client-side) entities
@@ -100,13 +100,14 @@ Stock state: `sold-out` ≤ 0, `low` 1–3, `ok` > 3.
 
 | Code | Rule |
 |---|---|
-| `name-missing` | de and en non-empty after trim |
+| `name-missing` | at least one language has a non-empty name after trim |
 | `pieces-count` | 2 ≤ n ≤ 5 |
 | `piece-duplicate` | distinct ids |
 | `piece-price-missing` | price in every project currency |
 | `set-price-not-positive` | integer > 0 per currency |
 | `set-price-not-below-sum` | set price < live sum per currency |
 | `sum-not-live` | entered sum equals live sum at save |
+| `key-invalid` | a chosen key: letters, digits, `-`, `_`; 1 to 251 characters after trimming (256 with the `look-` prefix) |
 | `image-invalid` | path pattern and positive size |
 
 ## Limits

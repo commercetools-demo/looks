@@ -34,7 +34,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R5. Currencies and list price rule
 
-- **Decision**: `project { currencies }` is read once (`use-project-currencies`) and drives every price column, input, validation and the discount `money` array. A piece's list price in a currency is the master variant's price in that currency with no `country`, `customerGroup` or `channel`. Savings percent uses the first project currency. Sums are omitted for a currency when any piece lacks a price (a missing price never reads as a smaller sum).
+- **Decision**: `project { currencies languages }` is read once (`use-project-settings`) and drives every price column, input, validation and the discount `money` array. A piece's list price in a currency is the master variant's price in that currency with no `country`, `customerGroup` or `channel`. Savings percent uses the first project currency. Sums are omitted for a currency when any piece lacks a price (a missing price never reads as a smaller sum).
 - **Rationale**: FR-007/008. The source's rule was EUR without country and CHF with any country; the generic rule is stricter and safer.
 - **Alternatives**: first price in the currency regardless of scope — can pick a customer-group or channel price and understate the sum.
 - **Edge**: a project currency added later makes existing looks lack a price in it; they are flagged and cannot be repriced until every currency has a set price.
@@ -84,7 +84,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R13. Shop preview
 
-- **Decision**: a neutral custom composition from Nimbus primitives mirroring the structure of the shop's set block: optional look photo above, "Set zu <price>" with struck-through sum, one row per piece (image, name, size dropdown with sold-out and low-stock states, low stock = 1 to 3), inert full-width button. Texts are German regardless of profile language; only the caption follows the user language. Prices in the project's first currency.
+- **Decision**: a neutral custom composition from Nimbus primitives mirroring the structure of the shop's set block: optional look photo above, "Set zu <price>" with struck-through sum, one row per piece (image, name, size dropdown with sold-out and low-stock states, low stock = 1 to 3), inert full-width button. All texts, including the card texts, follow the user's language through the app's message files (no fixed shop language). Prices in the project's first currency.
 - **Rationale**: spec FR-070/071; brand styling is out of scope.
 - **Alternatives**: embed the real storefront in an iframe — needs a preview route in the shop and cross-origin auth; out of scope.
 
@@ -102,3 +102,36 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 - **Currencies read**: `project { currencies }` needs the `view_project_settings` scope, which is in the app's View scopes.
 - **Product names**: read with `name(acceptLanguage: [dataLocale, de, en])`, so a piece is shown in the data locale with the standard fallback.
 - **Registry limits**: the package registry used here refuses very recent releases, so `@fastify/busboy` is pinned to 3.2.2 through `overrides` in `package.json`.
+
+## R16. The look name per project language
+
+- **Decision**: the name is a record language → text, one entry per project language (`project { languages }`), edited with the Nimbus `LocalizedField` (data locale first, others behind its toggle). One name is enough; empty translations are dropped before saving. The discount `name` and `description` carry the same languages: German gets `Look-Set: …`, every other language `Look set: …`. The key comes from the English name, else the German one, else the first translation.
+- **Rationale**: constitution IV (one input per project language, omit empty translations) and the project-language request; requiring every language would block projects with many languages, and readers already fall back (data locale, de, en, first).
+- **Alternatives**: require all languages — too strict for large projects; keep a fixed German/English pair — ignores the project's languages.
+
+## R17. Read price restrictions as references
+
+- **Decision**: a variant's price restrictions are read with `customerGroupRef { id }` and `channelRef { id }`, not `customerGroup { id }` and `channel { id }`.
+- **Rationale**: the resolved fields load the referenced resource and fail with "Insufficient scope: view_customers or view_customer_groups" for a user without those scopes (seen on the first product search in a real project). The app only needs to know whether a restriction exists, so the references are enough and the minimum scope set (FR-080) stays unchanged.
+The order read follows the same rule: `includedDiscounts { discountRef { id } }` instead of `discount { id }`, so reading sales never resolves (or needs access to) the referenced Cart Discount.
+
+## R18. The look key is visible and editable at creation
+
+- **Decision**: step 1 shows the key (suggested from the name, free of existing keys, following the name until edited) and lets the user change it. A chosen key is validated with the shared key rule, checked against existing keys while typing (the form loads them once; the save checks again), saved as typed, and never renamed: a taken key is a field error, also when it is lost in a race. A suggested (not edited) key keeps the automatic suffix and the one retry. After creation the key is read-only (constitution VI: immutable).
+- **Rationale**: the key is the stable link between the look definition and its discount and shows up in the Merchant Center; merchandisers want to see and set it, but silently changing a key they chose would be surprising.
+- **Alternatives**: edit only on the review step — the suggestion could not follow the name; allow renaming later — keys are immutable and shared by two resources.
+
+## R19. List price with country-specific prices
+
+- **Decision**: a piece's list price is taken per price cell (currency and country) from its master variant (other variants only for cells the master lacks), never from a price restricted to a customer group or channel and only while valid. Set prices, sums and discounts work per cell; one Cart Discount per country (main `look-<key>`, others `look-<key>-<COUNTRY>`, condition `country = "XX"`), all in one Discount Group `look-<key>` that holds the look's single `sortOrder` (`0.7`–`0.7999`, unique among Cart Discounts and Discount Groups) and its on/off switch. Rows without a price from every piece do not exist; an empty set price creates no discount.
+- **Rationale**: the first version accepted only fully unrestricted prices, which found no price in projects whose prices are per country (the commercetools sample data has EUR for DE, GBP for GB and USD for US), blocking every look. The cart selects the price by the cart's country, so a guess between different amounts would make the set price land wrongly; "ambiguous" with an explicit setting is safer.
+- **Alternatives**: take the first price of the currency — silently wrong for several markets; read prices through price selection per country — one request per country and currency, and the set price still has one amount per currency.
+- **Note**: prices on non-master variants are not read; the master variant is the reference.
+
+Follow-up (same decision): the list price is also searched on the other variants (master first, per currency), because some catalogs keep prices only on the size variants, and the error for a missing price lists every price the product carries with its restriction, so a project whose prices are restricted or sit elsewhere shows the cause instead of a bare "no price".
+
+## R20. Variants are told apart by several attributes; no prices in the pieces step
+
+- **Decision**: a variant is labelled by the values of the configured `VARIANT_ATTRIBUTES` (default `size`), e.g. `searchColor,finishColor,size`, joined with " / "; attribute values may be text, number, enum, localized or sets. Several variants are always listed (by SKU when no attribute has a value); only a single variant without any value is "one size". The pieces step shows no prices and no sum, they appear from the set price step on.
+- **Rationale**: a product such as a pillow cover has variants that differ by finish and search colour as well as size; the former single `SIZE_ATTRIBUTE` read only text values, so such products were shown as one size. Prices in the pieces step distracted from choosing pieces; the set price step needs the sum and shows it.
+- **Alternatives**: one setting per attribute kind — less flexible than an ordered list.

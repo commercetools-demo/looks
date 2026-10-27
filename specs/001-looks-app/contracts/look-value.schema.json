@@ -17,9 +17,9 @@
     "setPrice": {
       "type": "object",
       "minProperties": 1,
-      "propertyNames": { "pattern": "^[A-Z]{3}$" },
+      "propertyNames": { "pattern": "^[A-Z]{3}(/[A-Z]{2})?$" },
       "additionalProperties": { "type": "integer", "exclusiveMinimum": 0 },
-      "description": "Cent amount per project currency, each below the live sum of the pieces in that currency."
+      "description": "Cent amount per price cell: `EUR/DE` (currency and country) or `EUR` for a price without a country. Each is below the live sum of the pieces in that cell; a cell without an entry has no discount."
     },
     "image": {
       "type": "object",

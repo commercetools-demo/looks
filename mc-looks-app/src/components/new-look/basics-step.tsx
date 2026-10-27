@@ -1,24 +1,35 @@
 import { useIntl } from 'react-intl';
 import {
   Box,
+  Button,
   Flex,
   FormField,
   Stack,
   Text,
   TextInput,
 } from '@commercetools/nimbus';
+import { LookNameField } from '../common/look-name-field';
 import { LookPhoto } from '../common/look-photo';
+import { lookObjectKey } from '../../domain/keys';
+import type { LocalizedValue } from '../../domain/types';
 import type { PhotoCheck } from '../../hooks/use-photo-check';
 import messages from './messages';
 
 /** Width of the photo shown next to the form. */
 export const STEP1_PHOTO_WIDTH = 120;
 
-/** Step 1: names in German and English and the optional look photo. */
+/** Step 1: the name in the project languages, the look key and the optional
+ *  look photo. */
 export function BasicsStep(props: {
-  label: { de: string; en: string };
-  onLabelChange: (label: { de: string; en: string }) => void;
-  nameErrors: { de?: string; en?: string };
+  label: LocalizedValue;
+  onLabelChange: (label: LocalizedValue) => void;
+  nameError: string | undefined;
+  /** The key shown in the field: the one the user typed, else the suggestion. */
+  keyValue: string;
+  keyIsCustom: boolean;
+  onKeyChange: (key: string) => void;
+  onKeyReset: () => void;
+  keyError: string | undefined;
   photoPath: string;
   onPhotoPathChange: (path: string) => void;
   photoError: string | undefined;
@@ -28,46 +39,53 @@ export function BasicsStep(props: {
   isDisabled: boolean;
 }) {
   const intl = useIntl();
-  const { label, nameErrors } = props;
+  const { label, nameError } = props;
   return (
     <Flex gap="800" alignItems="flex-start" wrap="wrap">
       <Stack gap="500" maxWidth="520px" flex="1" minWidth="280px">
-        <FormField.Root
-          isRequired
+        <LookNameField
+          label={intl.formatMessage(messages.name)}
+          description={intl.formatMessage(messages.nameHelp)}
+          value={label}
+          onChange={props.onLabelChange}
+          error={nameError}
           isDisabled={props.isDisabled}
-          isInvalid={Boolean(nameErrors.de)}
+        />
+        <FormField.Root
+          isDisabled={props.isDisabled}
+          isInvalid={Boolean(props.keyError)}
         >
           <FormField.Label>
-            {intl.formatMessage(messages.nameDe)}
+            {intl.formatMessage(messages.keyLabel)}
           </FormField.Label>
           <FormField.Input>
             <TextInput
-              aria-label={intl.formatMessage(messages.nameDe)}
-              value={label.de}
-              onChange={(de) => props.onLabelChange({ ...label, de })}
-            />
-          </FormField.Input>
-          {nameErrors.de && <FormField.Error>{nameErrors.de}</FormField.Error>}
-        </FormField.Root>
-        <FormField.Root
-          isRequired
-          isDisabled={props.isDisabled}
-          isInvalid={Boolean(nameErrors.en)}
-        >
-          <FormField.Label>
-            {intl.formatMessage(messages.nameEn)}
-          </FormField.Label>
-          <FormField.Input>
-            <TextInput
-              aria-label={intl.formatMessage(messages.nameEn)}
-              value={label.en}
-              onChange={(en) => props.onLabelChange({ ...label, en })}
+              aria-label={intl.formatMessage(messages.keyLabel)}
+              value={props.keyValue}
+              onChange={props.onKeyChange}
+              width={'full'}
             />
           </FormField.Input>
           <FormField.Description>
-            {intl.formatMessage(messages.nameHelp)}
+            {props.keyValue.trim()
+              ? intl.formatMessage(messages.keyHelp, {
+                  fullKey: lookObjectKey(props.keyValue.trim()),
+                })
+              : intl.formatMessage(messages.keyHelpEmpty)}
           </FormField.Description>
-          {nameErrors.en && <FormField.Error>{nameErrors.en}</FormField.Error>}
+          {props.keyError && (
+            <FormField.Error>{props.keyError}</FormField.Error>
+          )}
+          {props.keyIsCustom && (
+            <Button
+              size="2xs"
+              variant="link"
+              isDisabled={props.isDisabled}
+              onPress={props.onKeyReset}
+            >
+              {intl.formatMessage(messages.keyReset)}
+            </Button>
+          )}
         </FormField.Root>
         <FormField.Root
           isDisabled={props.isDisabled || !props.photoAvailable}
@@ -85,6 +103,7 @@ export function BasicsStep(props: {
               placeholder={intl.formatMessage(messages.photoPlaceholder)}
               value={props.photoPath}
               onChange={props.onPhotoPathChange}
+              width={'full'}
             />
           </FormField.Input>
           <FormField.Description>

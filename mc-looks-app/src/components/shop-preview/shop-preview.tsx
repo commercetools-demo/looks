@@ -3,9 +3,9 @@ import { Box, Button, Flex, Image, Stack, Text } from '@commercetools/nimbus';
 import { formatMoney } from '../../domain/format';
 import type { Piece } from '../../domain/types';
 import { useCurrencies } from '../../hooks/context';
+import commonMessages from '../common/messages';
 import messages from './messages';
 import { buildPreview, type PreviewRow } from './preview-model';
-import { SHOP_LOCALE, shopTexts } from './shop-texts';
 
 /** The neutral shop preview of a look. `setPrice` and `sum` are cent amounts
  *  per project currency; the card shows the first project currency. */
@@ -45,7 +45,7 @@ export function ShopPreview(props: ShopPreviewProps) {
   }
 
   const model = buildPreview({ ...props, currency });
-  const money = (cents: number) => formatMoney(cents, currency, SHOP_LOCALE);
+  const money = (cents: number) => formatMoney(cents, currency, intl.locale);
 
   return (
     <Box
@@ -86,12 +86,14 @@ export function ShopPreview(props: ShopPreviewProps) {
         >
           <Text fontWeight="600" fontSize="500">
             {model.setPrice === undefined
-              ? shopTexts.setPending
-              : shopTexts.setPrice(money(model.setPrice))}
+              ? intl.formatMessage(messages.setPending)
+              : intl.formatMessage(messages.setPrice, {
+                  price: money(model.setPrice),
+                })}
           </Text>
           {model.sum !== undefined && (
             <Text fontSize="350" color="neutral.11">
-              {shopTexts.sumLabel}:{' '}
+              {intl.formatMessage(messages.sumLabel)}:{' '}
               <Text as="span" textDecoration="line-through">
                 {money(model.sum)}
               </Text>
@@ -100,7 +102,9 @@ export function ShopPreview(props: ShopPreviewProps) {
         </Flex>
         {model.saving !== undefined && (
           <Text fontSize="350" color="positive.11">
-            {shopTexts.saving(money(model.saving))}
+            {intl.formatMessage(messages.saving, {
+              amount: money(model.saving),
+            })}
           </Text>
         )}
         <Stack gap="300">
@@ -114,7 +118,7 @@ export function ShopPreview(props: ShopPreviewProps) {
           width="100%"
           onPress={() => undefined}
         >
-          {shopTexts.addSet}
+          {intl.formatMessage(messages.addSet)}
         </Button>
       </Stack>
     </Box>
@@ -122,12 +126,15 @@ export function ShopPreview(props: ShopPreviewProps) {
 }
 
 function SizeLookAlike({ row }: { row: PreviewRow }) {
-  const label = row.oneSize ? shopTexts.oneSize : row.sizeLabel;
+  const intl = useIntl();
+  const label = row.oneSize
+    ? intl.formatMessage(commonMessages.oneSize)
+    : row.sizeLabel;
   const note =
     row.sizeState === 'sold-out'
-      ? shopTexts.soldOut
+      ? intl.formatMessage(messages.soldOut)
       : row.sizeState === 'low'
-      ? shopTexts.lowStock(row.quantity)
+      ? intl.formatMessage(messages.lowStock, { count: row.quantity })
       : undefined;
   return (
     <Flex

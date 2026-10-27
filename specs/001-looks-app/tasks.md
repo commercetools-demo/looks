@@ -120,7 +120,7 @@ description: "Task list for the Looks Merchant Center app"
 
 - [X] T046 [US2] [SKILL: commercetools-commerce-patterns] Create `mc-looks-app/src/domain/save-look.ts`: `planNewLook`, `runSave` (discount inactive → object → optional activation, idempotent by key, `SaveProgress`), `saveNewLook`, `planMatches`, `LookKeyTakenError` (depends on T020, T028)
 - [X] T047 [P] [US2] Create `mc-looks-app/src/domain/image-size.ts` and a `use-photo-check` hook: path pattern check and loading the image from `config.shopOrigin` to read width and height
-- [X] T048 [P] [US2] Create `mc-looks-app/src/components/shop-preview/{preview-model.ts,shop-preview.tsx,preview-panel.tsx,shop-texts.ts}`: neutral composition mirroring the set block, first project currency, German text constants
+- [X] T048 [P] [US2] Create `mc-looks-app/src/components/shop-preview/{preview-model.ts,shop-preview.tsx,preview-panel.tsx}`: neutral composition mirroring the set block, first project currency, German text constants
 - [X] T049 [P] [US2] Create `mc-looks-app/src/components/new-look/basics-step.tsx` (names de/en, optional photo path with 120 px preview, field errors)
 - [X] T050 [P] [US2] Create `mc-looks-app/src/components/new-look/pieces-step.tsx` and `piece-result-card.tsx` (search, results with image/name/colour/prices/sizes, add/remove, drag reorder, count and sum line, sold-out warning)
 - [X] T051 [P] [US2] Create `mc-looks-app/src/components/new-look/set-price-step.tsx` (one input per project currency, sum, saving, field errors)

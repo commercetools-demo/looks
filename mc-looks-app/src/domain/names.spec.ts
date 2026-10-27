@@ -3,6 +3,7 @@ import {
   buildLookDiscountName,
   lookNameFromDiscount,
   lookNameFromSetName,
+  omitEmptyTranslations,
 } from './names';
 
 describe('names', () => {
@@ -42,5 +43,30 @@ describe('names', () => {
     });
     expect(lookNameFromDiscount(undefined)).toBeUndefined();
     expect(lookNameFromDiscount({ name: {}, description: {} })).toBeUndefined();
+  });
+
+  it('names the discount in every filled project language, dropping empty translations', () => {
+    expect(
+      buildLookDiscountName({
+        de: 'Kontrast',
+        en: 'Contrast',
+        fr: ' ',
+        'de-AT': 'Kontrast AT',
+        it: 'Contrasto',
+      })
+    ).toEqual({
+      de: 'Look-Set: Kontrast',
+      en: 'Look set: Contrast',
+      'de-AT': 'Look-Set: Kontrast AT',
+      it: 'Look set: Contrasto',
+    });
+    expect(buildLookDescription({ de: ' x ', en: '' })).toEqual({ de: 'x' });
+    expect(omitEmptyTranslations({ de: ' ', en: 'a' })).toEqual({ en: 'a' });
+  });
+
+  it('reads the name of a language with the English prefix back', () => {
+    expect(
+      lookNameFromDiscount({ name: { it: 'Look set: Contrasto' } })
+    ).toEqual({ it: 'Contrasto' });
   });
 });

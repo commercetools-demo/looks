@@ -1,0 +1,6 @@
+query FetchProjectSettings {
+  project {
+    currencies
+    languages
+  }
+}

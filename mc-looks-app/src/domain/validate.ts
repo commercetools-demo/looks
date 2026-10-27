@@ -1,24 +1,21 @@
+import { isValidLookKey } from './keys';
 import { isLookImagePath } from './look-value';
 import { LOOK_MAX_PIECES, LOOK_MIN_PIECES } from './limits';
 import { sumListPrices } from './prices';
-import type { LookInput, Money } from './types';
+import type { Money, NewLook } from './types';
 
 export type ValidationCode =
   | 'name-missing'
+  | 'key-invalid'
   | 'pieces-count'
   | 'piece-duplicate'
-  | 'piece-price-missing'
+  | 'set-price-none'
   | 'set-price-not-positive'
   | 'set-price-not-below-sum'
   | 'sum-not-live'
   | 'image-invalid';
 
-export type ValidationField =
-  | 'label.de'
-  | 'label.en'
-  | 'pieces'
-  | 'setPrice'
-  | 'image';
+export type ValidationField = 'label' | 'key' | 'pieces' | 'setPrice' | 'image';
 
 export interface ValidationError {
   code: ValidationCode;
@@ -29,23 +26,29 @@ export interface ValidationError {
 
 /**
  * The save rules (FR-035). An empty result means the look may be written.
- * `livePrices` holds today's list prices per piece; `currencies` are the
- * project's currencies.
+ * `livePrices` holds today's list prices per piece and price cell; `keys`
+ * are the cells to consider (`lookPriceKeys`). Every cell all pieces have a
+ * price in needs a set price below its sum; a piece missing a cell leaves
+ * that cell out.
  */
 export function validateLook(
   look: Pick<
-    LookInput,
-    'label' | 'componentProductIds' | 'setPrice' | 'sum' | 'image'
+    NewLook,
+    'key' | 'label' | 'componentProductIds' | 'setPrice' | 'sum' | 'image'
   >,
   livePrices: Map<string, Money>,
-  currencies: string[]
+  keys: string[]
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  if (!look.label.de.trim())
-    errors.push({ code: 'name-missing', field: 'label.de' });
-  if (!look.label.en.trim())
-    errors.push({ code: 'name-missing', field: 'label.en' });
+  // One name is enough; readers fall back de, en, first. Empty ones are omitted.
+  if (!Object.values(look.label).some((text) => text.trim())) {
+    errors.push({ code: 'name-missing', field: 'label' });
+  }
+
+  if (look.key !== undefined && !isValidLookKey(look.key)) {
+    errors.push({ code: 'key-invalid', field: 'key' });
+  }
 
   if (look.image) {
     const { path, width, height } = look.image;
@@ -70,20 +73,17 @@ export function validateLook(
       continue;
     }
     seen.add(id);
-    for (const currency of currencies) {
-      if (livePrices.get(id)?.[currency] === undefined) {
-        errors.push({
-          code: 'piece-price-missing',
-          field: 'pieces',
-          productId: id,
-          currency,
-        });
-      }
-    }
   }
 
-  const liveSum = sumListPrices(ids, livePrices, currencies);
-  for (const currency of currencies) {
+  const liveSum = sumListPrices(ids, livePrices, keys);
+  // A cell without a set price gets no discount and is not checked.
+  const cells = keys.filter(
+    (key) => liveSum[key] !== undefined && look.setPrice[key] !== undefined
+  );
+  if (cells.length === 0 && ids.length > 0) {
+    errors.push({ code: 'set-price-none', field: 'setPrice' });
+  }
+  for (const currency of cells) {
     const setPrice = look.setPrice[currency];
     if (!Number.isInteger(setPrice) || setPrice <= 0) {
       errors.push({
@@ -94,7 +94,6 @@ export function validateLook(
       continue;
     }
     const sum = liveSum[currency];
-    if (sum === undefined) continue; // reported per piece above
     if (setPrice >= sum) {
       errors.push({
         code: 'set-price-not-below-sum',

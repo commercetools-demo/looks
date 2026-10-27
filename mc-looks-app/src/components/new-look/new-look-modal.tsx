@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useHistory } from 'react-router-dom';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@commercetools/nimbus';
 import { config } from '../../config';
 import {
+  LookKeyTakenError,
   SaveStepError,
   planMatches,
   runSave,
@@ -21,15 +22,28 @@ import {
   type SavePlan,
   type SaveProgress,
 } from '../../domain/save-look';
-import { sumListPrices } from '../../domain/prices';
+import {
+  lookPriceKeys,
+  referenceMoney,
+  sumListPrices,
+} from '../../domain/prices';
 import { livePriceMap } from '../../domain/pieces';
-import type { Money, NewLook, Piece } from '../../domain/types';
+import { localized } from '../../domain/format';
+import { deriveLookKey, keySourceName, lookObjectKey } from '../../domain/keys';
+import { omitEmptyTranslations } from '../../domain/names';
+import { takenLookKeys } from '../../domain/look-rows';
+import type { LocalizedValue, Money, NewLook, Piece } from '../../domain/types';
 import {
   validateLook,
   type ValidationError,
   type ValidationField,
 } from '../../domain/validate';
-import { useCanManage, useCurrencies, useLookApi } from '../../hooks/context';
+import {
+  useCanManage,
+  useCurrencies,
+  useDataLocale,
+  useLookApi,
+} from '../../hooks/context';
 import { usePhotoCheck } from '../../hooks/use-photo-check';
 import { describeError } from '../common/describe-error';
 import commonMessages from '../common/messages';
@@ -43,10 +57,10 @@ import { parseCents } from './set-price';
 import { useValidationText } from './use-validation-text';
 
 const STEP_FIELDS: ValidationField[][] = [
-  ['label.de', 'label.en'],
+  ['label', 'key'],
   ['pieces'],
   ['setPrice'],
-  ['label.de', 'label.en', 'pieces', 'setPrice', 'image'],
+  ['label', 'key', 'pieces', 'setPrice', 'image'],
 ];
 const LAST_STEP = STEP_FIELDS.length - 1;
 const STEP_TITLES = [
@@ -85,11 +99,18 @@ export function NewLookModal({
   const api = useLookApi();
   const history = useHistory();
   const currencies = useCurrencies();
+  const dataLocale = useDataLocale();
   const canManage = useCanManage();
   const describeValidation = useValidationText();
 
   const [step, setStep] = useState(0);
-  const [label, setLabel] = useState({ de: '', en: '' });
+  const [label, setLabel] = useState<LocalizedValue>({});
+  // The key the user typed; `undefined` while the suggestion is used.
+  const [customKey, setCustomKey] = useState<string | undefined>();
+  // Keys of existing looks, to suggest a free key and flag a taken one early.
+  const [takenKeys, setTakenKeys] = useState<Set<string>>(new Set());
+  // The key was taken by someone else while saving.
+  const [keyRace, setKeyRace] = useState(false);
   const [photoPath, setPhotoPath] = useState('');
   const [photoError, setPhotoError] = useState<string | undefined>();
   const [pieces, setPieces] = useState<Piece[]>([]);
@@ -99,33 +120,70 @@ export function NewLookModal({
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>();
 
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([api.fetchLookObjects(), api.fetchCartDiscounts()]).then(
+      ([objects, discounts]) => {
+        if (!cancelled) setTakenKeys(takenLookKeys(objects, discounts));
+      },
+      // Without the list the save still refuses a taken key.
+      () => undefined
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  const suggestedKey = useMemo(() => {
+    const source = keySourceName(omitEmptyTranslations(label));
+    return source ? deriveLookKey(source, takenKeys) : '';
+  }, [label, takenKeys]);
+  const chosenKey = customKey?.trim();
+  const keyValue = customKey ?? suggestedKey;
+  const keyTaken =
+    keyRace || (chosenKey !== undefined && takenKeys.has(chosenKey));
+
   const photo = usePhotoCheck(photoPath, config.shopOrigin);
   const close = () => history.push(basePath);
   const isDisabled = !canManage;
 
   const livePrices = useMemo(() => livePriceMap(pieces), [pieces]);
-  const sum = useMemo(
+  // Price cells (currency and country) the pieces have a price in.
+  const priceKeys = useMemo(
     () =>
-      sumListPrices(
+      lookPriceKeys(
         pieces.map((piece) => piece.id),
         livePrices,
         currencies
       ),
     [pieces, livePrices, currencies]
   );
+  const sum = useMemo(
+    () =>
+      sumListPrices(
+        pieces.map((piece) => piece.id),
+        livePrices,
+        priceKeys
+      ),
+    [pieces, livePrices, priceKeys]
+  );
+  // Rows exist where every piece has a price; a row with an empty set price
+  // gets no discount.
+  const cells = priceKeys.filter((key) => sum[key] !== undefined);
+  const filled = cells.filter((key) => (priceTexts[key] ?? '').trim() !== '');
   const parsed = Object.fromEntries(
-    currencies.map((currency) => [
-      currency,
-      parseCents(priceTexts[currency] ?? ''),
-    ])
+    filled.map((key) => [key, parseCents(priceTexts[key])])
   );
   const cents: Money = Object.fromEntries(
-    currencies.map((currency) => [currency, parsed[currency] ?? 0])
+    filled.flatMap((key) =>
+      parsed[key] === undefined ? [] : [[key, parsed[key]]]
+    )
   );
 
   function newLook(): NewLook {
     return {
-      label: { de: label.de.trim(), en: label.en.trim() },
+      ...(chosenKey !== undefined ? { key: chosenKey } : {}),
+      label: omitEmptyTranslations(label),
       componentProductIds: pieces.map((piece) => piece.id),
       setPrice: cents,
       sum,
@@ -153,11 +211,11 @@ export function NewLookModal({
   };
 
   const amountErrors: Record<string, string | undefined> = {};
-  for (const currency of currencies) {
-    const text = (priceTexts[currency] ?? '').trim();
-    if (text && parsed[currency] === undefined) {
-      amountErrors[currency] = intl.formatMessage(messages.errorAmountFormat, {
-        currency,
+  for (const key of filled) {
+    const text = (priceTexts[key] ?? '').trim();
+    if (text && parsed[key] === undefined) {
+      amountErrors[key] = intl.formatMessage(messages.errorAmountFormat, {
+        currency: key,
       });
     }
   }
@@ -175,10 +233,11 @@ export function NewLookModal({
   }
 
   function validate(forStep: number): boolean {
-    const relevant = validateLook(newLook(), livePrices, currencies).filter(
+    const relevant = validateLook(newLook(), livePrices, priceKeys).filter(
       (error) => STEP_FIELDS[forStep].includes(error.field)
     );
     setErrors(relevant);
+    if (keyTaken && STEP_FIELDS[forStep].includes('key')) return false;
     return (
       relevant.length === 0 &&
       (forStep < 2 || Object.keys(amountErrors).length === 0)
@@ -218,7 +277,7 @@ export function NewLookModal({
       } else {
         await saveNewLook(api, newLook(), { activate });
       }
-      const name = label.de.trim() || label.en.trim();
+      const name = localized(omitEmptyTranslations(label), dataLocale) ?? '';
       toast.success({
         title: intl.formatMessage(messages.saved),
         description: intl.formatMessage(
@@ -229,6 +288,12 @@ export function NewLookModal({
       onSaved();
       close();
     } catch (error) {
+      if (error instanceof LookKeyTakenError && chosenKey !== undefined) {
+        // The chosen key was taken meanwhile: back to the field, nothing was written.
+        setKeyRace(true);
+        setStep(0);
+        return;
+      }
       const stepError = error instanceof SaveStepError ? error : undefined;
       setFailure({
         message: describeError(intl, stepError ? stepError.original : error),
@@ -294,10 +359,23 @@ export function NewLookModal({
                 <BasicsStep
                   label={label}
                   onLabelChange={setLabel}
-                  nameErrors={{
-                    de: firstFor('label.de'),
-                    en: firstFor('label.en'),
+                  nameError={firstFor('label')}
+                  keyValue={keyValue}
+                  keyIsCustom={customKey !== undefined}
+                  onKeyChange={(key) => {
+                    setCustomKey(key);
+                    setKeyRace(false);
                   }}
+                  onKeyReset={() => {
+                    setCustomKey(undefined);
+                    setKeyRace(false);
+                  }}
+                  keyError={
+                    firstFor('key') ??
+                    (keyTaken
+                      ? intl.formatMessage(messages.errorKeyTaken)
+                      : undefined)
+                  }
                   photoPath={photoPath}
                   onPhotoPathChange={(path) => {
                     setPhotoPath(path);
@@ -312,25 +390,33 @@ export function NewLookModal({
               {step === 1 && (
                 <PiecesStep
                   pieces={pieces}
-                  onPiecesChange={setPieces}
-                  sum={sum}
+                  onPiecesChange={(next) => {
+                    setPieces(next);
+                    // Prices start at the sums of the new pieces.
+                    setPriceTexts({});
+                  }}
                   errors={messagesFor(['pieces'])}
                   isDisabled={isDisabled}
                 />
               )}
               {step === 2 && (
                 <SetPriceStep
+                  pieces={pieces}
                   texts={priceTexts}
                   onTextsChange={setPriceTexts}
-                  sum={sum}
-                  cents={cents}
                   errors={setPriceErrors}
+                  generalErrors={errors
+                    .filter(
+                      (error) => error.field === 'setPrice' && !error.currency
+                    )
+                    .map(describe)}
                   isDisabled={isDisabled}
                 />
               )}
               {step === LAST_STEP && (
                 <ReviewStep
-                  name={label}
+                  name={omitEmptyTranslations(label)}
+                  fullKey={lookObjectKey(chosenKey ?? suggestedKey)}
                   photoPath={photo.image?.path}
                   pieces={pieces}
                   sum={sum}
@@ -344,11 +430,11 @@ export function NewLookModal({
             <Box position="sticky" top="0" minWidth={0}>
               <PreviewPanel
                 pieces={pieces}
-                setPrice={cents}
-                sum={sum}
+                setPrice={referenceMoney(cents, currencies)}
+                sum={referenceMoney(sum, currencies)}
                 photoUrl={photoUrl}
                 photoRatio={photo.image}
-                photoAlt={label.de || label.en}
+                photoAlt={localized(omitEmptyTranslations(label), dataLocale)}
               />
             </Box>
           </Grid>

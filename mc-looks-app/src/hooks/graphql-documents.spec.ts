@@ -36,6 +36,18 @@ describe('GraphQL documents under src/hooks', () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
+  // Resolving a reference loads the referenced resource and needs its scope
+  // (customer groups, channels, ...), which the app does not request. Reads
+  // use the `...Ref { id }` fields instead.
+  it('never resolves a reference: price restrictions and discounts are read as references', () => {
+    const resolving =
+      /\b(customerGroup|channel|discount|supplyChannel|distributionChannel)\s*\{/;
+    const offenders = files
+      .filter((file) => resolving.test(fs.readFileSync(file, 'utf8')))
+      .map((file) => path.relative(HOOKS_DIR, file));
+    expect(offenders).toEqual([]);
+  });
+
   it.each(files.map((file) => [path.relative(HOOKS_DIR, file), file]))(
     'parses %s with its imports',
     (_name, file) => {

@@ -14,8 +14,32 @@ export default defineMessages({
   back: { id: 'Looks.newLook.back', defaultMessage: 'Zurück' },
   next: { id: 'Looks.newLook.next', defaultMessage: 'Weiter' },
   saveLook: { id: 'Looks.newLook.saveLook', defaultMessage: 'Look speichern' },
-  nameDe: { id: 'Looks.newLook.nameDe', defaultMessage: 'Name (Deutsch)' },
-  nameEn: { id: 'Looks.newLook.nameEn', defaultMessage: 'Name (Englisch)' },
+  name: { id: 'Looks.newLook.name', defaultMessage: 'Name' },
+  keyLabel: { id: 'Looks.newLook.keyLabel', defaultMessage: 'Key' },
+  keyHelp: {
+    id: 'Looks.newLook.keyHelp',
+    defaultMessage:
+      'Wird als {fullKey} gespeichert. Der Key kann nach dem Anlegen nicht mehr geändert werden.',
+  },
+  keyHelpEmpty: {
+    id: 'Looks.newLook.keyHelpEmpty',
+    defaultMessage:
+      'Der Vorschlag entsteht aus dem Namen. Der Key kann nach dem Anlegen nicht mehr geändert werden.',
+  },
+  keyReset: {
+    id: 'Looks.newLook.keyReset',
+    defaultMessage: 'Vorschlag übernehmen',
+  },
+  errorKeyInvalid: {
+    id: 'Looks.newLook.errorKeyInvalid',
+    defaultMessage:
+      'Der Key darf nur Buchstaben, Ziffern, Bindestriche und Unterstriche enthalten.',
+  },
+  errorKeyTaken: {
+    id: 'Looks.newLook.errorKeyTaken',
+    defaultMessage: 'Dieser Key ist schon vergeben.',
+  },
+  reviewKey: { id: 'Looks.newLook.reviewKey', defaultMessage: 'Key' },
   nameHelp: {
     id: 'Looks.newLook.nameHelp',
     defaultMessage: 'Der englische Name bestimmt den Schlüssel des Looks.',
@@ -66,7 +90,7 @@ export default defineMessages({
   piecesCount: {
     id: 'Looks.newLook.piecesCount',
     defaultMessage:
-      '{count, plural, one {# Teil gewählt} other {# Teile gewählt}}. Summe der Teile: {sum}',
+      '{count, plural, one {# Teil gewählt} other {# Teile gewählt}}',
   },
   dropHint: {
     id: 'Looks.newLook.dropHint',
@@ -114,13 +138,9 @@ export default defineMessages({
     id: 'Looks.newLook.pieceColour',
     defaultMessage: 'Farbe: {colour}',
   },
-  errorNameDe: {
-    id: 'Looks.newLook.errorNameDe',
-    defaultMessage: 'Bitte den deutschen Namen angeben.',
-  },
-  errorNameEn: {
-    id: 'Looks.newLook.errorNameEn',
-    defaultMessage: 'Bitte den englischen Namen angeben.',
+  errorName: {
+    id: 'Looks.newLook.errorName',
+    defaultMessage: 'Bitte mindestens einen Namen eingeben.',
   },
   errorPiecesMin: {
     id: 'Looks.newLook.errorPiecesMin',
@@ -135,9 +155,10 @@ export default defineMessages({
     id: 'Looks.newLook.errorDuplicate',
     defaultMessage: '{piece} ist mehrfach im Look.',
   },
-  errorPriceMissing: {
-    id: 'Looks.newLook.errorPriceMissing',
-    defaultMessage: '{piece} hat keinen Preis in {currency}.',
+  errorPriceNone: {
+    id: 'Looks.newLook.errorPriceNone',
+    defaultMessage:
+      'Tragen Sie in mindestens einer Zeile einen Setpreis ein. Zeilen gibt es nur für Währung und Land, in denen alle Teile einen Preis haben.',
   },
   errorNotPositive: {
     id: 'Looks.newLook.errorNotPositive',
@@ -172,6 +193,10 @@ export default defineMessages({
   setPriceSaving: {
     id: 'Looks.newLook.setPriceSaving',
     defaultMessage: 'Ersparnis {amount} ({percent} %)',
+  },
+  reviewCell: {
+    id: 'Looks.newLook.reviewCell',
+    defaultMessage: '{cell}: {setPrice} (Summe {sum}, Ersparnis {saving})',
   },
   reviewTitle: {
     id: 'Looks.newLook.reviewTitle',

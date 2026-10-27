@@ -1,4 +1,4 @@
-import type { Money } from './types';
+import type { Money, NewLook } from './types';
 import { CURRENCIES } from '../test-utils/fixtures';
 import { validateLook } from './validate';
 
@@ -8,7 +8,10 @@ const prices = new Map<string, Money>([
   ['c', { EUR: 30000 }],
 ]);
 
-const valid = {
+const valid: Pick<
+  NewLook,
+  'label' | 'componentProductIds' | 'setPrice' | 'sum'
+> = {
   label: { de: 'Look', en: 'Look' },
   componentProductIds: ['a', 'b'],
   setPrice: { EUR: 27000, CHF: 29700 },
@@ -23,13 +26,13 @@ describe('validateLook', () => {
     expect(codes()).toEqual([]);
   });
 
-  it('requires both names', () => {
-    expect(codes({ ...valid, label: { de: ' ', en: 'x' } })).toEqual([
+  it('requires at least one name; one language is enough', () => {
+    expect(codes({ ...valid, label: { de: ' ', en: '' } })).toEqual([
       'name-missing',
     ]);
-    expect(codes({ ...valid, label: { de: 'x', en: '' } })).toEqual([
-      'name-missing',
-    ]);
+    expect(codes({ ...valid, label: {} })).toEqual(['name-missing']);
+    expect(codes({ ...valid, label: { de: ' ', en: 'x' } })).toEqual([]);
+    expect(codes({ ...valid, label: { fr: 'x' } })).toEqual([]);
   });
 
   it('requires 2 to 5 pieces', () => {
@@ -47,20 +50,6 @@ describe('validateLook', () => {
     expect(codes({ ...valid, componentProductIds: ['a', 'a'] })).toContain(
       'piece-duplicate'
     );
-  });
-
-  it('rejects a piece without a price in a project currency', () => {
-    const errors = validateLook(
-      { ...valid, componentProductIds: ['a', 'c'] },
-      prices,
-      CURRENCIES
-    );
-    expect(errors).toContainEqual({
-      code: 'piece-price-missing',
-      field: 'pieces',
-      productId: 'c',
-      currency: 'CHF',
-    });
   });
 
   it('rejects a set price that is zero, negative, fractional, or not below the sum', () => {
@@ -116,14 +105,74 @@ describe('validateLook', () => {
     ).toEqual([]);
   });
 
-  it('works for any number of currencies', () => {
-    const one = validateLook(
-      { ...valid, setPrice: { EUR: 27000 }, sum: { EUR: 30000 } },
-      prices,
-      ['EUR']
-    );
-    expect(one).toEqual([]);
-    const three = validateLook(valid, prices, ['EUR', 'CHF', 'USD']);
-    expect(three.map((e) => e.currency)).toContain('USD');
+  it('checks only cells with a set price and a live sum', () => {
+    expect(
+      validateLook(
+        { ...valid, setPrice: { EUR: 27000 }, sum: { EUR: 30000 } },
+        prices,
+        ['EUR', 'CHF']
+      )
+    ).toEqual([]);
+    // USD has neither a live sum nor a set price: ignored
+    expect(validateLook(valid, prices, ['EUR', 'CHF', 'USD'])).toEqual([]);
+  });
+
+  it('ignores a cell some piece has no price in, even with a set price', () => {
+    const live = new Map<string, Money>([
+      ['a', { EUR: 10000, CHF: 11000 }],
+      ['c', { EUR: 30000 }],
+    ]);
+    expect(
+      validateLook(
+        {
+          ...valid,
+          componentProductIds: ['a', 'c'],
+          sum: { EUR: 40000 },
+        },
+        live,
+        CURRENCIES
+      ).map((e) => e.code)
+    ).toEqual([]);
+  });
+
+  it('works per currency and country cell and names the cell', () => {
+    const live = new Map<string, Money>([
+      ['a', { 'EUR/DE': 3299, 'EUR/FR': 2639, 'GBP/GB': 3199 }],
+      ['b', { 'EUR/DE': 1000, 'EUR/FR': 1000, 'GBP/GB': 1000 }],
+    ]);
+    const keys = ['EUR/DE', 'EUR/FR', 'GBP/GB'];
+    const look = {
+      ...valid,
+      setPrice: { 'EUR/DE': 4000, 'EUR/FR': 3639, 'GBP/GB': 4000 },
+      sum: { 'EUR/DE': 4299, 'EUR/FR': 3639, 'GBP/GB': 4199 },
+    };
+    expect(validateLook(look, live, keys)).toEqual([
+      {
+        code: 'set-price-not-below-sum',
+        field: 'setPrice',
+        currency: 'EUR/FR',
+      },
+    ]);
+    // a cell without a set price is left out
+    expect(
+      validateLook({ ...look, setPrice: { 'EUR/DE': 4000 } }, live, keys)
+    ).toEqual([]);
+  });
+
+  it('requires a set price in at least one cell', () => {
+    expect(codes({ ...valid, setPrice: {} })).toEqual(['set-price-none']);
+    expect(codes(valid, new Map(), CURRENCIES)).toEqual(['set-price-none']);
+    expect(
+      codes({ ...valid, componentProductIds: ['a', 'c'], setPrice: { CHF: 1 } })
+    ).toEqual(['set-price-none']);
+  });
+
+  it('checks a chosen key, and ignores the key when none was chosen', () => {
+    expect(codes({ ...valid, key: 'my-key_1' } as never)).toEqual([]);
+    expect(codes({ ...valid, key: 'bad key' } as never)).toEqual([
+      'key-invalid',
+    ]);
+    expect(codes({ ...valid, key: '' } as never)).toEqual(['key-invalid']);
+    expect(codes(valid)).toEqual([]);
   });
 });

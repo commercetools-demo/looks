@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { lookObjectKey } from '../domain/keys';
+import { lookKeyFromDiscountKey, lookObjectKey } from '../domain/keys';
 import { buildLookRows, type LookRow } from '../domain/look-rows';
 import type { LookDiscount, LookObject, Piece } from '../domain/types';
 import { useCurrencies, useLookApi } from './context';
@@ -12,7 +12,8 @@ export type LookDetailState =
 
 interface Loaded {
   object?: LookObject;
-  discount?: LookDiscount;
+  /** The main discount and the country discounts of the look. */
+  discounts: LookDiscount[];
   pieces: Map<string, Piece>;
 }
 
@@ -37,15 +38,19 @@ export function useLookDetail(lookKey: string) {
     setSource({ status: 'loading' });
     (async () => {
       const key = lookObjectKey(lookKey);
-      const [object, discount] = await Promise.all([
+      const [object, all] = await Promise.all([
         api.getLookObject(key),
-        api.getCartDiscountByKey(key),
+        api.fetchCartDiscounts(),
       ]);
-      const ids = object?.value.componentProductIds ?? discount?.pieceIds ?? [];
+      const discounts = all.filter(
+        (candidate) => lookKeyFromDiscountKey(candidate.key) === lookKey
+      );
+      const main = discounts.find((candidate) => candidate.key === key);
+      const ids = object?.value.componentProductIds ?? main?.pieceIds ?? [];
       const pieces =
         ids.length > 0 ? await api.fetchPieces(ids) : new Map<string, Piece>();
       if (!cancelled)
-        setSource({ status: 'ready', data: { object, discount, pieces } });
+        setSource({ status: 'ready', data: { object, discounts, pieces } });
     })().catch((error: unknown) => {
       if (!cancelled) setSource({ status: 'error', error });
     });
@@ -56,28 +61,40 @@ export function useLookDetail(lookKey: string) {
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const apply = useCallback((discount?: LookDiscount, object?: LookObject) => {
-    setSource((current) =>
-      current.status === 'ready'
-        ? {
-            status: 'ready',
-            data: {
-              ...current.data,
-              ...(discount ? { discount } : {}),
-              ...(object ? { object } : {}),
-            },
-          }
-        : current
-    );
-  }, []);
+  const apply = useCallback(
+    (
+      discount?: LookDiscount,
+      object?: LookObject,
+      more: LookDiscount[] = []
+    ) => {
+      const written = discount ? [discount, ...more] : more;
+      setSource((current) => {
+        if (current.status !== 'ready') return current;
+        const known = current.data.discounts;
+        const replaced = known.map(
+          (d) => written.find((w) => w.id === d.id) ?? d
+        );
+        const added = written.filter((w) => !known.some((d) => d.id === w.id));
+        return {
+          status: 'ready',
+          data: {
+            ...current.data,
+            discounts: [...replaced, ...added],
+            ...(object ? { object } : {}),
+          },
+        };
+      });
+    },
+    []
+  );
 
   const state = useMemo<LookDetailState>(() => {
     if (source.status !== 'ready') return source;
-    const { object, discount, pieces } = source.data;
-    if (!object && !discount) return { status: 'not-found' };
+    const { object, discounts, pieces } = source.data;
+    if (!object && discounts.length === 0) return { status: 'not-found' };
     const [row] = buildLookRows({
       objects: object ? [object] : [],
-      discounts: discount ? [discount] : [],
+      discounts,
       pieces,
       currencies,
     });

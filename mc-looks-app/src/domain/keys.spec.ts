@@ -1,5 +1,10 @@
 import {
   deriveLookKey,
+  isCountryDiscountKey,
+  isValidLookKey,
+  keySourceName,
+  lookDiscountKey,
+  lookKeyFromDiscountKey,
   lookKeyFromObjectKey,
   lookObjectKey,
   slugify,
@@ -44,5 +49,65 @@ describe('keys', () => {
   it('produces keys that satisfy the shared key rule with the prefix', () => {
     const key = lookObjectKey(deriveLookKey('Ton-in-Ton-Look', new Set()));
     expect(key).toMatch(/^[a-zA-Z0-9-_]{2,256}$/);
+  });
+
+  it('derives the key from the English name, else the German one, else the first translation', () => {
+    expect(keySourceName({ de: 'Kontrast', en: 'Contrast' })).toBe('Contrast');
+    expect(keySourceName({ de: 'Kontrast', 'en-GB': 'Contrast' })).toBe(
+      'Contrast'
+    );
+    expect(keySourceName({ de: 'Kontrast', fr: 'Contraste' })).toBe('Kontrast');
+    expect(keySourceName({ fr: 'Contraste', it: 'Contrasto' })).toBe(
+      'Contraste'
+    );
+    expect(keySourceName({ de: ' ', fr: 'Contraste' })).toBe('Contraste');
+    expect(keySourceName({})).toBe('');
+  });
+
+  it('accepts a chosen key by the shared key rule (letters, digits, - and _, trimmed)', () => {
+    expect(isValidLookKey('cozy-in-grey')).toBe(true);
+    expect(isValidLookKey('  Winter_2026-A  ')).toBe(true);
+    expect(isValidLookKey('')).toBe(false);
+    expect(isValidLookKey('   ')).toBe(false);
+    expect(isValidLookKey('has space')).toBe(false);
+    expect(isValidLookKey('ümlaut')).toBe(false);
+    expect(isValidLookKey('a/b')).toBe(false);
+    expect(isValidLookKey('a'.repeat(251))).toBe(true);
+    expect(isValidLookKey('a'.repeat(252))).toBe(false);
+  });
+});
+
+describe('country discount keys', () => {
+  it('keys the main discount look-<key> and the others by country', () => {
+    expect(lookDiscountKey('cozy', 'DE', true)).toBe('look-cozy');
+    expect(lookDiscountKey('cozy', '', true)).toBe('look-cozy');
+    expect(lookDiscountKey('cozy', 'FR', false)).toBe('look-cozy-FR');
+    expect(lookDiscountKey('cozy', '', false)).toBe('look-cozy-ALL');
+  });
+
+  it('reads the look key from a main or country discount key', () => {
+    expect(lookKeyFromDiscountKey('look-cozy')).toBe('cozy');
+    expect(lookKeyFromDiscountKey('look-cozy-DE')).toBe('cozy');
+    expect(lookKeyFromDiscountKey('look-cozy-ALL')).toBe('cozy');
+    expect(lookKeyFromDiscountKey('look-cozy-in-grey')).toBe('cozy-in-grey');
+    expect(lookKeyFromDiscountKey('look-cozy-in-grey-GB')).toBe('cozy-in-grey');
+    expect(lookKeyFromDiscountKey('promo-1')).toBeUndefined();
+    expect(lookKeyFromDiscountKey(undefined)).toBeUndefined();
+  });
+
+  it('tells country discounts from main ones', () => {
+    expect(isCountryDiscountKey('look-cozy-DE')).toBe(true);
+    expect(isCountryDiscountKey('look-cozy-ALL')).toBe(true);
+    expect(isCountryDiscountKey('look-cozy')).toBe(false);
+    expect(isCountryDiscountKey('look-cozy-de')).toBe(false);
+    expect(isCountryDiscountKey('promo-DE')).toBe(false);
+  });
+
+  it('rejects chosen look keys that end like a country discount key', () => {
+    expect(isValidLookKey('winter-DE')).toBe(false);
+    expect(isValidLookKey('winter-ALL')).toBe(false);
+    expect(isValidLookKey('winter-de')).toBe(true);
+    expect(isValidLookKey('winter-DEU')).toBe(true);
+    expect(isValidLookKey('winter-2026')).toBe(true);
   });
 });

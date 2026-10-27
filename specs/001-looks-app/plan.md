@@ -116,7 +116,7 @@ mc-looks-app/                            # the app; folder name == connect.yaml 
 │   │   ├── use-looks-connector/        # fetch-all, fetch, create, update, fragments/
 │   │   ├── use-pieces-connector/       # search, by-ids, inventory
 │   │   ├── use-orders-connector/       # recent orders for past looks
-│   │   └── use-project-currencies/
+│   │   └── use-project-settings/
 │   ├── components/
 │   │   ├── entry-point/  looks-list/  past-looks/  new-look/
 │   │   ├── look-detail/  shop-preview/  common/

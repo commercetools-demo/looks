@@ -10,9 +10,9 @@ import {
   Switch,
   Text,
 } from '@commercetools/nimbus';
-import type { Money, Piece } from '../../domain/types';
+import type { LocalizedValue, Money, Piece } from '../../domain/types';
+import { sortPriceKeys, splitPriceKey } from '../../domain/prices';
 import { useCurrencies } from '../../hooks/context';
-import { MoneyLines } from '../common/money-lines';
 import { PieceImage } from '../common/piece-image';
 import { useMoney } from '../common/look-hooks';
 import messages from './messages';
@@ -37,7 +37,9 @@ function SummaryRow({
 /** Step 4: the summary and the switch "Nach dem Anlegen aktiv" (off by
  *  default, so a look can be checked before it goes live). */
 export function ReviewStep(props: {
-  name: { de: string; en: string };
+  name: LocalizedValue;
+  /** The full key, `look-<key>`. */
+  fullKey: string;
   photoPath: string | undefined;
   pieces: Piece[];
   sum: Money;
@@ -49,14 +51,7 @@ export function ReviewStep(props: {
   const intl = useIntl();
   const money = useMoney();
   const currencies = useCurrencies();
-  const saving = Object.fromEntries(
-    currencies.flatMap((currency) =>
-      props.sum[currency] !== undefined &&
-      props.sum[currency] > props.setPrice[currency]
-        ? [[currency, props.sum[currency] - props.setPrice[currency]]]
-        : []
-    )
-  );
+  const cells = sortPriceKeys(Object.keys(props.setPrice), currencies);
   return (
     <Card.Root maxWidth="720px">
       <Card.Header>
@@ -68,24 +63,34 @@ export function ReviewStep(props: {
         <Stack gap="300">
           <SummaryRow label={intl.formatMessage(messages.reviewName)}>
             <Text fontWeight="500">
-              {props.name.de} / {props.name.en}
+              {Object.values(props.name).join(' / ')}
             </Text>
+          </SummaryRow>
+          <SummaryRow label={intl.formatMessage(messages.reviewKey)}>
+            <Text fontFamily="mono">{props.fullKey}</Text>
           </SummaryRow>
           <SummaryRow label={intl.formatMessage(messages.reviewPhoto)}>
             {props.photoPath ?? intl.formatMessage(messages.reviewNoPhoto)}
           </SummaryRow>
-          <SummaryRow label={intl.formatMessage(messages.reviewSum)}>
-            <MoneyLines value={props.sum} align="flex-start" />
-          </SummaryRow>
           <SummaryRow label={intl.formatMessage(messages.reviewSetPrice)}>
-            <MoneyLines value={props.setPrice} strong align="flex-start" />
-          </SummaryRow>
-          <SummaryRow label={intl.formatMessage(messages.reviewSaving)}>
-            {currencies
-              .filter((currency) => saving[currency] !== undefined)
-              .map((currency) => (
-                <Text key={currency}>{money(saving[currency], currency)}</Text>
-              ))}
+            <Stack gap="100">
+              {cells.map((key) => {
+                const { currency, country } = splitPriceKey(key);
+                return (
+                  <Text key={key}>
+                    {intl.formatMessage(messages.reviewCell, {
+                      cell: country ? `${currency} ${country}` : currency,
+                      setPrice: money(props.setPrice[key], currency),
+                      sum: money(props.sum[key], currency),
+                      saving: money(
+                        props.sum[key] - props.setPrice[key],
+                        currency
+                      ),
+                    })}
+                  </Text>
+                );
+              })}
+            </Stack>
           </SummaryRow>
           <SummaryRow label={intl.formatMessage(messages.reviewPieces)}>
             <Stack gap="200">
@@ -94,9 +99,6 @@ export function ReviewStep(props: {
                   <PieceImage src={piece.imageUrl} width={32} />
                   <Text flex="1" minWidth={0} truncate>
                     {piece.name}
-                  </Text>
-                  <Text color="neutral.11">
-                    {money(piece.prices[currencies[0]], currencies[0])}
                   </Text>
                 </Flex>
               ))}

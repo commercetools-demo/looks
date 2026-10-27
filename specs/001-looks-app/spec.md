@@ -44,7 +44,7 @@ A merchandiser opens "Looks" in the Merchant Center main menu and sees every act
 
 ### User Story 2 - Create a new look with a live shop preview (Priority: P1)
 
-A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** (name in German and English, optional look photo), **Pieces** (search products, choose 2 to 5, reorder), **Set price** (one price per project currency, shown against the sum), and **Review** (summary, "Nach dem Anlegen aktiv" switch, "Look speichern"). Beside the form, a shop preview shows how the look will appear on a product page, updating as they type.
+A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** (the name in every project language, optional look photo), **Pieces** (search products, choose 2 to 5, reorder), **Set price** (one price per project currency, shown against the sum), and **Review** (summary, "Nach dem Anlegen aktiv" switch, "Look speichern"). Beside the form, a shop preview shows how the look will appear on a product page, updating as they type.
 
 **Why this priority**: Creating looks is the core job of the app and the reason it exists.
 
@@ -52,15 +52,17 @@ A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** 
 
 **Acceptance Scenarios**:
 
-1. **Given** step 1, **When** the user enters names and presses "Weiter", **Then** step 2 opens; if either name is missing, a field error names the problem and nothing is written.
+1. **Given** step 1, **When** the user enters a name in at least one project language and presses "Weiter", **Then** step 2 opens; if no name is entered, a field error names the problem and nothing is written.
 2. **Given** step 1 with a look-photo path of the form `looks/<name>.webp` (or jpg, png) that loads from the shop, **When** it loads, **Then** the photo appears 120 px wide in 2:3 next to the form and later in the preview; **Given** an invalid path or a photo that cannot be loaded, **Then** "Weiter" stays on step 1 with a field error. An empty field is valid (look without photo).
-3. **Given** step 2, **When** the user searches, **Then** products are found with image, name, colour, price and sizes with availability; selecting a product adds it to the look; the step is titled "Teile wählen (2 bis 5)" and states the count and the sum ("4 Teile gewählt. Summe der Teile: 295,96 €").
+3. **Given** step 2, **When** the user searches, **Then** products are found with image, name, colour, price and sizes with availability; selecting a product adds it to the look; the step is titled "Teile wählen (2 bis 5)" and states the count ("4 Teile gewählt").
 4. **Given** fewer than 2 or more than 5 pieces, **When** the user proceeds or saves, **Then** a field error states the limit and the current count; nothing is written.
 5. **Given** a piece without sizes (e.g. an accessory), **Then** it reads "Einheitsgröße" instead of a size list.
 6. **Given** a piece is sold out in every size, **When** it is added, **Then** a warning explains that the set cannot be bought at the set price while this lasts, but saving is not blocked.
 7. **Given** a set price in a currency that is zero, or equal to or above the live sum of the pieces, **When** the user proceeds, **Then** a field error names that currency.
 8. **Given** a selected piece has no list price in one of the project's currencies, **Then** saving is refused with an error naming the piece and the currency.
 9. **Given** the review step with "Nach dem Anlegen aktiv" off (the default), **When** the user saves, **Then** the look is stored inactive and listed as "Inaktiv"; with it on, the look is live right after saving.
+10. **Given** step 1, **When** the user has entered a name, **Then** the field "Key" shows the suggested key (derived from the name, free of existing keys, e.g. `winter-2` when `winter` exists) and how it will be saved (`look-<key>`), and follows the name until the user edits it; **When** the user types their own key, **Then** it is kept as typed, shown on the review and saved as given; "Vorschlag übernehmen" takes the suggestion back.
+11. **Given** a key with characters other than letters, digits, hyphens and underscores, or a key that is already taken, **When** the user presses "Weiter" (a taken key is flagged while typing), **Then** a field error names the problem and nothing is written; a key chosen by the user is never renamed silently, also not when someone else takes it while saving (the flow returns to the key field).
 
 ---
 
@@ -156,7 +158,7 @@ A user with View permission only sees the same list, section and details, but al
 
 ### Edge Cases
 
-- **Name collision**: two users save a look with the same name at the same moment. The loser re-derives the next free key (suffix `-2`, `-3`, …) and retries once before showing an error.
+- **Name collision**: two users save a look with the same name at the same moment. When the key was only suggested, the loser re-derives the next free key (suffix `-2`, `-3`, …) and retries once before showing an error; when the user chose the key, it is not changed and the user is asked to pick another.
 - **Partial save failure** (network, conflict, permission) after the discount exists but before the definition: the discount stays inactive (harmless in every cart); the user sees what failed with "Erneut versuchen"; the look is "Unvollständig" until a retry completes. A retry continues where it stopped and never creates duplicates.
 - **Activation fails** after both writes succeeded: the look exists and shows as inactive; it can be switched on from the list.
 - **Edited form during a failed save**: a retry only resumes the earlier plan if the entered data still matches it; otherwise it re-plans.
@@ -188,7 +190,7 @@ A user with View permission only sees the same list, section and details, but al
 #### Currencies
 
 - **FR-007**: The currencies of a look are the **project's currencies**, read from the project settings at runtime. Set prices, sums, discount amounts, savings and sales revenue MUST be handled per project currency. No currency code MAY be hard-coded. Price columns show one line per currency, the first (the project's default currency, then the order of the project settings) in bold.
-- **FR-008**: A piece's list price in a currency is its master variant's price in that currency that has no country, customer-group or channel restriction. A piece lacking such a price in any project currency is not eligible (see FR-035).
+- **FR-008**: A piece's list price is taken per currency and country (price cell) from its master variant, else from another variant that has the cell, never from a price restricted to a customer group or channel, and only while it is valid. The set-price step shows a table with one row per cell in which every piece has a price (ordered by currency): the pieces' prices, their sum, the set price (money field, starting at the sum) and the saving in percent (number field); editing one updates the other. A row with an empty set price gets no Cart Discount; one Cart Discount is written per country with set prices (condition on the cart country).
 
 #### Looks list
 
@@ -213,19 +215,19 @@ A user with View permission only sees the same list, section and details, but al
 #### Creating a look
 
 - **FR-030**: "Neuer Look" MUST open a four-step flow (Grunddaten, Teile, Setpreis, Prüfen) with a step indicator that marks the current step, and the shop preview beside the form in every step.
-- **FR-031**: Step 1 MUST collect the name in German and English (both required) and an optional look photo path (`looks/<name>.webp|jpg|png`, help text "Hochformat, das Model trägt den Look"). The photo's pixel size MUST be read from the loaded file and stored with the path.
-- **FR-032**: Step 2 MUST search products and show per product: image, name, colour (the variant's colour name in the data locale, falling back to the colour attribute's label (attribute names per FR-084), so colourways of one model can be told apart), price per currency, and sizes with availability from the default inventory. Sizes are the variants having a default inventory entry, labelled by the configured size attribute (FR-084). Pieces MUST be reorderable (drag). A look MUST have 2 to 5 pieces, no duplicates.
+- **FR-031**: Step 1 MUST collect the name with one input per project language (the Nimbus localized text field: the data locale first, the other languages behind its toggle; at least one language is required, empty translations are omitted when saving) and an optional look photo path (`looks/<name>.webp|jpg|png`, help text "Hochformat, das Model trägt den Look"). The photo's pixel size MUST be read from the loaded file and stored with the path.
+- **FR-032**: Step 2 MUST search products and show per product: image, name, colour (the variant's colour name in the data locale, falling back to the colour attribute's label (attribute names per FR-084), so colourways of one model can be told apart), and sizes with availability from the default inventory. Sizes are the variants having a default inventory entry, labelled by their variant attributes (FR-084); several variants without any such attribute are listed by SKU, and only a product with a single such variant is one size. Pieces MUST be reorderable (drag). A look MUST have 2 to 5 pieces, no duplicates. The step shows no prices and no sum; prices appear from the set price step on.
 - **FR-033**: Step 3 MUST collect one set price per project currency and show the sum of the pieces and the saving.
 - **FR-034**: Step 4 MUST show a summary and the switch "Nach dem Anlegen aktiv" (default off).
-- **FR-035**: Saving MUST be refused unless: both names are present; there are 2 to 5 distinct pieces; every piece has a list price (FR-008) in every project currency; the set price in each currency is a positive integer amount strictly below the live sum of the pieces in that currency; and the sum the user saw still equals the live sum at save time.
-- **FR-036**: The look key MUST be the slug of the English name (lowercase ASCII letters, digits and single hyphens; umlauts transliterated; at most 40 characters), with `-2`, `-3`, … appended when taken. The look definition and the discount share the key `look-<lookKey>`.
+- **FR-035**: Saving MUST be refused unless: at least one name is present; there are 2 to 5 distinct pieces; every piece has a list price (FR-008) in every project currency; the set price in each currency is a positive integer amount strictly below the live sum of the pieces in that currency; and the sum the user saw still equals the live sum at save time.
+- **FR-036**: The look key MUST be shown and editable while the look is created: step 1 has a field "Key" that suggests the slug of the English name, else the German one, else the first translation (lowercase ASCII letters, digits and single hyphens; umlauts transliterated; at most 40 characters; `-2`, `-3`, … appended while taken) and follows the name until the user edits it. A key the user typed MUST follow the shared key rule (letters, digits, `-` and `_` only, trimmed, the whole key with its prefix at most 256 characters), MUST be unique (a taken key is flagged and refused, never renamed), and is saved as given. The field states how the key is stored and that it cannot be changed after creation; afterwards the key is shown read-only. Look definition and discount share the key `look-<lookKey>`.
 
 #### Saving and consistency
 
 - **FR-040**: Saving MUST write, in this order: (1) the set-price discount, inactive; (2) the look definition; (3) activation, only when "Nach dem Anlegen aktiv" is on. No order of failure MAY leave a half look live. Every step MUST check by key first and be idempotent, so a retry continues where it stopped.
 - **FR-041**: The set-price discount MUST apply once per complete set: no cart condition, one pattern component per piece (exactly one unit of each, matched by product), an absolute amount per project currency equal to live sum minus set price, distributed proportionately over the matched lines, valid in no specific store, requiring no code, with a rank unique among all Cart Discounts.
 - **FR-042**: App-created discounts MUST take the lowest free rank in the reserved range 0.7–0.799 in steps of 0.001, written without trailing zeros (the API rejects e.g. `0.700`). When the range is exhausted, saving MUST be refused with a message.
-- **FR-043**: Discounts MUST carry readable names: name "Look-Set: <look name>" in German and "Look set: <look name>" in English; description "<look name>". Readers MUST take the look name from `name` when it has the "Look-Set: …" form and otherwise from `description`. Keys never change.
+- **FR-043**: Discounts MUST carry readable names, in every language the look has a name in: name "Look-Set: <look name>" in German and "Look set: <look name>" in every other language; description "<look name>". Readers MUST take the look name from `name` when it has the "Look-Set: …" form and otherwise from `description`. Keys never change.
 - **FR-044**: Look-building logic (key derivation, definition value, discount draft, price reader, validation rules, rank allocation) MUST live in one browser-safe module with unit tests; the app is its only writer.
 
 #### Switching, repricing, completing
@@ -245,7 +247,7 @@ A user with View permission only sees the same list, section and details, but al
 #### Shop preview
 
 - **FR-070**: A shop preview ("Shop-Vorschau", caption "So erscheint der Look im Shop") MUST appear in every step of the new-look flow and on the detail. It mirrors the structure of the shop's product-page set block: "Set zu <set price>" with "Einzelpreise zusammen: <sum>" struck through, one row per piece with image, name and size dropdown including sold-out and low-stock states, the look photo above when there is one, and a full-width "Set in den Warenkorb" button, inert in the app. Without a set price it reads "Setpreis folgt". Without a first piece it shows a neutral placeholder.
-- **FR-071**: The preview is neutral (Nimbus default theme, no brand colours, fonts or logos). It shows prices in the project's default currency; every text inside the preview card is German regardless of the user's profile language; only the caption follows the user's language. The preview MUST never write anything.
+- **FR-071**: The preview is neutral (Nimbus default theme, no brand colours, fonts or logos). It shows prices in the project's default currency. Like every other text of the app, its texts and the price format follow the Merchant Center user's language (FR-004, German and English); there is no fixed shop language. The preview MUST never write anything.
 
 #### Platform integration, scopes, hosting
 
@@ -258,15 +260,16 @@ A user with View permission only sees the same list, section and details, but al
 - **FR-082**: Registration, installation for the project, and team permissions are manual steps performed in the Merchant Center and MUST be documented in a setup checklist naming each step and its owner (Organization → Custom Applications → add "Looks", entry-point path, scopes, menu label in de/en; after first deploy set URL, set state Ready, install for the project; assign Manage/View to teams). The checklist MUST have one section per deploy path: for Netlify, the site URL is the Application URL; for Connect, the checklist covers creating the connector deployment, its variables (FR-081), and the application URL that Connect provides. Switching between the two paths MUST be described as changing the Application URL in the registration.
 - **FR-083**: Seeding or demo-data tooling is not part of this feature.
 - **FR-084**: Everything that differs between projects MUST be a developer-set configuration value, defined in one place and never scattered as literals through the code. The values are:
-  - **Size attribute**: the name of the product-variant attribute that holds a variant's size (used for size labels, the size dropdown and per-size stock);
+  - **Variant attributes**: the names of the product-variant attributes that tell the variants of a product apart (for example search colour, finish colour and size), in display order; a variant is shown as the values of these attributes joined with " / " (text, number, enum, localized or set values), used for the variant choice, the preview dropdown and per-variant stock;
   - **Colour attributes**: the name of the localized colour-name attribute and the name of the fallback colour attribute;
   - **Shop origin**: where look photos are loaded from and "Im Shop ansehen" points to;
+  - **Price country** (optional): the country whose price is used when a product has several country prices with different amounts in one currency (FR-008);
   - **Application ID** and **production URL** (FR-081).
 - **FR-085**: The configuration MUST be designed so it can move to environment variables (`.env`, with a committed example file listing every variable, a description and a default) without changing any code that reads it: all reads go through one configuration module. Until then the module holds the defaults. Missing or empty required values MUST fail loudly at start-up or build time with a message naming the variable, not silently at first use. A product that lacks the configured size attribute is shown as "Einheitsgröße" (one size).
 
 ### Key Entities *(include if feature involves data)*
 
-- **Look**: a curated set of 2–5 products. Attributes: look key, German and English name, ordered pieces, set price per project currency, optional look photo (path, width, height), optional switch-off time. It is the pairing of a *look definition* and a *set-price discount*; neither alone is a complete look.
+- **Look**: a curated set of 2–5 products. Attributes: look key, name per project language, ordered pieces, set price per project currency, optional look photo (path, width, height), optional switch-off time. It is the pairing of a *look definition* and a *set-price discount*; neither alone is a complete look.
 - **Look definition**: the key-value document in the container `look`, key `look-<lookKey>`, value `{ componentProductIds[], setPrice{<currency>: cent amount}, image?{path,width,height}, endedAt? (ISO time) }`. Written by the app; read by the storefront.
 - **Set-price discount**: the Cart Discount with the same key. It decides what the shopper pays and whether the look is live (`isActive`). Its name carries the look name (FR-043).
 - **Piece**: a product as the app shows it: image, localized name, colour, list prices per currency, sizes with default-inventory stock, sold-out-everywhere flag.
@@ -294,7 +297,7 @@ A user with View permission only sees the same list, section and details, but al
 - **Users and permissions**: Users are merchandisers and team leads who already have Merchant Center access; teams get View or Manage via the Organization's custom-application settings.
 - **Platform**: The shop reads looks as described in the data contract (product-page set block, cart summary line) and applies the set price from the discount. Changing the storefront is out of scope; this app only writes the data it reads. Because the naming changes from `sim-look`/`sim-demo-look-` to `look`/`look-`, any shop reader of the old names must be pointed at the new ones; that work is outside this spec.
 - **Naming**: container `look`, key prefix `look-` (the decision was "just `look-`"; the container name follows the same rule).
-- **Language**: German is the reference UI language, English the second; profile language drives UI labels, data locale drives content.
+- **Language**: German is the reference UI language, English the second; profile language drives UI labels, data locale drives content. Look names are entered in the **project's languages** (read from the project settings, like the currencies); one name is enough, readers fall back data locale, de, en, first.
 - **No brands**: looks are not tied to a brand. Product search covers the whole catalog; there is no brand filter, badge, brand-pure rule or brand-themed preview. Brands can be reintroduced later as a separate feature.
 - **Currencies**: from the project settings (FR-007). Percent saving is computed on the first currency.
 - **Stock**: sizes and stock come from the default inventory (inventory entries without a supply channel); no stock channel is configured. A variant has a size only if it has such an entry; when no variant of a product has one, all variants are listed as sold out so the sold-out warning still shows.

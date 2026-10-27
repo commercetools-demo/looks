@@ -13,6 +13,7 @@ import {
   type RenderLooksOptions,
 } from '../../test-utils';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
+import { buildDiscount } from '../../test-utils/fixtures';
 import { buildLook, buildLooks, pieces } from '../../test-utils/looks-fixtures';
 import { LOOK_TABLE_COLUMN_WIDTHS } from './looks-table';
 
@@ -425,6 +426,73 @@ describe('looks list: switching and opening', () => {
     expect(fake.objects.get('look-office')?.value.endedAt).toEqual(
       expect.any(String)
     );
+  });
+
+  it('switches the country discounts of a look too', async () => {
+    const office = buildLook('office', 'Büro');
+    const data = buildLooks([office]);
+    data.discounts.push(
+      buildDiscount('office-FR', ['p1', 'p2'], {
+        country: 'FR',
+        name: { de: 'Look-Set: Büro', en: 'Look set: Büro' },
+        description: { de: 'Büro', en: 'Büro' },
+      })
+    );
+    const { fake } = setup(data);
+    await userEvent.click(
+      within(await rowOf('Büro')).getByRole('switch', { name: 'Büro aktiv' })
+    );
+    await waitFor(() =>
+      expect(fake.discounts.get('disc-office-FR')?.isActive).toBe(false)
+    );
+    expect(fake.discounts.get('disc-office')?.isActive).toBe(false);
+    expect(
+      fake.callsTo('updateCartDiscount').map((call) => call.args[0])
+    ).toEqual(['disc-office', 'disc-office-FR']);
+  });
+
+  it('switches the look group first, then the discounts', async () => {
+    const { fake } = setup(undefined, {
+      prepare: (f) =>
+        f.groups.set('grp-look-0', {
+          id: 'grp-look-0',
+          version: 1,
+          key: 'look-look-0',
+          sortOrder: '0.7',
+          isActive: true,
+        }),
+    });
+    await userEvent.click(
+      within(await rowOf('Büro')).getByRole('switch', { name: 'Büro aktiv' })
+    );
+    await waitFor(() =>
+      expect(fake.groups.get('grp-look-0')?.isActive).toBe(false)
+    );
+    await waitFor(() =>
+      expect(fake.discounts.get('disc-look-0')?.isActive).toBe(false)
+    );
+    const order = fake.calls
+      .filter((call) =>
+        ['updateDiscountGroup', 'updateCartDiscount'].includes(call.method)
+      )
+      .map((call) => call.method);
+    expect(order[0]).toBe('updateDiscountGroup');
+    expect(order).toContain('updateCartDiscount');
+    expect(fake.callsTo('getDiscountGroupByKey')[0].args).toEqual([
+      'look-look-0',
+    ]);
+  });
+
+  it('still switches a legacy look without a group and makes no group call', async () => {
+    const { fake } = setup();
+    await userEvent.click(
+      within(await rowOf('Büro')).getByRole('switch', { name: 'Büro aktiv' })
+    );
+    await waitFor(() =>
+      expect(fake.discounts.get('disc-look-0')?.isActive).toBe(false)
+    );
+    expect(fake.callsTo('updateDiscountGroup')).toHaveLength(0);
+    expect(fake.groups.size).toBe(0);
   });
 
   it('offers no switch for an incomplete look, only "Vervollständigen", which opens the detail', async () => {

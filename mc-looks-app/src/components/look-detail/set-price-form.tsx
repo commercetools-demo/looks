@@ -1,62 +1,57 @@
 import { useState } from 'react';
-import { useIntl, type IntlShape } from 'react-intl';
+import { useIntl } from 'react-intl';
 import {
   Alert,
   Button,
   Card,
   Flex,
-  FormField,
   Heading,
   Stack,
   Text,
-  TextInput,
   toast,
 } from '@commercetools/nimbus';
-import { formatMoney } from '../../domain/format';
 import type { LookRow } from '../../domain/look-rows';
 import { SetPriceStepError, changeSetPrice } from '../../domain/look-writes';
 import type { LookDiscount, LookObject, Money } from '../../domain/types';
+import { splitPriceKey } from '../../domain/prices';
 import { validateLook, type ValidationError } from '../../domain/validate';
-import { useCanManage, useCurrencies, useLookApi } from '../../hooks/context';
+import { useCanManage, useLookApi } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
+import { SetPriceTable, amountText } from '../common/set-price-table';
+import { parseCents } from '../new-look/set-price';
 import { useMoney } from '../common/look-hooks';
 import commonMessages from '../common/messages';
 import messages from './messages';
 
-/** Cents from text with a comma or a dot as decimal mark; `NaN` when unreadable. */
-export function parseCents(text: string): number {
-  const normalized = text.trim().replace(/\s/g, '').replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return NaN;
-  return Math.round(Number(normalized) * 100);
-}
-
-const initialText = (intl: IntlShape, cents: number | undefined): string =>
-  cents === undefined
-    ? ''
-    : intl.formatNumber(cents / 100, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-        useGrouping: false,
-      });
-
-/** Set price per project currency, with the live sum and the saving. */
+/** Set prices per currency and country, in the shared price table. */
 export function SetPriceForm({
   row,
   apply,
   reload,
 }: {
   row: LookRow;
-  apply: (discount?: LookDiscount, object?: LookObject) => void;
+  apply: (
+    discount?: LookDiscount,
+    object?: LookObject,
+    more?: LookDiscount[]
+  ) => void;
   reload: () => void;
 }) {
   const intl = useIntl();
   const api = useLookApi();
-  const currencies = useCurrencies();
   const canManage = useCanManage();
   const money = useMoney();
+  // Only price rows every piece has a price in can get a set price.
+  const cells = Object.keys(row.liveSum);
+  const pieces = row.pieces.filter(
+    (piece): piece is NonNullable<typeof piece> => piece !== undefined
+  );
   const [texts, setTexts] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      currencies.map((c) => [c, initialText(intl, row.setPrice?.[c])])
+      cells.map((key) => [
+        key,
+        row.setPrice?.[key] === undefined ? '' : amountText(row.setPrice[key]),
+      ])
     )
   );
   const [errors, setErrors] = useState<ValidationError[]>([]);
@@ -65,8 +60,14 @@ export function SetPriceForm({
   const [unchanged, setUnchanged] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // A row without a stored set price stays without a discount while empty;
+  // a stored one cannot be emptied (its discount would keep the old amount).
   const entered: Money = Object.fromEntries(
-    currencies.map((c) => [c, parseCents(texts[c] ?? '')])
+    cells.flatMap((key) => {
+      const text = (texts[key] ?? '').trim();
+      if (text === '' && row.setPrice?.[key] === undefined) return [];
+      return [[key, parseCents(text) ?? 0]];
+    })
   );
 
   async function save(
@@ -81,7 +82,7 @@ export function SetPriceForm({
           piece ? [[piece.id, piece.prices] as const] : []
         )
       );
-      const label = { de: row.lookKey, en: row.lookKey };
+      const label = { en: row.lookKey };
       const found = validateLook(
         {
           label,
@@ -90,7 +91,7 @@ export function SetPriceForm({
           sum: row.liveSum,
         },
         livePrices,
-        currencies
+        cells
       );
       setErrors(found);
       if (found.length > 0) return;
@@ -111,7 +112,7 @@ export function SetPriceForm({
       }
       toast.success({ title: intl.formatMessage(messages.setPriceSaved) });
       if (options.discountChanged) reload();
-      else apply(result.discount, result.object);
+      else apply(result.discount, result.object, result.discounts);
     } catch (error) {
       if (
         error instanceof SetPriceStepError &&
@@ -131,20 +132,23 @@ export function SetPriceForm({
     }
   }
 
-  const errorText = (currency: string): string | undefined => {
+  const errorText = (key: string): string | undefined => {
     const error = errors.find(
-      (e) => e.field === 'setPrice' && e.currency === currency
+      (e) => e.field === 'setPrice' && e.currency === key
     );
     if (!error) return undefined;
     if (error.code === 'set-price-not-below-sum') {
       return intl.formatMessage(messages.errNotBelowSum, {
-        sum: money(row.liveSum[currency], currency),
+        sum: money(row.liveSum[key], splitPriceKey(key).currency),
       });
     }
     if (error.code === 'sum-not-live')
       return intl.formatMessage(messages.errSumNotLive);
     return intl.formatMessage(messages.errNotPositive);
   };
+  const rowErrors = Object.fromEntries(
+    cells.map((key) => [key, errorText(key)])
+  );
   const piecesError = errors.some((e) => e.field === 'pieces');
   const disabled = busy || !canManage;
 
@@ -195,56 +199,16 @@ export function SetPriceForm({
               </Alert.Actions>
             </Alert.Root>
           )}
-          <Flex gap="600" wrap="wrap">
-            {currencies.map((currency) => {
-              const cents = entered[currency];
-              const sum = row.liveSum[currency];
-              const saving =
-                sum !== undefined && cents > 0 ? sum - cents : undefined;
-              const error = errorText(currency);
-              const label = intl.formatMessage(messages.setPriceLabel, {
-                currency,
-              });
-              return (
-                <Stack key={currency} gap="100" flex="1" minWidth="220px">
-                  <FormField.Root
-                    isInvalid={Boolean(error)}
-                    isDisabled={disabled}
-                  >
-                    <FormField.Label>{label}</FormField.Label>
-                    <FormField.Input>
-                      <TextInput
-                        aria-label={label}
-                        inputMode="decimal"
-                        value={texts[currency] ?? ''}
-                        onChange={(value) => {
-                          setTexts((current) => ({
-                            ...current,
-                            [currency]: value,
-                          }));
-                          setUnchanged(false);
-                        }}
-                      />
-                    </FormField.Input>
-                    {error && <FormField.Error>{error}</FormField.Error>}
-                  </FormField.Root>
-                  <Text fontSize="300" color="neutral.11">
-                    {intl.formatMessage(messages.sumLine, {
-                      sum: money(sum, currency),
-                    })}
-                  </Text>
-                  {saving !== undefined && sum !== undefined && saving > 0 && (
-                    <Text fontSize="300" color="neutral.11">
-                      {intl.formatMessage(messages.savingLine, {
-                        amount: formatMoney(saving, currency, intl.locale),
-                        percent: Math.round((saving / sum) * 100),
-                      })}
-                    </Text>
-                  )}
-                </Stack>
-              );
-            })}
-          </Flex>
+          <SetPriceTable
+            pieces={pieces}
+            texts={texts}
+            onTextsChange={(next) => {
+              setTexts(next);
+              setUnchanged(false);
+            }}
+            errors={rowErrors}
+            isDisabled={disabled}
+          />
           {piecesError && (
             <Alert.Root colorPalette="critical">
               <Alert.Description>

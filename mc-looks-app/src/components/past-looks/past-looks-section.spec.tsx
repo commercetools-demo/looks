@@ -13,6 +13,7 @@ import {
   type RenderLooksOptions,
 } from '../../test-utils';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
+import { buildDiscount } from '../../test-utils/fixtures';
 import { buildLook, buildLooks, pieces } from '../../test-utils/looks-fixtures';
 import { salesOrder } from '../../test-utils/orders';
 
@@ -301,6 +302,84 @@ describe('Frühere Looks: reactivation', () => {
     );
     expect(screen.getByText('Noch keine früheren Looks')).toBeInTheDocument();
     expect(screen.getByTestId('looks-count')).toHaveTextContent('1 Look');
+  });
+
+  it('switches the country discounts on too, country discounts first and the main one last', async () => {
+    const back = off('back', 'Zurück', ['p1', 'p2'], {
+      endedAt: '2026-10-06T12:00:00.000Z',
+    });
+    back.discounts.push(
+      buildDiscount('back-DE', ['p1', 'p2'], {
+        country: 'DE',
+        isActive: false,
+        name: { de: 'Look-Set: Zurück', en: 'Look set: Zurück' },
+        description: { de: 'Zurück', en: 'Zurück' },
+      })
+    );
+    const { fake } = setup([back]);
+    await userEvent.click(
+      within(await cardOf('Zurück')).getByRole('button', {
+        name: /wieder aktivieren/i,
+      })
+    );
+    expect(
+      (await screen.findAllByText('Zurück ist aktiv')).length
+    ).toBeGreaterThan(0);
+    expect(fake.discounts.get('disc-back-DE')?.isActive).toBe(true);
+    expect(fake.discounts.get('disc-back')?.isActive).toBe(true);
+    expect(
+      fake.callsTo('updateCartDiscount').map((call) => call.args[0])
+    ).toEqual(['disc-back-DE', 'disc-back']);
+  });
+
+  it('switches the look group on first, then the discounts', async () => {
+    const { fake } = setup(
+      [
+        off('back', 'Zurück', ['p1', 'p2'], {
+          endedAt: '2026-10-06T12:00:00.000Z',
+        }),
+      ],
+      [],
+      {
+        prepare: (f) =>
+          f.groups.set('grp-back', {
+            id: 'grp-back',
+            version: 1,
+            key: 'look-back',
+            sortOrder: '0.7',
+            isActive: false,
+          }),
+      }
+    );
+    await userEvent.click(
+      within(await cardOf('Zurück')).getByRole('button', {
+        name: /wieder aktivieren/i,
+      })
+    );
+    expect(
+      (await screen.findAllByText('Zurück ist aktiv')).length
+    ).toBeGreaterThan(0);
+    expect(fake.groups.get('grp-back')?.isActive).toBe(true);
+    expect(fake.discounts.get('disc-back')?.isActive).toBe(true);
+    expect(
+      fake.calls
+        .filter((call) =>
+          ['updateDiscountGroup', 'updateCartDiscount'].includes(call.method)
+        )
+        .map((call) => call.method)
+    ).toEqual(['updateDiscountGroup', 'updateCartDiscount']);
+  });
+
+  it('reactivates a legacy look without a group', async () => {
+    const { fake } = setup([off('old', 'Alt', ['p1', 'p2'])]);
+    await userEvent.click(
+      within(await cardOf('Alt')).getByRole('button', {
+        name: /wieder aktivieren/i,
+      })
+    );
+    await screen.findAllByText('Alt ist aktiv');
+    expect(fake.discounts.get('disc-old')?.isActive).toBe(true);
+    expect(fake.callsTo('updateDiscountGroup')).toHaveLength(0);
   });
 
   it('does not open the detail when "Wieder aktivieren" is pressed', async () => {

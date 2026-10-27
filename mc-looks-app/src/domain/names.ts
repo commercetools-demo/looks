@@ -1,18 +1,35 @@
 import type { LocalizedValue } from './types';
 
-export const SET_NAME_PREFIX = { de: 'Look-Set: ', en: 'Look set: ' } as const;
+/** German keeps its own prefix; every other language uses the English one. */
+const SET_NAME_PREFIX = { de: 'Look-Set: ', other: 'Look set: ' } as const;
 
-/** `Look-Set: <name>` (de) / `Look set: <name>` (en). */
-export function buildLookDiscountName(label: { de: string; en: string }) {
-  return {
-    de: `${SET_NAME_PREFIX.de}${label.de}`,
-    en: `${SET_NAME_PREFIX.en}${label.en}`,
-  };
+const isGerman = (locale: string) =>
+  locale === 'de' || locale.startsWith('de-');
+
+/** A localized value without empty translations (trimmed). */
+export function omitEmptyTranslations(value: LocalizedValue): LocalizedValue {
+  const result: LocalizedValue = {};
+  for (const [locale, text] of Object.entries(value)) {
+    const trimmed = text?.trim();
+    if (trimmed) result[locale] = trimmed;
+  }
+  return result;
+}
+
+/** `Look-Set: <name>` (de) / `Look set: <name>` (every other language). */
+export function buildLookDiscountName(label: LocalizedValue): LocalizedValue {
+  const result: LocalizedValue = {};
+  for (const [locale, text] of Object.entries(omitEmptyTranslations(label))) {
+    result[locale] = `${
+      isGerman(locale) ? SET_NAME_PREFIX.de : SET_NAME_PREFIX.other
+    }${text}`;
+  }
+  return result;
 }
 
 /** The description is the plain look name. */
-export function buildLookDescription(label: { de: string; en: string }) {
-  return { de: label.de, en: label.en };
+export function buildLookDescription(label: LocalizedValue): LocalizedValue {
+  return omitEmptyTranslations(label);
 }
 
 const SET_NAME = /^(?:Look-Set|Look set): (.+)$/;

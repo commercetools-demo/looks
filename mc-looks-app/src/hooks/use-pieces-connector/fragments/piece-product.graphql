@@ -9,10 +9,12 @@ fragment PieceVariantFragment on ProductVariant {
       centAmount
     }
     country
-    customerGroup {
+    validFrom
+    validUntil
+    customerGroupRef {
       id
     }
-    channel {
+    channelRef {
       id
     }
   }

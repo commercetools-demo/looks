@@ -44,7 +44,6 @@
   "Looks.detail.completeMissingDiscount": "The set-price discount for this look definition is missing. Completing creates it inactive. The look stays switched off.",
   "Looks.detail.completeInconsistent": "The look definition and the set-price discount name different pieces. The look cannot be switched here; please check it in the Merchant Center.",
   "Looks.detail.completeAction": "Complete",
-  "Looks.detail.completeNameDe": "Name (German)",
-  "Looks.detail.completeNameEn": "Name (English)",
+  "Looks.detail.completeName": "Look name",
   "Looks.detail.completed": "Look completed"
 }

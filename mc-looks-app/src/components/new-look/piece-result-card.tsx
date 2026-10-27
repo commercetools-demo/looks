@@ -3,15 +3,13 @@ import { Add, Check } from '@commercetools/nimbus-icons';
 import { Box, Button, Flex, Icon, Stack, Text } from '@commercetools/nimbus';
 import { stockStateOf } from '../../domain/stock';
 import type { Piece } from '../../domain/types';
-import { useCurrencies } from '../../hooks/context';
-import { useMoney } from '../common/look-hooks';
 import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import messages from './messages';
 
 export type CardState = 'available' | 'in-look' | 'full';
 
-/** One search result: image, name, colour, price per currency, size chips
+/** One search result: image, name, colour, prices per currency and country, size chips
  *  with "nur noch N" and "ausverkauft", and the add action. */
 export function PieceResultCard(props: {
   piece: Piece;
@@ -20,8 +18,6 @@ export function PieceResultCard(props: {
   onAdd: () => void;
 }) {
   const intl = useIntl();
-  const money = useMoney();
-  const currencies = useCurrencies();
   const { piece } = props;
   const entries = piece.oneSize
     ? [
@@ -67,15 +63,6 @@ export function PieceResultCard(props: {
               {piece.colour}
             </Text>
           )}
-          <Text
-            fontSize="300"
-            color="neutral.11"
-            style={{ fontVariantNumeric: 'tabular-nums' }}
-          >
-            {currencies
-              .map((currency) => money(piece.prices[currency], currency))
-              .join(' / ')}
-          </Text>
         </Box>
         {piece.oneSize ? (
           <Text fontSize="300">
@@ -152,7 +139,7 @@ export function PieceResultCard(props: {
             isDisabled={props.isDisabled || props.state === 'full'}
             onPress={props.onAdd}
           >
-            <Icon size="sm">
+            <Icon size="2xs">
               <Add />
             </Icon>
             {intl.formatMessage(messages.add)}

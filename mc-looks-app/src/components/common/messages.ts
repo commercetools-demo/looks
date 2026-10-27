@@ -26,9 +26,14 @@ export default defineMessages({
     id: 'Looks.common.priceDrift',
     defaultMessage: 'Setpreis weicht ab',
   },
-  currenciesLoadError: {
-    id: 'Looks.common.currenciesLoadError',
-    defaultMessage: 'Die Währungen des Projekts konnten nicht geladen werden',
+  settingsLoadError: {
+    id: 'Looks.common.settingsLoadError',
+    defaultMessage:
+      'Währungen und Sprachen des Projekts konnten nicht geladen werden',
+  },
+  languagesMissing: {
+    id: 'Looks.common.languagesMissing',
+    defaultMessage: 'Das Projekt hat keine Sprache.',
   },
   currenciesMissing: {
     id: 'Looks.common.currenciesMissing',
@@ -115,6 +120,14 @@ export default defineMessages({
     id: 'Looks.common.opChangeDiscountValue',
     defaultMessage: 'Rabattbetrag ändern',
   },
+  opCreateDiscountGroup: {
+    id: 'Looks.common.opCreateDiscountGroup',
+    defaultMessage: 'Rabattgruppe anlegen',
+  },
+  opSwitchDiscountGroup: {
+    id: 'Looks.common.opSwitchDiscountGroup',
+    defaultMessage: 'Rabattgruppe umschalten',
+  },
   opCompleteDiscount: {
     id: 'Looks.common.opCompleteDiscount',
     defaultMessage: 'Look vervollständigen',
@@ -122,5 +135,39 @@ export default defineMessages({
   opWriteLookObject: {
     id: 'Looks.common.opWriteLookObject',
     defaultMessage: 'Look-Definition speichern',
+  },
+  priceTableCurrency: {
+    id: 'Looks.common.priceTableCurrency',
+    defaultMessage: 'Währung',
+  },
+  priceTableCountry: {
+    id: 'Looks.common.priceTableCountry',
+    defaultMessage: 'Land',
+  },
+  priceTableCountryAll: {
+    id: 'Looks.common.priceTableCountryAll',
+    defaultMessage: 'ohne Land',
+  },
+  priceTableSum: { id: 'Looks.common.priceTableSum', defaultMessage: 'Summe' },
+  priceTableSetPrice: {
+    id: 'Looks.common.priceTableSetPrice',
+    defaultMessage: 'Setpreis',
+  },
+  priceTableSaving: {
+    id: 'Looks.common.priceTableSaving',
+    defaultMessage: 'Ersparnis %',
+  },
+  priceTableCellLabel: {
+    id: 'Looks.common.priceTableCellLabel',
+    defaultMessage: 'Setpreis {currency} {country}',
+  },
+  priceTablePercentLabel: {
+    id: 'Looks.common.priceTablePercentLabel',
+    defaultMessage: 'Ersparnis in Prozent {currency} {country}',
+  },
+  priceTableHint: {
+    id: 'Looks.common.priceTableHint',
+    defaultMessage:
+      'Preise der Master-Variante; Zeilen gibt es nur, wenn alle Teile dort einen Preis haben. Tragen Sie den Setpreis oder die Ersparnis in Prozent ein, das andere Feld rechnet mit. Eine leere Zeile bekommt keinen Discount.',
   },
 });

@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
-import {
-  Alert,
-  Button,
-  FormField,
-  Stack,
-  TextInput,
-  toast,
-} from '@commercetools/nimbus';
+import { Alert, Button, Stack, toast } from '@commercetools/nimbus';
 import type { LookRow } from '../../domain/look-rows';
 import { completeLook } from '../../domain/look-writes';
+import { omitEmptyTranslations } from '../../domain/names';
+import type { LocalizedValue } from '../../domain/types';
 import { useCanManage, useLookApi } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
+import { LookNameField } from '../common/look-name-field';
 import commonMessages from '../common/messages';
 import messages from './messages';
 
@@ -28,13 +24,13 @@ export function CompleteLookPanel({
   const intl = useIntl();
   const api = useLookApi();
   const canManage = useCanManage();
-  const [label, setLabel] = useState({ de: '', en: '' });
+  const [label, setLabel] = useState<LocalizedValue>({});
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string>();
   const missingDiscount = row.completeness === 'missing-discount';
   const completable = missingDiscount || row.completeness === 'missing-object';
-  const namesMissing =
-    missingDiscount && (!label.de.trim() || !label.en.trim());
+  const nameMissing =
+    missingDiscount && Object.keys(omitEmptyTranslations(label)).length === 0;
 
   async function complete() {
     setBusy(true);
@@ -42,9 +38,7 @@ export function CompleteLookPanel({
     try {
       await completeLook(api, row, {
         liveSum: row.liveSum,
-        ...(missingDiscount
-          ? { label: { de: label.de.trim(), en: label.en.trim() } }
-          : {}),
+        ...(missingDiscount ? { label: omitEmptyTranslations(label) } : {}),
       });
       toast.success({ title: intl.formatMessage(messages.completed) });
       onCompleted();
@@ -68,35 +62,21 @@ export function CompleteLookPanel({
       <Alert.Description>{intl.formatMessage(description)}</Alert.Description>
       {completable && (
         <Stack gap="300" mt="200">
-          {missingDiscount &&
-            (['de', 'en'] as const).map((locale) => {
-              const text = intl.formatMessage(
-                locale === 'de'
-                  ? messages.completeNameDe
-                  : messages.completeNameEn
-              );
-              return (
-                <FormField.Root key={locale} isDisabled={disabled}>
-                  <FormField.Label>{text}</FormField.Label>
-                  <FormField.Input>
-                    <TextInput
-                      aria-label={text}
-                      value={label[locale]}
-                      onChange={(value) =>
-                        setLabel((current) => ({ ...current, [locale]: value }))
-                      }
-                    />
-                  </FormField.Input>
-                </FormField.Root>
-              );
-            })}
+          {missingDiscount && (
+            <LookNameField
+              label={intl.formatMessage(messages.completeName)}
+              value={label}
+              onChange={setLabel}
+              isDisabled={disabled}
+            />
+          )}
           {failure && <Alert.Description>{failure}</Alert.Description>}
           <Alert.Actions>
             <Button
               size="xs"
               variant="solid"
               colorPalette="primary"
-              isDisabled={disabled || namesMissing}
+              isDisabled={disabled || nameMissing}
               onPress={() => void complete()}
             >
               {intl.formatMessage(messages.completeAction)}

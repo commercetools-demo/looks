@@ -70,7 +70,11 @@ export function PastLookCard({
   /** False while the sales read failed: the figures are left out. */
   figures: boolean;
   onOpen: (lookKey: string) => void;
-  onDiscountChange: (discount: LookDiscount, object?: LookObject) => void;
+  onDiscountChange: (
+    discount: LookDiscount,
+    object?: LookObject,
+    more?: LookDiscount[]
+  ) => void;
 }) {
   const intl = useIntl();
   const api = useLookApi();
@@ -104,10 +108,14 @@ export function PastLookCard({
     setBusy(true);
     try {
       const current = await api.getCartDiscount(past.discountId);
+      const countryDiscounts = await Promise.all(
+        past.countryDiscountIds.map((id) => api.getCartDiscount(id))
+      );
       const result = await switchLook(api, current, true, {
         objectKey: past.objectKey,
+        countryDiscounts,
       });
-      onDiscountChange(result.discount, result.object);
+      onDiscountChange(result.discount, result.object, result.countryDiscounts);
       toast[result.outcome === 'conflict' ? 'warning' : 'success']({
         title: intl.formatMessage(
           result.outcome === 'conflict'

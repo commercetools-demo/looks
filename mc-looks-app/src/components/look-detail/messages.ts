@@ -184,13 +184,9 @@ export default defineMessages({
     id: 'Looks.detail.completeAction',
     defaultMessage: 'Vervollständigen',
   },
-  completeNameDe: {
-    id: 'Looks.detail.completeNameDe',
-    defaultMessage: 'Name (Deutsch)',
-  },
-  completeNameEn: {
-    id: 'Looks.detail.completeNameEn',
-    defaultMessage: 'Name (Englisch)',
+  completeName: {
+    id: 'Looks.detail.completeName',
+    defaultMessage: 'Look-Name',
   },
   completed: {
     id: 'Looks.detail.completed',

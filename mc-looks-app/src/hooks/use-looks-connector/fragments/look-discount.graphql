@@ -4,6 +4,7 @@ fragment LookDiscountFragment on CartDiscount {
   key
   isActive
   sortOrder
+  cartPredicate
   createdAt
   nameAllLocales {
     locale

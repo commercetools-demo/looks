@@ -10,7 +10,7 @@ export interface SalesLine {
   quantity: number;
   discountedPrice: {
     value: { currencyCode: string; centAmount: number };
-    includedDiscounts?: ReadonlyArray<{ discount: { id: string } }> | null;
+    includedDiscounts?: ReadonlyArray<{ discountRef: { id: string } }> | null;
   };
 }
 
@@ -37,6 +37,8 @@ export interface PastLookRow {
   setsSold: number;
   revenue: Money;
   discountId: string;
+  /** The look's country discounts, switched together with the main one. */
+  countryDiscountIds: string[];
 }
 
 interface Sales {
@@ -60,8 +62,8 @@ export function salesByDiscount(
     for (const line of order.lineItems ?? []) {
       for (const entry of line.discountedPricePerQuantity ?? []) {
         const currency = entry.discountedPrice.value.currencyCode;
-        for (const { discount } of entry.discountedPrice.includedDiscounts ??
-          []) {
+        for (const { discountRef: discount } of entry.discountedPrice
+          .includedDiscounts ?? []) {
           if (!discountIds.has(discount.id)) continue;
           const bucket = sales.get(discount.id) ?? {
             orders: 0,
@@ -98,14 +100,37 @@ export function buildPastLooks(
   dataLocale?: string
 ): PastLookRow[] {
   const past = rows.filter(isPastLook).filter((row) => row.discount);
+  const discountsOf = (row: LookRow) =>
+    [row.discount, ...row.countryDiscounts].filter(
+      (discount): discount is NonNullable<typeof discount> => !!discount
+    );
   const sales = salesByDiscount(
     orders,
-    new Set(past.map((row) => (row.discount as { id: string }).id))
+    new Set(past.flatMap((row) => discountsOf(row).map((d) => d.id)))
   );
+  // A look's sales are those of all its country discounts (an order carries
+  // the discount of its cart's country only, so orders do not double count).
+  const soldBy = (row: LookRow) => {
+    const total: { orders: number; units: number; revenue: Money } = {
+      orders: 0,
+      units: 0,
+      revenue: {},
+    };
+    for (const discount of discountsOf(row)) {
+      const part = sales.get(discount.id);
+      if (!part) continue;
+      total.orders += part.orders;
+      total.units += part.units;
+      for (const [currency, cents] of Object.entries(part.revenue)) {
+        total.revenue[currency] = (total.revenue[currency] ?? 0) + cents;
+      }
+    }
+    return total;
+  };
   return past
     .map((row): { row: LookRow; past: PastLookRow } => {
       const discount = row.discount as NonNullable<LookRow['discount']>;
-      const sold = sales.get(discount.id);
+      const sold = soldBy(row);
       const pieceCount = row.pieceIds.length || 1;
       return {
         row,
@@ -118,10 +143,11 @@ export function buildPastLooks(
           pieceCount: row.pieceIds.length,
           activeFrom: discount.createdAt,
           ...(endedAtOf(row) ? { activeUntil: endedAtOf(row) } : {}),
-          orders: sold?.orders ?? 0,
-          setsSold: Math.floor((sold?.units ?? 0) / pieceCount),
-          revenue: sold?.revenue ?? {},
+          orders: sold.orders,
+          setsSold: Math.floor(sold.units / pieceCount),
+          revenue: sold.revenue,
           discountId: discount.id,
+          countryDiscountIds: row.countryDiscounts.map((d) => d.id),
         },
       };
     })

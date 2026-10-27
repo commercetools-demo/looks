@@ -1,0 +1,7 @@
+fragment LookGroupFragment on DiscountGroup {
+  id
+  version
+  key
+  sortOrder
+  isActive
+}

@@ -80,12 +80,14 @@ describe('ShopPreview', () => {
     expect(screen.getByTestId('preview-photo')).toBeInTheDocument();
   });
 
-  it('keeps the card texts German under an English profile; the caption follows the language', async () => {
+  it('follows the profile language: card texts, prices and caption are English under an English profile', async () => {
     host({ pieces: [jacket], setPrice: { EUR: 100 } }, 'en');
-    expect(screen.getByText(/^Set zu 1,00/)).toBeInTheDocument();
+    expect(screen.getByText(/^Set for €1\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/Prices added up/)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Set in den Warenkorb' })
+      screen.getByRole('button', { name: 'Add set to cart' })
     ).toBeInTheDocument();
+    expect(screen.queryByText(/Set zu/)).not.toBeInTheDocument();
     expect(
       screen.getByText('How the look appears in the shop')
     ).toBeInTheDocument();

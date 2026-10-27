@@ -5,7 +5,13 @@ import type {
   LookObjectDraft,
 } from '../domain/look-api';
 import { toLocalizedRecord } from '../domain/format';
-import type { LookDiscount, LookObject, Piece } from '../domain/types';
+import { countryOfPredicate } from '../hooks/use-looks-connector/conversion';
+import type {
+  LookDiscount,
+  LookDiscountGroup,
+  LookObject,
+  Piece,
+} from '../domain/types';
 
 type Call = { method: string; args: unknown[] };
 
@@ -18,6 +24,7 @@ export function createFakeLookApi(
   initial: {
     objects?: LookObject[];
     discounts?: LookDiscount[];
+    groups?: LookDiscountGroup[];
     pieces?: Piece[];
     orders?: Array<unknown>;
   } = {}
@@ -28,6 +35,7 @@ export function createFakeLookApi(
   const discounts = new Map(
     (initial.discounts ?? []).map((d) => [d.id, { ...d }])
   );
+  const groups = new Map((initial.groups ?? []).map((g) => [g.id, { ...g }]));
   const pieces = new Map((initial.pieces ?? []).map((p) => [p.id, p]));
   const calls: Call[] = [];
   const failures = new Map<string, Array<unknown>>();
@@ -73,6 +81,59 @@ export function createFakeLookApi(
       const found = objects.get(key);
       return found ? { ...found } : undefined;
     },
+    async fetchDiscountGroups() {
+      record('fetchDiscountGroups');
+      maybeFail('fetchDiscountGroups');
+      return [...groups.values()].map((g) => ({ ...g }));
+    },
+    async getDiscountGroupByKey(key) {
+      record('getDiscountGroupByKey', key);
+      maybeFail('getDiscountGroupByKey');
+      const found = [...groups.values()].find((g) => g.key === key);
+      return found ? { ...found } : undefined;
+    },
+    async createDiscountGroup(draft) {
+      record('createDiscountGroup', draft);
+      maybeFail('createDiscountGroup');
+      if (
+        [...groups.values()].some((g) => g.key === draft.key) ||
+        [...groups.values(), ...discounts.values()].some(
+          (entry) => entry.sortOrder === draft.sortOrder
+        )
+      ) {
+        throw new LookApiError('createDiscountGroup', 'duplicate', undefined, {
+          code: 'DuplicateField',
+        });
+      }
+      const created: LookDiscountGroup = {
+        id: `g${nextId++}`,
+        version: 1,
+        key: draft.key,
+        sortOrder: draft.sortOrder,
+        isActive: draft.isActive,
+      };
+      groups.set(created.id, created);
+      return { ...created };
+    },
+    async updateDiscountGroup(id, version, actions, operation) {
+      record('updateDiscountGroup', id, version, actions, operation);
+      maybeFail('updateDiscountGroup');
+      const current = groups.get(id);
+      if (!current)
+        throw new LookApiError(operation, 'unknown', undefined, {
+          message: 'not found',
+        });
+      if (current.version !== version) {
+        throw new LookApiError(operation, 'conflict', undefined, {
+          statusCode: 409,
+          code: 'ConcurrentModification',
+        });
+      }
+      const next = { ...current, version: current.version + 1 };
+      for (const action of actions) next.isActive = action.setIsActive.isActive;
+      groups.set(id, next);
+      return { ...next };
+    },
     async createCartDiscount(draft: CartDiscountDraftInput) {
       record('createCartDiscount', draft);
       maybeFail('createCartDiscount');
@@ -89,13 +150,17 @@ export function createFakeLookApi(
         version: 1,
         key: draft.key,
         isActive: draft.isActive,
-        sortOrder: draft.sortOrder,
+        // A discount in a group uses the group's rank.
+        sortOrder:
+          [...groups.values()].find((g) => g.key === draft.discountGroup?.key)
+            ?.sortOrder ?? '0',
         createdAt: '2026-10-01T00:00:00.000Z',
         name: fromLocalized(draft.name),
         description: fromLocalized(draft.description),
         amount: Object.fromEntries(
           money.map((m) => [m.currencyCode, m.centAmount])
         ),
+        country: countryOfPredicate(draft.cartPredicate),
         pieceIds: draft.target.pattern.targetPattern.map(
           (c) => /"([^"]+)"/.exec(c.CountOnLineItemUnits.predicate)![1]
         ),
@@ -186,6 +251,7 @@ export function createFakeLookApi(
     calls,
     objects,
     discounts,
+    groups,
     callsTo: (method: string) => calls.filter((c) => c.method === method),
     /** The next call to `method` throws `error` (queued, in order). */
     failNext(method: string, error: unknown = new Error(`${method} failed`)) {

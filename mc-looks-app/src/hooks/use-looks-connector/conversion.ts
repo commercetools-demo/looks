@@ -15,6 +15,7 @@ export interface RawLookDiscount {
   createdAt: string;
   nameAllLocales?: Array<{ locale: string; value: string }> | null;
   descriptionAllLocales?: Array<{ locale: string; value: string }> | null;
+  cartPredicate?: string | null;
   value?: { type?: string; money?: RawMoney[] | null } | null;
   target?: {
     type?: string;
@@ -44,6 +45,19 @@ export function patternProductIds(target: RawLookDiscount['target']): string[] {
   return ids;
 }
 
+const COUNTRY_PREDICATE = /^country\s*=\s*"([A-Z]{2})"$/;
+
+/** The country a discount applies in: `country = "DE"` is DE, `true` and
+ *  `country is not defined` mean no country; any other condition is not one
+ *  the app wrote (`undefined`). */
+export function countryOfPredicate(
+  predicate: string | null | undefined
+): string | undefined {
+  const text = (predicate ?? 'true').trim();
+  if (text === 'true' || text === 'country is not defined') return '';
+  return COUNTRY_PREDICATE.exec(text)?.[1];
+}
+
 export function toLookDiscount(raw: RawLookDiscount): LookDiscount {
   const amount: Record<string, number> = {};
   for (const money of raw.value?.money ?? []) {
@@ -59,6 +73,7 @@ export function toLookDiscount(raw: RawLookDiscount): LookDiscount {
     name: toLocalizedRecord(raw.nameAllLocales),
     description: toLocalizedRecord(raw.descriptionAllLocales),
     amount,
+    country: countryOfPredicate(raw.cartPredicate),
     pieceIds: patternProductIds(raw.target),
   };
 }

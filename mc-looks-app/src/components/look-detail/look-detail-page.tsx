@@ -243,8 +243,8 @@ function LookDetailBody({
         >
           <ShopPreview
             pieces={row.pieces}
-            setPrice={row.setPrice}
-            sum={row.liveSum}
+            setPrice={row.referenceSetPrice}
+            sum={row.referenceSum}
             photoUrl={photoUrl}
             photoRatio={row.image}
           />

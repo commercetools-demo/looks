@@ -11,14 +11,19 @@ import { LookProvider } from '../hooks/context';
 import de from '../i18n/data/de.json';
 import en from '../i18n/data/en.json';
 import { createFakeLookApi } from './fake-look-api';
-import { CURRENCIES } from './fixtures';
+import { CURRENCIES, LANGUAGES } from './fixtures';
 import { PROJECT_KEY } from './index';
 
 /** Renders a single component with the app's providers (intl, Nimbus, a
  *  `LookProvider` over a fake API), for component specs that need no routes. */
 export function renderUi(
   ui: ReactElement,
-  options: { locale?: string; currencies?: string[]; canManage?: boolean } = {}
+  options: {
+    locale?: string;
+    currencies?: string[];
+    languages?: string[];
+    canManage?: boolean;
+  } = {}
 ) {
   const locale = options.locale ?? 'de';
   const permissions = [
@@ -31,6 +36,7 @@ export function renderUi(
         <LookProvider
           api={createFakeLookApi().api}
           currencies={options.currencies ?? CURRENCIES}
+          languages={options.languages ?? LANGUAGES}
         >
           {ui}
         </LookProvider>

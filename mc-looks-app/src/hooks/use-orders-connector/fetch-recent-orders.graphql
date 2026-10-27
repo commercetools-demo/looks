@@ -16,7 +16,7 @@ query FetchRecentOrders($where: String!, $limit: Int!, $offset: Int!) {
               centAmount
             }
             includedDiscounts {
-              discount {
+              discountRef {
                 id
               }
             }

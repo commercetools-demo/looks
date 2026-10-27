@@ -2,7 +2,7 @@ import { useIntl } from 'react-intl';
 import { Alert, Button, LoadingSpinner, Stack } from '@commercetools/nimbus';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import { LookProvider } from '../hooks/context';
-import { useProjectCurrencies } from '../hooks/use-project-currencies';
+import { useProjectSettings } from '../hooks/use-project-settings';
 import messages from './common/messages';
 import LookDetailPage from './look-detail/look-detail-page';
 import LooksPage from './looks-list/looks-page';
@@ -28,7 +28,8 @@ export function LooksRoutes() {
 /** Loads the project's currencies once, then renders the routes. */
 export function LooksApp() {
   const intl = useIntl();
-  const { currencies, loading, error, refetch } = useProjectCurrencies();
+  const { currencies, languages, loading, error, refetch } =
+    useProjectSettings();
 
   if (loading) {
     return (
@@ -42,12 +43,16 @@ export function LooksApp() {
       </Stack>
     );
   }
-  if (error || currencies.length === 0) {
+  if (error || currencies.length === 0 || languages.length === 0) {
     return (
       <Alert.Root colorPalette="critical" m="600">
         <Alert.Title>
           {intl.formatMessage(
-            error ? messages.currenciesLoadError : messages.currenciesMissing
+            error
+              ? messages.settingsLoadError
+              : currencies.length === 0
+              ? messages.currenciesMissing
+              : messages.languagesMissing
           )}
         </Alert.Title>
         <Alert.Actions>
@@ -59,7 +64,7 @@ export function LooksApp() {
     );
   }
   return (
-    <LookProvider currencies={currencies}>
+    <LookProvider currencies={currencies} languages={languages}>
       <LooksRoutes />
     </LookProvider>
   );

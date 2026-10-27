@@ -180,7 +180,11 @@ export function LooksTable({
   pricesLoading: boolean;
   onSortChange: (key: SortKey, direction: SortState['direction']) => void;
   onOpen: (lookKey: string) => void;
-  onDiscountChange: (discount: LookDiscount, object?: LookObject) => void;
+  onDiscountChange: (
+    discount: LookDiscount,
+    object?: LookObject,
+    more?: LookDiscount[]
+  ) => void;
 }) {
   const intl = useIntl();
   const canManage = useCanManage();
@@ -239,7 +243,9 @@ export function LooksTable({
       header: intl.formatMessage(messages.columnSetPrice),
       ...sortable,
       align: 'end',
-      render: ({ row }) => <MoneyLines value={row.look.setPrice} strong />,
+      render: ({ row }) => (
+        <MoneyLines value={row.look.referenceSetPrice} strong />
+      ),
     },
     {
       id: 'sum',
@@ -249,7 +255,7 @@ export function LooksTable({
       align: 'end',
       render: ({ row }) => (
         <PriceCell look={row.look} loading={pricesLoading}>
-          <MoneyLines value={row.look.liveSum} />
+          <MoneyLines value={row.look.referenceSum} />
         </PriceCell>
       ),
     },

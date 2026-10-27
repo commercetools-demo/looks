@@ -5,6 +5,7 @@ import {
   buildObject,
   buildPiece,
   CURRENCIES,
+  LANGUAGES,
 } from '../test-utils/fixtures';
 import { createFakeLookApi } from '../test-utils/fake-look-api';
 import { LookProvider } from './context';
@@ -25,6 +26,7 @@ function setup(fake: ReturnType<typeof createFakeLookApi>, lookKey = 'a') {
     createElement(LookProvider, {
       api: fake.api,
       currencies: CURRENCIES,
+      languages: LANGUAGES,
       children,
     });
   return renderHook(() => useLookDetail(lookKey), { wrapper });

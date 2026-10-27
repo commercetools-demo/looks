@@ -7,6 +7,7 @@ import {
 import {
   allPieceIds,
   buildLookRows,
+  discountForKey,
   isPastLook,
   takenLookKeys,
 } from './look-rows';
@@ -120,5 +121,122 @@ describe('helpers', () => {
     ];
     expect(allPieceIds(objects, discounts).sort()).toEqual(['a', 'b', 'c']);
     expect([...takenLookKeys(objects, discounts)].sort()).toEqual(['x', 'z']);
+  });
+});
+
+describe('buildLookRows with country discounts', () => {
+  const cellPieces = new Map([
+    [
+      'a',
+      buildPiece('a', {
+        prices: { 'EUR/DE': 3299, 'EUR/FR': 2639, 'GBP/GB': 3199 },
+      }),
+    ],
+    [
+      'b',
+      buildPiece('b', {
+        prices: { 'EUR/DE': 1000, 'EUR/FR': 1000, 'GBP/GB': 1000 },
+      }),
+    ],
+  ]);
+  const setPrice = { 'EUR/DE': 4000, 'EUR/FR': 3000, 'GBP/GB': 3500 };
+  const object = buildObject('x', ['a', 'b'], { setPrice });
+  const main = buildDiscount('x', ['a', 'b'], {
+    country: 'DE',
+    amount: { EUR: 299 },
+  });
+  const fr = (amount: number) =>
+    buildDiscount('x', ['a', 'b'], {
+      id: 'disc-x-fr',
+      key: 'look-x-FR',
+      country: 'FR',
+      amount: { EUR: amount },
+    });
+  const gb = buildDiscount('x', ['a', 'b'], {
+    id: 'disc-x-gb',
+    key: 'look-x-GB',
+    country: 'GB',
+    amount: { GBP: 699 },
+  });
+  const build = (discounts = [main, fr(639), gb]) =>
+    buildLookRows({
+      objects: [object],
+      discounts,
+      pieces: cellPieces,
+      currencies: ['EUR', 'GBP'],
+    });
+
+  it('has one row with the main discount and the country discounts', () => {
+    const rows = build();
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row.discount?.id).toBe('disc-x');
+    expect(row.countryDiscounts.map((d) => d.key)).toEqual([
+      'look-x-FR',
+      'look-x-GB',
+    ]);
+    expect(row.completeness).toBe('complete');
+    expect(row.liveSum).toEqual({
+      'EUR/DE': 4299,
+      'EUR/FR': 3639,
+      'GBP/GB': 4199,
+    });
+    expect(row.referenceSum).toEqual({ EUR: 4299, GBP: 4199 });
+    expect(row.referenceSetPrice).toEqual({ EUR: 4000, GBP: 3500 });
+    expect(row.priceDrift).toBe(false);
+  });
+
+  it('takes the status from the main discount only', () => {
+    const [row] = build([
+      main,
+      { ...fr(639), isActive: false },
+      { ...gb, isActive: false },
+    ]);
+    expect(row.isActive).toBe(true);
+    const [off] = build([{ ...main, isActive: false }, fr(639), gb]);
+    expect(off.isActive).toBe(false);
+  });
+
+  it('finds the discount of a cell by country', () => {
+    const [row] = build();
+    expect(discountForKey(row, 'EUR/DE')?.id).toBe('disc-x');
+    expect(discountForKey(row, 'EUR/FR')?.id).toBe('disc-x-fr');
+    expect(discountForKey(row, 'GBP/GB')?.id).toBe('disc-x-gb');
+    expect(discountForKey(row, 'EUR/IT')).toBeUndefined();
+  });
+
+  it('detects drift in one country against that country discount', () => {
+    expect(build([main, fr(600), gb])[0].priceDrift).toBe(true);
+  });
+
+  it('shows drift when a country with a set price has no discount', () => {
+    expect(build([main, gb])[0].priceDrift).toBe(true);
+  });
+
+  it('flags a priced cell without a set price', () => {
+    const [row] = buildLookRows({
+      objects: [buildObject('x', ['a', 'b'], { setPrice: { 'EUR/DE': 4000 } })],
+      discounts: [main],
+      pieces: cellPieces,
+      currencies: ['EUR', 'GBP'],
+    });
+    expect(row.missingCurrency).toBe(true);
+  });
+
+  it('does not create rows or taken keys apart from the look', () => {
+    expect(build()).toHaveLength(1);
+    const orphan = buildLookRows({
+      objects: [],
+      discounts: [fr(639)],
+      pieces: cellPieces,
+      currencies: ['EUR'],
+    });
+    expect(orphan.map((r) => r.lookKey)).toEqual(['x']);
+    expect(orphan[0].completeness).toBe('missing-discount');
+    expect([...takenLookKeys([object], [main, fr(639), gb])]).toEqual(['x']);
+    expect(allPieceIds([object], [main, fr(639), gb]).sort()).toEqual([
+      'a',
+      'b',
+    ]);
   });
 });

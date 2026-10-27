@@ -1,0 +1,9 @@
+#import "./fragments/look-group.graphql"
+
+query FetchLookDiscountGroups($limit: Int, $offset: Int) {
+  discountGroups(limit: $limit, offset: $offset) {
+    results {
+      ...LookGroupFragment
+    }
+  }
+}

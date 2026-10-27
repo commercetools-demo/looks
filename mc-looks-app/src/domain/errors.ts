@@ -14,6 +14,8 @@ export type Operation =
   | 'searchProducts'
   | 'readOrders'
   | 'createDiscount'
+  | 'createDiscountGroup'
+  | 'switchDiscountGroup'
   | 'activateDiscount'
   | 'switchDiscount'
   | 'changeDiscountValue'

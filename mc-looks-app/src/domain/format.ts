@@ -14,10 +14,28 @@ export function localized(
   dataLocale: string | undefined
 ): string | undefined {
   if (!value) return undefined;
-  for (const locale of localeChain(dataLocale)) {
-    if (value[locale]) return value[locale];
+  return pickLocale(value, localeChain(dataLocale));
+}
+
+/** The text for the first locale of the chain; a bare language (`de`) also
+ *  matches a regional key (`de-DE`), then the first text the value has. */
+export function pickLocale(
+  value: Record<string, unknown>,
+  locales: string[]
+): string | undefined {
+  const text = (key: string | undefined) =>
+    key && typeof value[key] === 'string' && value[key]
+      ? (value[key] as string)
+      : undefined;
+  for (const locale of locales) {
+    const found =
+      text(locale) ??
+      text(Object.keys(value).find((key) => key.startsWith(`${locale}-`)));
+    if (found) return found;
   }
-  return Object.values(value).find(Boolean);
+  return Object.values(value).find(
+    (entry): entry is string => typeof entry === 'string' && entry.length > 0
+  );
 }
 
 /** Cent amount as money text in the given display locale. */

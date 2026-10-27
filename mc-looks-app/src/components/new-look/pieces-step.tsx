@@ -15,10 +15,9 @@ import {
   Text,
 } from '@commercetools/nimbus';
 import { LOOK_MAX_PIECES, LOOK_MIN_PIECES } from '../../domain/limits';
-import type { Money, Piece } from '../../domain/types';
-import { useCurrencies, useLookApi } from '../../hooks/context';
+import type { Piece } from '../../domain/types';
+import { useLookApi } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
-import { useMoney } from '../common/look-hooks';
 import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import messages from './messages';
@@ -46,14 +45,11 @@ function move<T>(list: T[], from: number, to: number): T[] {
 export function PiecesStep(props: {
   pieces: Piece[];
   onPiecesChange: (pieces: Piece[]) => void;
-  sum: Money;
   errors: string[];
   isDisabled: boolean;
 }) {
   const intl = useIntl();
   const api = useLookApi();
-  const money = useMoney();
-  const currencies = useCurrencies();
   const { pieces, onPiecesChange } = props;
   const [text, setText] = useState('');
   const [results, setResults] = useState<Piece[] | undefined>();
@@ -101,10 +97,6 @@ export function PiecesStep(props: {
       onPiecesChange(next.map((item) => item.piece));
     }
   };
-  const prices = (piece: Piece) =>
-    currencies
-      .map((currency) => money(piece.prices[currency], currency))
-      .join(' / ');
   const soldOutPieces = pieces.filter((piece) => piece.soldOutEverywhere);
 
   return (
@@ -149,13 +141,6 @@ export function PiecesStep(props: {
                     <Stack gap="0" flex="1" minWidth={0}>
                       <Text fontWeight="500" truncate title={item.label}>
                         {item.label}
-                      </Text>
-                      <Text
-                        fontSize="300"
-                        color="neutral.11"
-                        style={{ fontVariantNumeric: 'tabular-nums' }}
-                      >
-                        {prices(item.piece)}
                       </Text>
                     </Stack>
                     <IconButton
@@ -217,9 +202,6 @@ export function PiecesStep(props: {
           <Text color="neutral.11" data-testid="pieces-chosen">
             {intl.formatMessage(messages.piecesCount, {
               count: pieces.length,
-              sum: currencies
-                .map((currency) => money(props.sum[currency], currency))
-                .join(' / '),
             })}
           </Text>
         )}

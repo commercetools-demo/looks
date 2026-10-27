@@ -36,3 +36,11 @@ describe('format', () => {
     expect(toLocalizedRecord(undefined)).toEqual({});
   });
 });
+
+describe('localized with regional locales', () => {
+  it('matches a bare fallback language to a regional key', () => {
+    expect(localized({ 'en-US': 'Plum', 'de-DE': 'Pflaume' }, 'fr-FR')).toBe(
+      'Pflaume'
+    );
+  });
+});

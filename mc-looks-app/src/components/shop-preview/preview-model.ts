@@ -1,5 +1,6 @@
 import { stockStateOf, type StockState } from '../../domain/stock';
 import type { Money, Piece } from '../../domain/types';
+import { referencePrice } from '../../domain/prices';
 
 export interface PreviewRow {
   id: string;
@@ -46,7 +47,7 @@ function rowOf(piece: Piece, currency: string): PreviewRow {
     id: piece.id,
     name: piece.name,
     imageUrl: piece.imageUrl,
-    price: piece.prices[currency],
+    price: referencePrice(piece.prices, currency),
     oneSize: piece.oneSize,
     sizeState: everySoldOut
       ? 'sold-out'
@@ -65,14 +66,14 @@ export function buildPreview({
 }: PreviewInput): PreviewModel {
   const present = pieces.filter((piece): piece is Piece => piece !== undefined);
   const rows = present.map((piece) => rowOf(piece, currency));
-  let liveSum = sum?.[currency];
+  let liveSum = referencePrice(sum, currency);
   if (sum === undefined) {
     const prices = rows.map((row) => row.price);
     liveSum = prices.every((price) => price !== undefined)
       ? (prices as number[]).reduce((total, price) => total + price, 0)
       : undefined;
   }
-  const set = setPrice?.[currency];
+  const set = referencePrice(setPrice, currency);
   const usableSet = set !== undefined && set > 0 ? set : undefined;
   const saving =
     usableSet !== undefined && liveSum !== undefined && usableSet < liveSum

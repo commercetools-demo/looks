@@ -33,7 +33,7 @@ const order = (
             currencyCode: u.currency ?? 'EUR',
             centAmount: u.cents ?? 6000,
           },
-          includedDiscounts: [{ discount: { id: u.discountId } }],
+          includedDiscounts: [{ discountRef: { id: u.discountId } }],
         },
       },
     ],
@@ -142,5 +142,41 @@ describe('buildPastLooks', () => {
     expect(salesWindowStart(new Date('2026-10-27T00:00:00.000Z'))).toBe(
       '2026-07-29T00:00:00.000Z'
     );
+  });
+});
+
+describe('buildPastLooks with country discounts', () => {
+  it('adds up the sales of all country discounts of a look', () => {
+    const rows = buildLookRows({
+      objects: [buildObject('x', ['a', 'b'])],
+      discounts: [
+        buildDiscount('x', ['a', 'b'], { isActive: false, country: 'DE' }),
+        buildDiscount('x', ['a', 'b'], {
+          id: 'disc-x-fr',
+          key: 'look-x-FR',
+          isActive: false,
+          country: 'FR',
+        }),
+      ],
+      pieces,
+      currencies: CURRENCIES,
+    });
+    expect(rows).toHaveLength(1);
+    const past = buildPastLooks(rows, [
+      order('o1', [{ discountId: 'disc-x', quantity: 2 }]),
+      order('o2', [{ discountId: 'disc-x-fr', quantity: 4, cents: 5000 }]),
+      order('o3', [
+        { discountId: 'disc-x', quantity: 2 },
+        { discountId: 'disc-x-fr', quantity: 2, cents: 5000 },
+      ]),
+    ]);
+    expect(past).toHaveLength(1);
+    expect(past[0]).toMatchObject({
+      discountId: 'disc-x',
+      countryDiscountIds: ['disc-x-fr'],
+      orders: 4,
+      setsSold: 5,
+      revenue: { EUR: 2 * 6000 + 4 * 5000 + 2 * 6000 + 2 * 5000 },
+    });
   });
 });

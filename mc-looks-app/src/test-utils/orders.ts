@@ -20,7 +20,7 @@ export const salesOrder = (
             currencyCode: unit.currency ?? 'EUR',
             centAmount: unit.cents ?? 6000,
           },
-          includedDiscounts: [{ discount: { id: unit.discountId } }],
+          includedDiscounts: [{ discountRef: { id: unit.discountId } }],
         },
       },
     ],

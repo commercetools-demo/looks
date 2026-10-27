@@ -6,8 +6,9 @@
  */
 
 export interface AppConfig {
-  /** Product-variant attribute holding the size. */
-  sizeAttribute: string;
+  /** Product-variant attributes that tell the variants of a product apart
+   *  (for example size, finish colour, search colour), in display order. */
+  variantAttributes: string[];
   /** Localized colour-name attribute. */
   colorNameAttribute: string;
   /** Fallback colour attribute (enum or localized enum). */
@@ -17,42 +18,59 @@ export interface AppConfig {
 }
 
 export const CONFIG_VARIABLES: Record<keyof AppConfig, string> = {
-  sizeAttribute: 'SIZE_ATTRIBUTE',
+  variantAttributes: 'VARIANT_ATTRIBUTES',
   colorNameAttribute: 'COLOR_NAME_ATTRIBUTE',
   colorAttribute: 'COLOR_ATTRIBUTE',
   shopOrigin: 'SHOP_ORIGIN',
 };
 
 const defaults: AppConfig = {
-  sizeAttribute: 'size',
+  variantAttributes: ['size'],
   colorNameAttribute: 'color-name',
   colorAttribute: 'color',
   shopOrigin: '',
 };
 
-const required: Array<keyof AppConfig> = [
-  'sizeAttribute',
+/** Raw values as read from the environment: every value is text, the list of
+ *  variant attributes is comma-separated. */
+export type ConfigSource = Partial<Record<keyof AppConfig, string | undefined>>;
+
+const requiredText: Array<'colorNameAttribute' | 'colorAttribute'> = [
   'colorNameAttribute',
   'colorAttribute',
 ];
 
-export function resolveConfig(
-  source: Partial<Record<keyof AppConfig, string | undefined>> = {}
-): AppConfig {
-  const merged = { ...defaults };
-  (Object.keys(defaults) as Array<keyof AppConfig>).forEach((key) => {
+export function resolveConfig(source: ConfigSource = {}): AppConfig {
+  const merged: AppConfig = { ...defaults };
+  if (source.variantAttributes !== undefined) {
+    merged.variantAttributes = source.variantAttributes
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
+  }
+  for (const key of [
+    'colorNameAttribute',
+    'colorAttribute',
+    'shopOrigin',
+  ] as const) {
     const value = source[key];
     if (value !== undefined) merged[key] = value.trim();
-  });
-  for (const key of required) {
-    if (!merged[key]) {
-      throw new Error(
-        `Missing configuration value ${CONFIG_VARIABLES[key]}: it must not be empty.`
-      );
-    }
+  }
+  const missing = (key: keyof AppConfig) =>
+    new Error(
+      `Missing configuration value ${CONFIG_VARIABLES[key]}: it must not be empty.`
+    );
+  if (merged.variantAttributes.length === 0) throw missing('variantAttributes');
+  for (const key of requiredText) {
+    if (!merged[key]) throw missing(key);
   }
   merged.shopOrigin = merged.shopOrigin.replace(/\/+$/, '');
   return merged;
 }
 
-export const config: AppConfig = resolveConfig();
+export const config: AppConfig = resolveConfig({
+  variantAttributes: process.env.VARIANT_ATTRIBUTES,
+  colorNameAttribute: process.env.COLOR_NAME_ATTRIBUTE,
+  colorAttribute: process.env.COLOR_ATTRIBUTE,
+  shopOrigin: process.env.SHOP_ORIGIN,
+});

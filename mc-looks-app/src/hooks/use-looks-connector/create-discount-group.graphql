@@ -1,0 +1,7 @@
+#import "./fragments/look-group.graphql"
+
+mutation CreateLookDiscountGroup($draft: DiscountGroupDraft!) {
+  createDiscountGroup(draft: $draft) {
+    ...LookGroupFragment
+  }
+}

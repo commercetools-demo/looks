@@ -1,14 +1,17 @@
 import type { LookDiscount, LookObject, Piece } from '../domain/types';
 
 export const CURRENCIES = ['EUR', 'CHF'];
+export const LANGUAGES = ['de', 'en'];
 
+/** A piece with EUR and CHF prices unless given. */
 export function buildPiece(id: string, overrides: Partial<Piece> = {}): Piece {
+  const prices = overrides.prices ?? { EUR: 10000, CHF: 11000 };
   return {
     id,
     name: `Piece ${id}`,
     imageUrl: `https://img.example.com/${id}.jpg`,
     colour: 'braun',
-    prices: { EUR: 10000, CHF: 11000 },
+    prices,
     sizes: [
       { sku: `${id}-36`, label: '36', availableQuantity: 5 },
       { sku: `${id}-38`, label: '38', availableQuantity: 2 },
@@ -51,6 +54,7 @@ export function buildDiscount(
     name: { de: `Look-Set: ${lookKey} de`, en: `Look set: ${lookKey} en` },
     description: { de: `${lookKey} de`, en: `${lookKey} en` },
     amount: { EUR: 2000, CHF: 2200 },
+    country: '',
     pieceIds,
     ...overrides,
   };

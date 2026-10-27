@@ -11,7 +11,8 @@
   "Looks.common.statusInactive": "Inactive",
   "Looks.common.incomplete": "Incomplete",
   "Looks.common.priceDrift": "Set price differs",
-  "Looks.common.currenciesLoadError": "The project's currencies could not be loaded",
+  "Looks.common.settingsLoadError": "The project's currencies and languages could not be loaded",
+  "Looks.common.languagesMissing": "The project has no language.",
   "Looks.common.currenciesMissing": "The project has no currency.",
   "Looks.common.switchLabel": "{name} active",
   "Looks.common.switchConflict": "The discount was changed in the meantime. Its current state is shown now.",
@@ -33,5 +34,16 @@
   "Looks.common.opSwitchDiscount": "Switch look on or off",
   "Looks.common.opChangeDiscountValue": "Change discount amount",
   "Looks.common.opCompleteDiscount": "Complete look",
-  "Looks.common.opWriteLookObject": "Save look definition"
+  "Looks.common.opWriteLookObject": "Save look definition",
+  "Looks.common.priceTableCurrency": "Currency",
+  "Looks.common.priceTableCountry": "Country",
+  "Looks.common.priceTableCountryAll": "no country",
+  "Looks.common.priceTableSum": "Sum",
+  "Looks.common.priceTableSetPrice": "Set price",
+  "Looks.common.priceTableSaving": "Saving %",
+  "Looks.common.priceTableCellLabel": "Set price {currency} {country}",
+  "Looks.common.priceTablePercentLabel": "Saving in percent {currency} {country}",
+  "Looks.common.priceTableHint": "Prices of the master variant; a row exists only where every piece has a price. Enter the set price or the saving in percent, the other field follows. An empty row gets no discount.",
+  "Looks.common.opCreateDiscountGroup": "Creating the discount group",
+  "Looks.common.opSwitchDiscountGroup": "Switching the discount group"
 }

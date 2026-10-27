@@ -1,6 +1,6 @@
 import type { AppConfig } from '../config';
-import { localeChain } from './format';
-import { livePricesOf, type RawPrice } from './prices';
+import { localeChain, pickLocale } from './format';
+import { livePricesOfVariants, type RawPrice } from './prices';
 import type { LocalizedValue, Piece, PieceSize } from './types';
 
 export interface RawVariant {
@@ -26,7 +26,7 @@ export interface RawProduct {
 
 type AttributeConfig = Pick<
   AppConfig,
-  'sizeAttribute' | 'colorNameAttribute' | 'colorAttribute'
+  'variantAttributes' | 'colorNameAttribute' | 'colorAttribute'
 >;
 
 const attributeOf = (variant: RawVariant | undefined, name: string): unknown =>
@@ -35,19 +35,24 @@ const attributeOf = (variant: RawVariant | undefined, name: string): unknown =>
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** A text from a plain string, a localized object or an enum `{ key, label }`. */
+/**
+ * A text from a plain string, a number or boolean, a localized object, an
+ * enum `{ key, label }`, or a set of those (joined with ", ").
+ */
 function textOf(value: unknown, locales: string[]): string | undefined {
-  if (typeof value === 'string') return value || undefined;
+  if (typeof value === 'string') return value.trim() || undefined;
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((entry) => textOf(entry, locales))
+      .filter((text): text is string => Boolean(text));
+    return parts.length > 0 ? parts.join(', ') : undefined;
+  }
   if (!isRecord(value)) return undefined;
   if ('label' in value) return textOf(value.label, locales);
-  for (const locale of locales) {
-    const text = value[locale];
-    if (typeof text === 'string' && text) return text;
-  }
-  const first = Object.values(value).find(
-    (entry): entry is string => typeof entry === 'string' && entry.length > 0
-  );
-  return first;
+  return pickLocale(value, locales);
 }
 
 /** The variant's default-inventory quantity, `undefined` without an entry. */
@@ -74,10 +79,18 @@ export function pieceFromProduct(
   const stocked = variants.filter((variant) => stockOf(variant) !== undefined);
   const listed = stocked.length > 0 ? stocked : variants;
 
-  const sizeLabels = listed.map((variant) =>
-    textOf(attributeOf(variant, config.sizeAttribute), locales)
-  );
-  const oneSize = sizeLabels.every((label) => label === undefined);
+  // A variant is told apart by its configured attributes (size, finish
+  // colour, search colour, ...), in the configured order.
+  const variantLabels = listed.map((variant) => {
+    const parts = config.variantAttributes
+      .map((name) => textOf(attributeOf(variant, name), locales))
+      .filter((text): text is string => Boolean(text));
+    return parts.length > 0 ? parts.join(' / ') : undefined;
+  });
+  // One size only for a single variant without any such attribute; several
+  // variants are always listed, by SKU when nothing else tells them apart.
+  const oneSize =
+    listed.length === 1 && variantLabels.every((label) => label === undefined);
 
   const sizes: PieceSize[] = oneSize
     ? [
@@ -92,7 +105,7 @@ export function pieceFromProduct(
       ]
     : listed.map((variant, index) => ({
         sku: variant.sku ?? undefined,
-        label: sizeLabels[index] ?? variant.sku ?? '',
+        label: variantLabels[index] ?? variant.sku ?? String(index + 1),
         availableQuantity: stockOf(variant) ?? 0,
       }));
 
@@ -118,16 +131,17 @@ export function pieceFromProduct(
   };
 }
 
-/** The piece with its list prices in the given currencies. */
+/** The piece with its list prices per cell (currency and country) in the given currencies. */
 export function withPrices(
   piece: Piece,
   product: RawProduct,
   currencies: string[]
 ): Piece {
+  const { masterVariant, variants } = product.masterData.current;
   return {
     ...piece,
-    prices: livePricesOf(
-      product.masterData.current.masterVariant.prices,
+    prices: livePricesOfVariants(
+      [masterVariant, ...(variants ?? [])],
       currencies
     ),
   };

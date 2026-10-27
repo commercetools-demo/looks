@@ -11,7 +11,16 @@ import { LookApiError } from '../../domain/errors';
 import { measureImage } from '../../domain/image-size';
 import { renderLooks, type RenderLooksOptions } from '../../test-utils';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
-import { buildPiece } from '../../test-utils/fixtures';
+import {
+  buildDiscount,
+  buildObject,
+  buildPiece,
+} from '../../test-utils/fixtures';
+import {
+  expandNameField,
+  fillLookName,
+  nameInput,
+} from '../../test-utils/names';
 
 jest.mock('../../domain/image-size', () => ({ measureImage: jest.fn() }));
 const measure = measureImage as jest.MockedFunction<typeof measureImage>;
@@ -21,17 +30,17 @@ type User = ReturnType<typeof userEvent.setup>;
 const jacket = buildPiece('jacket', {
   name: 'Jacke Cleo',
   colour: 'camel',
-  prices: { EUR: 12999, CHF: 14290, USD: 13999 },
+  prices: { EUR: 12999, CHF: 14290 },
 });
 const trousers = buildPiece('trousers', {
   name: 'Hose Bea',
-  prices: { EUR: 7999, CHF: 8790, USD: 8499 },
+  prices: { EUR: 7999, CHF: 8790 },
 });
 const scarf = buildPiece('scarf', {
   name: 'Schal Dora',
   oneSize: true,
   sizes: [{ label: '', availableQuantity: 8 }],
-  prices: { EUR: 3999, CHF: 4390, USD: 4299 },
+  prices: { EUR: 3999, CHF: 4390 },
 });
 const coat = buildPiece('coat', {
   name: 'Mantel Eva',
@@ -40,7 +49,7 @@ const coat = buildPiece('coat', {
     { label: '38', availableQuantity: 0 },
   ],
   soldOutEverywhere: true,
-  prices: { EUR: 19999, CHF: 21990, USD: 20999 },
+  prices: { EUR: 19999, CHF: 21990 },
 });
 const belt = buildPiece('belt', {
   name: 'Gürtel Fay',
@@ -49,9 +58,23 @@ const belt = buildPiece('belt', {
 const extras = ['a', 'b', 'c', 'd'].map((id) =>
   buildPiece(`extra-${id}`, {
     name: `Extra ${id}`,
-    prices: { EUR: 1000, CHF: 1100, USD: 1200 },
+    prices: { EUR: 1000, CHF: 1100 },
   })
 );
+
+// Prices per currency and country: the cell key is `EUR/DE`.
+const shirt = buildPiece('shirt', {
+  name: 'Hemd Ida',
+  prices: { 'EUR/DE': 10000, 'EUR/FR': 10500, 'GBP/GB': 9000 },
+});
+const skirt = buildPiece('skirt', {
+  name: 'Rock Lena',
+  prices: { 'EUR/DE': 5000, 'EUR/FR': 5500, 'GBP/GB': 4500 },
+});
+const hat = buildPiece('hat', {
+  name: 'Hut Mia',
+  prices: { 'EUR/DE': 2000 },
+});
 
 const SHOP = 'https://shop.example.com';
 
@@ -77,16 +100,9 @@ const next = (user: User) =>
 
 async function fillBasics(
   user: User,
-  names = { de: 'Jacken-Look', en: 'Jacket look' }
+  names: Record<string, string> = { de: 'Jacken-Look', en: 'Jacket look' }
 ) {
-  await user.type(
-    await screen.findByRole('textbox', { name: 'Name (Deutsch)' }),
-    names.de
-  );
-  await user.type(
-    screen.getByRole('textbox', { name: 'Name (Englisch)' }),
-    names.en
-  );
+  await fillLookName(user, names);
 }
 
 async function addPiece(user: User, name: string) {
@@ -108,13 +124,25 @@ async function gotoSetPrice(user: User, names = ['Jacke Cleo', 'Hose Bea']) {
   await gotoPieces(user);
   for (const name of names) await addPiece(user, name);
   await next(user);
-  await screen.findByRole('textbox', { name: 'Setpreis EUR' });
+  await screen.findAllByRole('group', { name: /^Setpreis/ });
 }
 
-const typeAmount = async (user: User, currency: string, amount: string) => {
-  const input = screen.getByRole('textbox', { name: `Setpreis ${currency}` });
+/** The amount field of a row; `label` is `EUR` or `EUR DE`. */
+const amountInput = (label: string) =>
+  within(screen.getByRole('group', { name: `Setpreis ${label}` })).getByRole(
+    'textbox'
+  );
+
+const percentInput = (label: string) =>
+  screen.getByRole('textbox', {
+    name: new RegExp(`^Ersparnis in Prozent ${label}`),
+  });
+
+const typeAmount = async (user: User, label: string, amount: string) => {
+  const input = amountInput(label);
   await user.clear(input);
   await user.type(input, amount);
+  await user.tab();
 };
 
 async function gotoReview(user: User) {
@@ -125,11 +153,17 @@ async function gotoReview(user: User) {
   await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
 }
 
-const writes = (fake: ReturnType<typeof createFakeLookApi>) => [
-  ...fake.callsTo('createCartDiscount'),
-  ...fake.callsTo('writeLookObject'),
-  ...fake.callsTo('updateCartDiscount'),
+const WRITE_METHODS = [
+  'createDiscountGroup',
+  'updateDiscountGroup',
+  'createCartDiscount',
+  'writeLookObject',
+  'updateCartDiscount',
 ];
+
+/** The write calls in the order they happened. */
+const writes = (fake: ReturnType<typeof createFakeLookApi>) =>
+  fake.calls.filter((call) => WRITE_METHODS.includes(call.method));
 
 beforeEach(() => {
   config.shopOrigin = SHOP;
@@ -158,16 +192,13 @@ describe('Neuer Look: step 1, basics', () => {
     expect(indicators[2]).not.toHaveAttribute('data-state');
   });
 
-  it('scenario 1: refuses missing names with field errors and writes nothing; names open step 2', async () => {
+  it('scenario 1: refuses a missing name with a field error and writes nothing; a name opens step 2', async () => {
     const user = userEvent.setup();
     const { fake } = setup();
-    await screen.findByRole('textbox', { name: 'Name (Deutsch)' });
+    await screen.findByRole('textbox', { name: /^DE/ });
     await next(user);
     expect(
-      await screen.findByText('Bitte den deutschen Namen angeben.')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Bitte den englischen Namen angeben.')
+      await screen.findByText('Bitte mindestens einen Namen eingeben.')
     ).toBeInTheDocument();
     expect(writes(fake)).toHaveLength(0);
     await fillBasics(user);
@@ -220,9 +251,7 @@ describe('Neuer Look: step 1, basics', () => {
         /Der Pfad muss die Form looks\/<name>\.webp haben/
       )
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: 'Name (Deutsch)' })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /^DE/ })).toBeInTheDocument();
 
     await user.clear(field);
     measure.mockRejectedValue(new Error('404'));
@@ -265,12 +294,11 @@ describe('Neuer Look: step 1, basics', () => {
     await gotoPieces(user);
     await addPiece(user, 'Jacke Cleo');
     await user.click(screen.getByRole('button', { name: 'Zurück' }));
-    expect(
-      await screen.findByRole('textbox', { name: 'Name (Deutsch)' })
-    ).toHaveValue('Jacken-Look');
-    expect(
-      screen.getByRole('textbox', { name: 'Name (Englisch)' })
-    ).toHaveValue('Jacket look');
+    expect(await screen.findByRole('textbox', { name: /^DE/ })).toHaveValue(
+      'Jacken-Look'
+    );
+    await expandNameField(user);
+    expect(nameInput('EN')).toHaveValue('Jacket look');
     await next(user);
     expect(await screen.findByTestId('pieces-chosen')).toHaveTextContent(
       /1 Teil gewählt/
@@ -290,7 +318,7 @@ describe('Neuer Look: step 1, basics', () => {
 });
 
 describe('Neuer Look: step 2, pieces', () => {
-  it('scenario 3: finds products with image, name, colour, prices and sizes; adds them and states count and sum', async () => {
+  it('scenario 3: finds products with image, name, colour and sizes, without prices; adds them and states the count', async () => {
     const user = userEvent.setup();
     const { fake } = setup();
     await gotoPieces(user);
@@ -299,9 +327,7 @@ describe('Neuer Look: step 2, pieces', () => {
     const card = within(results).getAllByRole('listitem')[0];
     expect(within(card).getByText('Jacke Cleo')).toBeInTheDocument();
     expect(within(card).getByText('camel')).toBeInTheDocument();
-    expect(
-      within(card).getByText(/129,99\s€ \/ 142,90\sCHF/)
-    ).toBeInTheDocument();
+    expect(card).not.toHaveTextContent(/€|CHF/);
     expect(within(card).getByText('36')).toBeInTheDocument();
     expect(within(card).getByText('38: nur noch 2')).toBeInTheDocument();
 
@@ -323,7 +349,7 @@ describe('Neuer Look: step 2, pieces', () => {
     await user.clear(screen.getByRole('searchbox', { name: 'Produktsuche' }));
     await addPiece(user, 'Jacke Cleo');
     expect(await screen.findByTestId('pieces-chosen')).toHaveTextContent(
-      '2 Teile gewählt. Summe der Teile: 209,98 € / 230,80 CHF'
+      '2 Teile gewählt'
     );
     // Added pieces read "Im Look" instead of an add button.
     const again = within(
@@ -334,14 +360,14 @@ describe('Neuer Look: step 2, pieces', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows the sum in a single currency when the project has one', async () => {
+  it('states the count for a project with one currency', async () => {
     const user = userEvent.setup();
     setup({ currencies: ['EUR'] });
     await gotoPieces(user);
     await addPiece(user, 'Jacke Cleo');
     await addPiece(user, 'Hose Bea');
     expect(await screen.findByTestId('pieces-chosen')).toHaveTextContent(
-      '2 Teile gewählt. Summe der Teile: 209,98 €'
+      '2 Teile gewählt'
     );
   });
 
@@ -406,23 +432,8 @@ describe('Neuer Look: step 2, pieces', () => {
     ).toBeInTheDocument();
     await next(user);
     expect(
-      await screen.findByRole('textbox', { name: 'Setpreis EUR' })
+      await screen.findByRole('group', { name: 'Setpreis EUR' })
     ).toBeInTheDocument();
-  });
-
-  it('scenario 8: refuses a piece without a list price in a project currency, naming piece and currency', async () => {
-    const user = userEvent.setup();
-    setup();
-    await gotoPieces(user);
-    await addPiece(user, 'Jacke Cleo');
-    await addPiece(user, 'Gürtel Fay');
-    await next(user);
-    expect(
-      await screen.findByText('Gürtel Fay hat keinen Preis in CHF.')
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('textbox', { name: 'Setpreis EUR' })
-    ).not.toBeInTheDocument();
   });
 
   it('reorders the chosen pieces with the up and down buttons', async () => {
@@ -489,20 +500,33 @@ describe('Neuer Look: step 3, set price', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the live sum and saving per currency and accepts comma and dot', async () => {
+  it('shows one row per currency with the master prices and the sum, and starts at the sum', async () => {
     const user = userEvent.setup();
     setup();
     await gotoSetPrice(user);
+    const row = within(screen.getByTestId('price-row-EUR'));
+    expect(row.getByText(/129,99\s€/)).toBeInTheDocument();
+    expect(row.getByText(/79,99\s€/)).toBeInTheDocument();
+    expect(row.getByText(/209,98\s€/)).toBeInTheDocument();
+    expect(row.getByText('ohne Land')).toBeInTheDocument();
+    expect(amountInput('EUR')).toHaveValue('209,98');
     expect(
-      screen.getByText(/EUR: Summe der Teile 209,98\s€/)
+      within(screen.getByTestId('price-row-CHF')).getByText(/230,80\sCHF/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/CHF: Summe der Teile 230,80\sCHF/)
+      screen.getByRole('columnheader', { name: 'Summe' })
     ).toBeInTheDocument();
-    await typeAmount(user, 'EUR', '189.9');
     expect(
-      await screen.findByText(/Ersparnis 20,08\s€ \(10 %\)/)
+      screen.getByRole('columnheader', { name: 'Jacke Cleo' })
     ).toBeInTheDocument();
+  });
+
+  it('shows the saving in percent for a typed set price and accepts comma and dot', async () => {
+    const user = userEvent.setup();
+    setup();
+    await gotoSetPrice(user);
+    await typeAmount(user, 'EUR', '189,90');
+    expect(percentInput('EUR')).toHaveValue('9,6');
     await typeAmount(user, 'CHF', '209,90');
     await next(user);
     expect(
@@ -510,35 +534,172 @@ describe('Neuer Look: step 3, set price', () => {
     ).toBeInTheDocument();
   });
 
-  it('refuses an amount that is not a number', async () => {
+  it('writes the set price when a saving in percent is typed', async () => {
     const user = userEvent.setup();
     setup();
     await gotoSetPrice(user);
-    await typeAmount(user, 'EUR', 'abc');
-    await typeAmount(user, 'CHF', '1');
+    const percent = percentInput('EUR');
+    await user.clear(percent);
+    await user.type(percent, '10');
+    await user.tab();
+    // 209,98 minus 10 %
+    expect(amountInput('EUR')).toHaveValue('188,98');
+    expect(percent).toHaveValue('10');
+  });
+
+  it('leaves an emptied row without a discount and refuses when no row has a price', async () => {
+    const user = userEvent.setup();
+    setup();
+    await gotoSetPrice(user);
+    await user.clear(amountInput('EUR'));
+    await user.tab();
+    await user.clear(amountInput('CHF'));
+    await user.tab();
     await next(user);
     expect(
-      await screen.findByText('EUR: Bitte einen Betrag wie 189,90 eingeben.')
+      await screen.findByText(
+        /Tragen Sie in mindestens einer Zeile einen Setpreis ein/
+      )
     ).toBeInTheDocument();
   });
 
-  it('shows one input for a project with one currency and one per currency with three', async () => {
+  it('goes on with one priced row and saves no discount for the emptied one', async () => {
     const user = userEvent.setup();
-    const { unmount } = setup({ currencies: ['EUR'] });
+    setup();
     await gotoSetPrice(user);
-    expect(screen.getAllByRole('textbox', { name: /^Setpreis/ })).toHaveLength(
-      1
-    );
+    await typeAmount(user, 'EUR', '189,90');
+    await user.clear(amountInput('CHF'));
+    await user.tab();
+    await next(user);
+    expect(
+      await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^CHF:/)).not.toBeInTheDocument();
+  });
+
+  it('names the sum of a country row that is not below it, without crashing', async () => {
+    const user = userEvent.setup();
+    setup({
+      pieces: [
+        buildPiece('a', { name: 'Jacke Cleo', prices: { 'EUR/DE': 10000 } }),
+        buildPiece('b', { name: 'Hose Bea', prices: { 'EUR/DE': 20000 } }),
+      ],
+    });
+    await gotoSetPrice(user);
+    // The row starts at its sum, which is not below it.
+    await next(user);
+    expect(await screen.findByText(/EUR\/DE/)).toBeInTheDocument();
+  });
+
+  it('shows one row for pieces with one currency and one per currency with three', async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup({
+      pieces: [
+        buildPiece('a', { name: 'Jacke Cleo', prices: { EUR: 1000 } }),
+        buildPiece('b', { name: 'Hose Bea', prices: { EUR: 2000 } }),
+      ],
+    });
+    await gotoSetPrice(user);
+    expect(screen.getAllByRole('group', { name: /^Setpreis/ })).toHaveLength(1);
     unmount();
 
-    setup({ currencies: ['EUR', 'CHF', 'USD'] });
+    setup({
+      currencies: ['EUR', 'CHF', 'USD'],
+      pieces: [
+        buildPiece('a', {
+          name: 'Jacke Cleo',
+          prices: { EUR: 1000, CHF: 1100, USD: 1200 },
+        }),
+        buildPiece('b', {
+          name: 'Hose Bea',
+          prices: { EUR: 2000, CHF: 2200, USD: 2400 },
+        }),
+      ],
+    });
     await gotoSetPrice(user);
-    expect(screen.getAllByRole('textbox', { name: /^Setpreis/ })).toHaveLength(
-      3
-    );
+    expect(screen.getAllByRole('group', { name: /^Setpreis/ })).toHaveLength(3);
     expect(
-      screen.getByRole('textbox', { name: 'Setpreis USD' })
+      screen.getByRole('group', { name: 'Setpreis USD' })
     ).toBeInTheDocument();
+  });
+
+  describe('with prices per country', () => {
+    const gotoCountries = (
+      user: User,
+      pieceNames = ['Hemd Ida', 'Rock Lena']
+    ) => gotoSetPrice(user, pieceNames);
+
+    it('shows one row per currency and country with the master prices and sums', async () => {
+      const user = userEvent.setup();
+      setup({ pieces: [shirt, skirt, hat], currencies: ['EUR', 'GBP'] });
+      await gotoPieces(user);
+      for (const name of ['Hemd Ida', 'Rock Lena']) await addPiece(user, name);
+      await next(user);
+      await screen.findByRole('group', { name: 'Setpreis EUR DE' });
+      const rows = screen
+        .getAllByTestId(/^price-row-/)
+        .map((row) => row.getAttribute('data-testid'));
+      expect(rows).toEqual([
+        'price-row-EUR/DE',
+        'price-row-EUR/FR',
+        'price-row-GBP/GB',
+      ]);
+      const de = within(screen.getByTestId('price-row-EUR/DE'));
+      expect(de.getByText('Deutschland')).toBeInTheDocument();
+      expect(de.getByText(/100,00\s€/)).toBeInTheDocument();
+      expect(de.getByText(/^50,00\s€$/)).toBeInTheDocument();
+      expect(de.getByText(/150,00\s€/)).toBeInTheDocument();
+      const fr = within(screen.getByTestId('price-row-EUR/FR'));
+      expect(fr.getByText(/105,00\s€/)).toBeInTheDocument();
+      expect(fr.getByText(/160,00\s€/)).toBeInTheDocument();
+      const gb = within(screen.getByTestId('price-row-GBP/GB'));
+      expect(gb.getByText(/135,00\s£/)).toBeInTheDocument();
+      expect(amountInput('EUR FR')).toHaveValue('160,00');
+    });
+
+    it('links the set price of a country row with its saving in percent', async () => {
+      const user = userEvent.setup();
+      setup({ pieces: [shirt, skirt], currencies: ['EUR', 'GBP'] });
+      await gotoCountries(user);
+      await typeAmount(user, 'EUR DE', '135');
+      expect(percentInput('EUR DE')).toHaveValue('10');
+      // the other rows are untouched
+      expect(percentInput('EUR FR')).toHaveValue('');
+      const percent = percentInput('GBP GB');
+      await user.clear(percent);
+      await user.type(percent, '20');
+      await user.tab();
+      expect(amountInput('GBP GB')).toHaveValue('108,00');
+      expect(amountInput('EUR DE')).toHaveValue('135,00');
+    });
+
+    it('leaves out a country in which a piece has no price', async () => {
+      const user = userEvent.setup();
+      setup({ pieces: [shirt, skirt, hat], currencies: ['EUR', 'GBP'] });
+      await gotoCountries(user, ['Hemd Ida', 'Rock Lena', 'Hut Mia']);
+      expect(screen.getAllByRole('group', { name: /^Setpreis/ })).toHaveLength(
+        1
+      );
+      expect(
+        screen.getByRole('group', { name: 'Setpreis EUR DE' })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', { name: 'Setpreis EUR FR' })
+      ).not.toBeInTheDocument();
+    });
+
+    it('names the cell in an error', async () => {
+      const user = userEvent.setup();
+      setup({ pieces: [shirt, skirt], currencies: ['EUR', 'GBP'] });
+      await gotoCountries(user);
+      await typeAmount(user, 'EUR DE', '140');
+      await typeAmount(user, 'GBP GB', '130');
+      await typeAmount(user, 'EUR FR', '0');
+      await next(user);
+      expect(
+        await screen.findByText('EUR/FR: Der Setpreis muss größer als 0 sein.')
+      ).toBeInTheDocument();
+    });
   });
 });
 
@@ -558,6 +719,7 @@ describe('Neuer Look: step 4, review and save', () => {
       screen.getByText(/ist inaktiv und kann in der Liste eingeschaltet werden/)
     ).toBeInTheDocument();
     expect(writes(fake).map((call) => call.method)).toEqual([
+      'createDiscountGroup',
       'createCartDiscount',
       'writeLookObject',
     ]);
@@ -579,6 +741,68 @@ describe('Neuer Look: step 4, review and save', () => {
     );
   });
 
+  it('creates the look group first, inactive, with the lowest rank; the discount references it and has no rank of its own', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup();
+    await gotoReview(user);
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+
+    expect(fake.callsTo('createDiscountGroup')).toHaveLength(1);
+    const groupDraft = fake.callsTo('createDiscountGroup')[0].args[0] as Record<
+      string,
+      unknown
+    >;
+    expect(groupDraft).toMatchObject({
+      key: 'look-jacket-look',
+      sortOrder: '0.7',
+      isActive: false,
+    });
+    const draft = fake.callsTo('createCartDiscount')[0].args[0] as Record<
+      string,
+      unknown
+    >;
+    expect(draft.discountGroup).toEqual({
+      typeId: 'discount-group',
+      key: 'look-jacket-look',
+    });
+    expect(draft).not.toHaveProperty('sortOrder');
+    expect([...fake.groups.values()]).toEqual([
+      expect.objectContaining({
+        key: 'look-jacket-look',
+        sortOrder: '0.7',
+        isActive: false,
+      }),
+    ]);
+    expect([...fake.discounts.values()][0].sortOrder).toBe('0.7');
+  });
+
+  it('gives a second look the next free rank, counting the rank of an existing group', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup({
+      prepare: (f) =>
+        f.groups.set('grp-other', {
+          id: 'grp-other',
+          version: 1,
+          key: 'look-other',
+          sortOrder: '0.7',
+          isActive: true,
+        }),
+    });
+    await gotoReview(user);
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    const groupDraft = fake.callsTo('createDiscountGroup')[0].args[0] as Record<
+      string,
+      unknown
+    >;
+    expect(groupDraft.sortOrder).toBe('0.7001');
+    expect(
+      [...fake.discounts.values()].find((d) => d.key === 'look-jacket-look')
+        ?.sortOrder
+    ).toBe('0.7001');
+  });
+
   it('scenario 9: with "Nach dem Anlegen aktiv" on, the look is live right after saving', async () => {
     const user = userEvent.setup();
     const { fake } = setup();
@@ -589,10 +813,13 @@ describe('Neuer Look: step 4, review and save', () => {
     await user.click(screen.getByRole('button', { name: 'Look speichern' }));
     expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
     expect(writes(fake).map((call) => call.method)).toEqual([
+      'createDiscountGroup',
       'createCartDiscount',
       'writeLookObject',
+      'updateDiscountGroup',
       'updateCartDiscount',
     ]);
+    expect([...fake.groups.values()][0].isActive).toBe(true);
     expect([...fake.discounts.values()][0].isActive).toBe(true);
     expect(screen.queryByText(/ist inaktiv und kann/)).not.toBeInTheDocument();
   });
@@ -626,7 +853,19 @@ describe('Neuer Look: step 4, review and save', () => {
 
   it('writes one amount per currency for a project with three currencies', async () => {
     const user = userEvent.setup();
-    const { fake } = setup({ currencies: ['EUR', 'CHF', 'USD'] });
+    const { fake } = setup({
+      currencies: ['EUR', 'CHF', 'USD'],
+      pieces: [
+        buildPiece('a', {
+          name: 'Jacke Cleo',
+          prices: { EUR: 12999, CHF: 14290, USD: 13999 },
+        }),
+        buildPiece('b', {
+          name: 'Hose Bea',
+          prices: { EUR: 7999, CHF: 8790, USD: 8499 },
+        }),
+      ],
+    });
     await gotoSetPrice(user);
     await typeAmount(user, 'EUR', '189,90');
     await typeAmount(user, 'CHF', '209,90');
@@ -640,6 +879,118 @@ describe('Neuer Look: step 4, review and save', () => {
       EUR: 18990,
       CHF: 20990,
       USD: 19900,
+    });
+  });
+
+  describe('with two countries', () => {
+    async function gotoCountryReview(user: User) {
+      await gotoPieces(user);
+      for (const name of ['Hemd Ida', 'Rock Lena']) await addPiece(user, name);
+      await next(user);
+      await screen.findByRole('group', { name: 'Setpreis EUR DE' });
+      await typeAmount(user, 'EUR DE', '140');
+      await typeAmount(user, 'EUR FR', '150');
+      await typeAmount(user, 'GBP GB', '130');
+      await next(user);
+      await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    }
+    const setupCountries = () =>
+      setup({ pieces: [shirt, skirt], currencies: ['EUR', 'GBP'] });
+
+    it('lists one line per currency and country on the review', async () => {
+      const user = userEvent.setup();
+      setupCountries();
+      await gotoCountryReview(user);
+      expect(
+        screen.getByText(
+          /^EUR DE: 140,00\s€ \(Summe 150,00\s€, Ersparnis 10,00\s€\)$/
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /^EUR FR: 150,00\s€ \(Summe 160,00\s€, Ersparnis 10,00\s€\)$/
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /^GBP GB: 130,00\s£ \(Summe 135,00\s£, Ersparnis 5,00\s£\)$/
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('writes one discount per country, then the object', async () => {
+      const user = userEvent.setup();
+      const { fake } = setupCountries();
+      await gotoCountryReview(user);
+      await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+      expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+
+      expect(writes(fake).map((call) => call.method)).toEqual([
+        'createDiscountGroup',
+        'createCartDiscount',
+        'createCartDiscount',
+        'createCartDiscount',
+        'writeLookObject',
+      ]);
+      const drafts = fake
+        .callsTo('createCartDiscount')
+        .map((call) => call.args[0] as Record<string, unknown>);
+      expect(drafts.map((draft) => draft.key)).toEqual([
+        'look-jacket-look',
+        'look-jacket-look-FR',
+        'look-jacket-look-GB',
+      ]);
+      expect(drafts.map((draft) => draft.cartPredicate)).toEqual([
+        'country = "DE"',
+        'country = "FR"',
+        'country = "GB"',
+      ]);
+      // One group holds all country discounts: the rank is on the group.
+      expect(drafts.some((draft) => 'sortOrder' in draft)).toBe(false);
+      expect(drafts.map((draft) => draft.discountGroup)).toEqual(
+        Array(3).fill({ typeId: 'discount-group', key: 'look-jacket-look' })
+      );
+      expect(fake.callsTo('createDiscountGroup')).toHaveLength(1);
+      expect([...fake.groups.values()].map((g) => g.sortOrder)).toEqual([
+        '0.7',
+      ]);
+      expect(drafts.every((draft) => draft.isActive === false)).toBe(true);
+      expect(fake.objects.get('look-jacket-look')?.value.setPrice).toEqual({
+        'EUR/DE': 14000,
+        'EUR/FR': 15000,
+        'GBP/GB': 13000,
+      });
+    });
+
+    it('activates the group first, then the country discounts, and the main discount last', async () => {
+      const user = userEvent.setup();
+      const { fake } = setupCountries();
+      await gotoCountryReview(user);
+      await user.click(
+        screen.getByRole('switch', { name: 'Nach dem Anlegen aktiv' })
+      );
+      await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+      expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+      const idOf = (key: string) =>
+        [...fake.discounts.values()].find((d) => d.key === key)?.id;
+      expect(writes(fake).map((call) => call.method)).toEqual([
+        'createDiscountGroup',
+        'createCartDiscount',
+        'createCartDiscount',
+        'createCartDiscount',
+        'writeLookObject',
+        'updateDiscountGroup',
+        'updateCartDiscount',
+        'updateCartDiscount',
+        'updateCartDiscount',
+      ]);
+      expect([...fake.groups.values()][0].isActive).toBe(true);
+      expect(fake.callsTo('updateCartDiscount').map((c) => c.args[0])).toEqual([
+        idOf('look-jacket-look-FR'),
+        idOf('look-jacket-look-GB'),
+        idOf('look-jacket-look'),
+      ]);
+      expect([...fake.discounts.values()].every((d) => d.isActive)).toBe(true);
     });
   });
 
@@ -712,46 +1063,282 @@ describe('Neuer Look: step 4, review and save', () => {
   });
 });
 
+describe('Neuer Look: name in the project languages', () => {
+  it('offers one input per project language, the data locale first, and saves only the filled ones', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup({ languages: ['de', 'en', 'fr'] });
+    await expandNameField(user);
+    expect(nameInput('DE')).toBeInTheDocument();
+    expect(nameInput('EN')).toBeInTheDocument();
+    expect(nameInput('FR')).toBeInTheDocument();
+    await fillBasics(user, { fr: 'Look veste' });
+    await next(user);
+    await screen.findByRole('heading', { name: 'Teile wählen (2 bis 5)' });
+    for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
+    await next(user);
+    await screen.findByRole('group', { name: 'Setpreis EUR' });
+    await typeAmount(user, 'EUR', '189,90');
+    await typeAmount(user, 'CHF', '209,90');
+    await next(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Look speichern' })
+    );
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    const discount = [...fake.discounts.values()][0];
+    expect(discount.name).toEqual({ fr: 'Look set: Look veste' });
+    expect(fake.objects.has('look-look-veste')).toBe(true);
+  });
+
+  it('shows only the default language until the others are expanded', async () => {
+    const user = userEvent.setup();
+    setup({ languages: ['de', 'en', 'fr'] });
+    expect(
+      await screen.findByRole('textbox', { name: /^DE/ })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: /^FR/ })
+    ).not.toBeInTheDocument();
+    await expandNameField(user);
+    expect(nameInput('FR')).toBeInTheDocument();
+  });
+
+  it('works for a project with a single language', async () => {
+    const user = userEvent.setup();
+    setup({ languages: ['en'], locale: 'en' });
+    expect(
+      await screen.findByRole('textbox', { name: /^EN/ })
+    ).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: /^EN/ }), 'Only look');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Choose pieces (2 to 5)' })
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Neuer Look: no prices in the pieces step', () => {
+  const PRICE_TEXT = /\d[.,]\d{2}|€|CHF|GBP|USD|\(DE\)|nicht verfügbar|Summe/;
+
+  async function gotoSearch(user: User) {
+    await gotoPieces(user);
+    return screen.findByRole('list', { name: 'Suchergebnisse' });
+  }
+
+  it('shows no price in the search results', async () => {
+    const user = userEvent.setup();
+    setup({
+      pieces: [
+        buildPiece('glasses', {
+          name: 'Classic Champagne Glasses',
+          prices: { EUR: 1500, GBP: 1300 },
+        }),
+        trousers,
+      ],
+    });
+    const results = await gotoSearch(user);
+    const cards = within(results).getAllByRole('listitem');
+    expect(cards.length).toBeGreaterThan(1);
+    for (const card of cards) expect(card).not.toHaveTextContent(PRICE_TEXT);
+    expect(
+      within(results).getByText('Classic Champagne Glasses')
+    ).toBeInTheDocument();
+  });
+
+  it('shows no price and no sum in the chosen, reorderable list', async () => {
+    const user = userEvent.setup();
+    setup();
+    await gotoSearch(user);
+    await addPiece(user, 'Jacke Cleo');
+    await addPiece(user, 'Hose Bea');
+    const chosen = await screen.findByRole('grid', { name: 'Gewählte Teile' });
+    expect(within(chosen).getByText('Jacke Cleo')).toBeInTheDocument();
+    expect(chosen).not.toHaveTextContent(PRICE_TEXT);
+    expect(screen.getByTestId('pieces-chosen')).toHaveTextContent(
+      /^2 Teile gewählt$/
+    );
+  });
+
+  it('shows the sum of the pieces only from the set price step on', async () => {
+    const user = userEvent.setup();
+    setup();
+    await gotoSetPrice(user);
+    expect(
+      await screen.findByRole('columnheader', { name: 'Summe' })
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('price-row-EUR')).getByText(/209,98\s€/)
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Neuer Look: the look key', () => {
+  const keyField = () => screen.getByRole('textbox', { name: 'Key' });
+
+  it('suggests a key from the name and follows the name until the key is edited', async () => {
+    const user = userEvent.setup();
+    setup();
+    await fillBasics(user, { en: 'Jacket look' });
+    await waitFor(() => expect(keyField()).toHaveValue('jacket-look'));
+    expect(
+      screen.getByText(/Wird als look-jacket-look gespeichert/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/nicht mehr geändert werden/)).toBeInTheDocument();
+
+    await fillBasics(user, { en: 'Jacket look two' });
+    await waitFor(() => expect(keyField()).toHaveValue('jacket-look-two'));
+  });
+
+  it('lets the user change the key; it is saved as typed and shown on the review', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup();
+    await fillBasics(user);
+    await user.clear(keyField());
+    await user.type(keyField(), 'Winter_2026');
+    await fillBasics(user, { en: 'Renamed look' });
+    expect(keyField()).toHaveValue('Winter_2026');
+
+    await next(user);
+    for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
+    await next(user);
+    await typeAmount(user, 'EUR', '189,90');
+    await typeAmount(user, 'CHF', '209,90');
+    await next(user);
+    expect(await screen.findByText('look-Winter_2026')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    expect([...fake.discounts.values()][0].key).toBe('look-Winter_2026');
+    expect(fake.objects.has('look-Winter_2026')).toBe(true);
+  });
+
+  it('refuses a key with characters outside letters, digits, - and _ and writes nothing', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup();
+    await fillBasics(user);
+    await user.clear(keyField());
+    await user.type(keyField(), 'not allowed!');
+    await next(user);
+    expect(
+      await screen.findByText(
+        'Der Key darf nur Buchstaben, Ziffern, Bindestriche und Unterstriche enthalten.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Teile wählen (2 bis 5)' })
+    ).not.toBeInTheDocument();
+    expect(writes(fake)).toHaveLength(0);
+  });
+
+  it('flags a key that is already taken while typing, and does not go on', async () => {
+    const user = userEvent.setup();
+    setup({
+      prepare: (fake) => {
+        fake.objects.set('look-winter', buildObject('winter', ['x', 'y']));
+        fake.discounts.set(
+          'd-winter',
+          buildDiscount('winter', ['x', 'y'], { id: 'd-winter' })
+        );
+      },
+    });
+    await fillBasics(user);
+    await user.clear(keyField());
+    await user.type(keyField(), 'winter');
+    expect(
+      await screen.findByText('Dieser Key ist schon vergeben.')
+    ).toBeInTheDocument();
+    await next(user);
+    expect(
+      screen.queryByRole('heading', { name: 'Teile wählen (2 bis 5)' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('suggests a free key when the one derived from the name is taken', async () => {
+    const user = userEvent.setup();
+    setup({
+      prepare: (fake) => {
+        fake.objects.set('look-winter', buildObject('winter', ['x', 'y']));
+        fake.discounts.set(
+          'd-winter',
+          buildDiscount('winter', ['x', 'y'], { id: 'd-winter' })
+        );
+      },
+    });
+    await fillBasics(user, { en: 'Winter' });
+    await waitFor(() => expect(keyField()).toHaveValue('winter-2'));
+  });
+
+  it('takes the suggestion back with "Vorschlag übernehmen"', async () => {
+    const user = userEvent.setup();
+    setup();
+    await fillBasics(user);
+    expect(
+      screen.queryByRole('button', { name: 'Vorschlag übernehmen' })
+    ).not.toBeInTheDocument();
+    await user.clear(keyField());
+    await user.type(keyField(), 'mine');
+    await user.click(
+      screen.getByRole('button', { name: 'Vorschlag übernehmen' })
+    );
+    await waitFor(() => expect(keyField()).toHaveValue('jacket-look'));
+  });
+
+  it('goes back to the key field when it was taken by someone else while saving, and writes nothing', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup();
+    await fillBasics(user);
+    await user.clear(keyField());
+    await user.type(keyField(), 'race');
+    await next(user);
+    for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
+    await next(user);
+    await typeAmount(user, 'EUR', '189,90');
+    await typeAmount(user, 'CHF', '209,90');
+    await next(user);
+    // another user takes the key after the form loaded the existing keys
+    fake.objects.set('look-race', buildObject('race', ['x', 'y']));
+    fake.discounts.set(
+      'd-race',
+      buildDiscount('race', ['x', 'y'], { id: 'd-race' })
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Look speichern' })
+    );
+    expect(
+      await screen.findByText('Dieser Key ist schon vergeben.')
+    ).toBeInTheDocument();
+    expect(writes(fake)).toHaveLength(0);
+  });
+});
+
 describe('Neuer Look: permissions and language', () => {
   it('disables every write control without Manage and says so', async () => {
     const user = userEvent.setup();
     setup({ canManage: false });
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Nur Lesezugriff')).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: 'Name (Deutsch)' })
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('textbox', { name: 'Name (Englisch)' })
-    ).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: /^DE/ })).toBeDisabled();
     expect(screen.getByRole('textbox', { name: /^Look-Foto/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(
-      await screen.findByText('Bitte den deutschen Namen angeben.')
+      await screen.findByText('Bitte mindestens einen Namen eingeben.')
     ).toBeInTheDocument();
   });
 
-  it('keeps the preview card German under an English profile while the labels follow the language', async () => {
+  it('shows the preview card in the language of the profile, like every other label', async () => {
     const user = userEvent.setup();
     setup({ locale: 'en' });
-    await user.type(
-      await screen.findByRole('textbox', { name: 'Name (German)' }),
-      'Jacken-Look'
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: 'Name (English)' }),
-      'Jacket look'
-    );
+    await fillLookName(user, { de: 'Jacken-Look', en: 'Jacket look' });
     await user.click(screen.getByRole('button', { name: 'Next' }));
     const results = await screen.findByRole('list', { name: 'Search results' });
     await user.click(
       within(results).getByRole('button', { name: /^Add: Jacke Cleo/ })
     );
     const preview = await screen.findByTestId('shop-preview');
-    expect(within(preview).getByText('Setpreis folgt')).toBeInTheDocument();
     expect(
-      within(preview).getByRole('button', { name: 'Set in den Warenkorb' })
+      within(preview).getByText('Set price to follow')
+    ).toBeInTheDocument();
+    expect(
+      within(preview).getByRole('button', { name: 'Add set to cart' })
     ).toBeInTheDocument();
     expect(
       screen.getByText('How the look appears in the shop')

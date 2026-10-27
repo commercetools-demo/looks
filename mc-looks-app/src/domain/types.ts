@@ -37,8 +37,21 @@ export interface LookDiscount {
   description: LocalizedValue;
   /** Absolute discount amount per currency. */
   amount: Money;
+  /** The country the discount applies in (`cartPredicate`), `''` for carts
+   *  without a country; `undefined` when the predicate is not the app's. */
+  country?: string;
   /** Product ids named by the pattern target, in order. */
   pieceIds: string[];
+}
+
+/** The Discount Group a look's Cart Discounts live in (key `look-<key>`). */
+export interface LookDiscountGroup {
+  id: string;
+  version: number;
+  key: string;
+  sortOrder: string;
+  /** The group must be active for its Cart Discounts to apply. */
+  isActive: boolean;
 }
 
 export interface PieceSize {
@@ -62,7 +75,11 @@ export interface Piece {
 
 /** What the user enters for a new look. */
 export interface NewLook {
-  label: { de: string; en: string };
+  /** The look key (without the `look-` prefix) when the user chose one;
+   *  otherwise it is derived from the name when saving. */
+  key?: string;
+  /** The look name per project language; empty translations are omitted. */
+  label: LocalizedValue;
   componentProductIds: string[];
   setPrice: Money;
   /** The live sum the set price was checked against. */

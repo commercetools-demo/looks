@@ -161,14 +161,19 @@ export function useLooksOverview() {
   }, []);
 
   const replaceDiscount = useCallback(
-    (discount: LookDiscount, object?: LookObject) => {
+    (
+      discount: LookDiscount,
+      object?: LookObject,
+      more: LookDiscount[] = []
+    ) => {
+      const written = [discount, ...more];
       setTier1((current) =>
         current.status !== 'ready'
           ? current
           : {
               status: 'ready',
-              discounts: current.discounts.map((d) =>
-                d.id === discount.id ? discount : d
+              discounts: current.discounts.map(
+                (d) => written.find((w) => w.id === d.id) ?? d
               ),
               objects: object
                 ? current.objects.map((o) =>

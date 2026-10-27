@@ -1,0 +1,11 @@
+#import "./fragments/look-group.graphql"
+
+mutation UpdateLookDiscountGroup(
+  $id: String!
+  $version: Long!
+  $actions: [DiscountGroupUpdateAction!]!
+) {
+  updateDiscountGroup(id: $id, version: $version, actions: $actions) {
+    ...LookGroupFragment
+  }
+}

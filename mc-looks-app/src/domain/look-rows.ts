@@ -1,7 +1,18 @@
-import { lookKeyFromObjectKey, lookObjectKey } from './keys';
+import {
+  isCountryDiscountKey,
+  lookKeyFromDiscountKey,
+  lookKeyFromObjectKey,
+  lookObjectKey,
+} from './keys';
 import { lookNameFromDiscount } from './names';
 import { livePriceMap } from './pieces';
-import { savingPercent, sumListPrices } from './prices';
+import {
+  lookPriceKeys,
+  referenceMoney,
+  savingPercent,
+  splitPriceKey,
+  sumListPrices,
+} from './prices';
 import type {
   LocalizedValue,
   LookDiscount,
@@ -30,25 +41,43 @@ export interface LookRow {
   /** `undefined` entries are pieces whose data is not loaded (yet). */
   pieces: Array<Piece | undefined>;
   image?: LookImage;
+  /** Set price and live sum per price cell (currency and country, or the currency alone). */
   setPrice?: Money;
   liveSum: Money;
-  discountAmount: Money;
+  /** The same per currency (the first country cell of each), for lists. */
+  referenceSetPrice?: Money;
+  referenceSum: Money;
   /** Saving in percent of the live sum in the first currency. */
   savingPercent?: number;
   /** The discount decides what the shopper pays. */
   isActive: boolean;
   completeness: Completeness;
-  /** Live sum minus discount amount no longer equals the stored set price. */
+  /** A discount's amount no longer equals today's live sum minus the stored
+   *  set price, or a country has no discount. */
   priceDrift: boolean;
-  /** A project currency has no set price: cannot be repriced as is. */
+  /** A price cell with a live sum has no set price: cannot be repriced as is. */
   missingCurrency: boolean;
   object?: LookObject;
+  /** The main discount `look-<key>`; it decides `isActive`. */
   discount?: LookDiscount;
+  /** The country discounts `look-<key>-DE` ... */
+  countryDiscounts: LookDiscount[];
 }
 
 const samePieces = (a: string[], b: string[]): boolean =>
   a.length > 0 &&
   JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+
+/** The discount that applies in the country of a price cell. */
+export function discountForKey(
+  row: Pick<LookRow, 'discount' | 'countryDiscounts'>,
+  key: string
+): LookDiscount | undefined {
+  const { country } = splitPriceKey(key);
+  return [row.discount, ...row.countryDiscounts].find(
+    (discount) => discount && discount.country === country
+  );
+}
 
 export function buildLookRows(input: {
   objects: LookObject[];
@@ -58,14 +87,24 @@ export function buildLookRows(input: {
 }): LookRow[] {
   const { currencies } = input;
   const objectsByKey = new Map(input.objects.map((o) => [o.key, o]));
-  const discountsByKey = new Map(
-    input.discounts
-      .filter((d) => lookKeyFromObjectKey(d.key))
-      .map((d) => [d.key, d])
-  );
+  const mainByKey = new Map<string, LookDiscount>();
+  const countriesByLook = new Map<string, LookDiscount[]>();
+  for (const discount of input.discounts) {
+    const lookKey = lookKeyFromDiscountKey(discount.key);
+    if (!lookKey) continue;
+    if (isCountryDiscountKey(discount.key)) {
+      countriesByLook.set(lookKey, [
+        ...(countriesByLook.get(lookKey) ?? []),
+        discount,
+      ]);
+    } else {
+      mainByKey.set(discount.key, discount);
+    }
+  }
   const keys = new Set<string>([
     ...objectsByKey.keys(),
-    ...discountsByKey.keys(),
+    ...mainByKey.keys(),
+    ...[...countriesByLook.keys()].map(lookObjectKey),
   ]);
   const livePrices = livePriceMap(input.pieces.values());
 
@@ -74,38 +113,46 @@ export function buildLookRows(input: {
     const lookKey = lookKeyFromObjectKey(objectKey);
     if (!lookKey) continue;
     const object = objectsByKey.get(objectKey);
-    const discount = discountsByKey.get(objectKey);
+    const discount = mainByKey.get(objectKey);
+    const countryDiscounts = countriesByLook.get(lookKey) ?? [];
     const value = object?.value;
     const pieceIds = value?.componentProductIds ?? discount?.pieceIds ?? [];
-    const liveSum = sumListPrices(pieceIds, livePrices, currencies);
-    const amount = discount?.amount ?? {};
+    const priceKeys = lookPriceKeys(pieceIds, livePrices, currencies);
+    const liveSum = sumListPrices(pieceIds, livePrices, priceKeys);
     const setPrice = value?.setPrice;
-    const first = currencies[0];
+    const withDiscounts = { discount, countryDiscounts };
 
     const priceDrift =
       !!discount &&
       !!setPrice &&
-      currencies.every(
-        (c) =>
-          liveSum[c] !== undefined &&
-          amount[c] !== undefined &&
-          setPrice[c] !== undefined
-      ) &&
-      currencies.some((c) => liveSum[c] - amount[c] !== setPrice[c]);
+      Object.keys(liveSum).some((key) => {
+        if (setPrice[key] === undefined) return false;
+        const amount = discountForKey(withDiscounts, key)?.amount[
+          splitPriceKey(key).currency
+        ];
+        return amount === undefined || liveSum[key] - amount !== setPrice[key];
+      });
+
+    const referenceSum = referenceMoney(liveSum, currencies);
+    const referenceSetPrice = setPrice
+      ? referenceMoney(setPrice, currencies)
+      : undefined;
+    const first = currencies[0];
 
     rows.push({
       id: objectKey,
       lookKey,
       objectKey: lookObjectKey(lookKey),
-      name: lookNameFromDiscount(discount),
+      name: lookNameFromDiscount(discount ?? countryDiscounts[0]),
       pieceIds,
       pieces: pieceIds.map((id) => input.pieces.get(id)),
       ...(value?.image ? { image: value.image } : {}),
       setPrice,
       liveSum,
-      discountAmount: amount,
+      referenceSetPrice,
+      referenceSum,
       savingPercent: first
-        ? savingPercent(liveSum[first], setPrice?.[first])
+        ? savingPercent(referenceSum[first], referenceSetPrice?.[first])
         : undefined,
       isActive: discount?.isActive ?? false,
       completeness: !discount
@@ -117,9 +164,11 @@ export function buildLookRows(input: {
         : 'inconsistent',
       priceDrift,
       missingCurrency:
-        !!setPrice && currencies.some((c) => setPrice[c] === undefined),
+        !!setPrice &&
+        Object.keys(liveSum).some((key) => setPrice[key] === undefined),
       object,
       discount,
+      countryDiscounts,
     });
   }
   return rows;
@@ -135,7 +184,7 @@ export function allPieceIds(
     for (const id of object.value?.componentProductIds ?? []) ids.add(id);
   }
   for (const discount of discounts) {
-    if (lookKeyFromObjectKey(discount.key)) {
+    if (lookKeyFromDiscountKey(discount.key)) {
       for (const id of discount.pieceIds) ids.add(id);
     }
   }
@@ -148,11 +197,12 @@ export function takenLookKeys(
   discounts: LookDiscount[]
 ): Set<string> {
   const taken = new Set<string>();
-  for (const key of [
-    ...objects.map((o) => o.key),
-    ...discounts.map((d) => d.key),
-  ]) {
-    const lookKey = lookKeyFromObjectKey(key);
+  for (const object of objects) {
+    const lookKey = lookKeyFromObjectKey(object.key);
+    if (lookKey) taken.add(lookKey);
+  }
+  for (const discount of discounts) {
+    const lookKey = lookKeyFromDiscountKey(discount.key);
     if (lookKey) taken.add(lookKey);
   }
   return taken;

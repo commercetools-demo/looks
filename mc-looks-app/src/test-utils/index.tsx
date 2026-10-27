@@ -14,7 +14,7 @@ import type { LookApi } from '../domain/look-api';
 import { LookProvider } from '../hooks/context';
 import de from '../i18n/data/de.json';
 import en from '../i18n/data/en.json';
-import { CURRENCIES } from './fixtures';
+import { CURRENCIES, LANGUAGES } from './fixtures';
 
 export const PROJECT_KEY = 'looks-test';
 export const APP_ROOT = `/${PROJECT_KEY}/${entryPointUriPath}`;
@@ -26,6 +26,8 @@ export interface RenderLooksOptions {
   /** Manage permission (View is always granted). Defaults to true. */
   canManage?: boolean;
   currencies?: string[];
+  /** Project languages; defaults to German and English. */
+  languages?: string[];
   /** UI language (labels, buttons). */
   locale?: string;
   /** Merchant Center data locale (look and product names). Defaults to `locale`. */
@@ -57,6 +59,7 @@ export function renderLooks(options: RenderLooksOptions) {
         <LookProvider
           api={options.api}
           currencies={options.currencies ?? CURRENCIES}
+          languages={options.languages ?? LANGUAGES}
         >
           <LooksRoutes />
         </LookProvider>

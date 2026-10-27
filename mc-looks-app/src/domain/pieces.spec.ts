@@ -115,16 +115,113 @@ describe('pieceFromProduct', () => {
     expect(pieceFromProduct(product(v), cfg, 'de').colour).toBe('Beige');
   });
 
-  it('reads sizes from a configured attribute name and enum labels', () => {
+  it('reads the variant label from a configured attribute name and enum labels', () => {
     const v = variant('a', undefined, 2, {
       attributesRaw: [{ name: 'groesse', value: { key: 'm', label: 'M' } }],
     });
     const piece = pieceFromProduct(
       product(v),
-      resolveConfig({ sizeAttribute: 'groesse' })
+      resolveConfig({ variantAttributes: 'groesse' })
     );
     expect(piece.sizes[0].label).toBe('M');
     expect(piece.oneSize).toBe(false);
+  });
+});
+
+describe('products with several variant attributes (pillow cover)', () => {
+  const pillowCfg = resolveConfig({
+    variantAttributes: 'searchColor, finishColor, size',
+  });
+  const pillow = (
+    sku: string,
+    attributes: Array<{ name: string; value: unknown }>,
+    qty: number | null = 3
+  ): RawVariant => ({
+    sku,
+    images: [],
+    prices: [],
+    attributesRaw: attributes,
+    availability:
+      qty === null ? null : { noChannel: { availableQuantity: qty } },
+  });
+
+  it('labels two variants by search colour, finish colour and size, in the configured order', () => {
+    const piece = pieceFromProduct(
+      product(
+        pillow('maya-1', [
+          { name: 'searchColor', value: { key: 'beige', label: 'Beige' } },
+          {
+            name: 'finishColor',
+            value: { key: 'linen', label: { de: 'Leinen', en: 'Linen' } },
+          },
+          { name: 'size', value: '45x45' },
+        ]),
+        [
+          pillow('maya-2', [
+            { name: 'size', value: '50x50' },
+            { name: 'finishColor', value: 'Natural' },
+            { name: 'searchColor', value: 'Grey' },
+          ]),
+        ]
+      ),
+      pillowCfg,
+      'en'
+    );
+    expect(piece.oneSize).toBe(false);
+    expect(piece.sizes.map((size) => size.label)).toEqual([
+      'Beige / Linen / 45x45',
+      'Grey / Natural / 50x50',
+    ]);
+    expect(piece.sizes.map((size) => size.sku)).toEqual(['maya-1', 'maya-2']);
+  });
+
+  it('skips attributes a variant does not have and reads numbers and sets', () => {
+    const piece = pieceFromProduct(
+      product(pillow('a', [{ name: 'size', value: 18 }]), [
+        pillow('b', [
+          {
+            name: 'finishColor',
+            value: ['Linen', { key: 'x', label: 'Stone' }],
+          },
+          { name: 'size', value: 20 },
+        ]),
+      ]),
+      pillowCfg
+    );
+    expect(piece.sizes.map((size) => size.label)).toEqual([
+      '18',
+      'Linen, Stone / 20',
+    ]);
+  });
+
+  it('is not one size: several variants without any configured attribute are listed by SKU', () => {
+    const piece = pieceFromProduct(
+      product(pillow('maya-1', []), [pillow('maya-2', [])]),
+      pillowCfg
+    );
+    expect(piece.oneSize).toBe(false);
+    expect(piece.sizes.map((size) => size.label)).toEqual(['maya-1', 'maya-2']);
+  });
+
+  it('is one size only for a single variant without a configured attribute', () => {
+    const piece = pieceFromProduct(product(pillow('maya-1', [])), pillowCfg);
+    expect(piece.oneSize).toBe(true);
+  });
+
+  it('lists both variants when neither has an inventory entry, as sold out', () => {
+    const piece = pieceFromProduct(
+      product(pillow('maya-1', [{ name: 'size', value: 'S' }], null), [
+        pillow('maya-2', [{ name: 'size', value: 'M' }], null),
+      ]),
+      pillowCfg
+    );
+    expect(
+      piece.sizes.map((size) => [size.label, size.availableQuantity])
+    ).toEqual([
+      ['S', 0],
+      ['M', 0],
+    ]);
+    expect(piece.soldOutEverywhere).toBe(true);
   });
 });
 
@@ -137,5 +234,128 @@ describe('toPiece and livePriceMap', () => {
     ]);
     expect(piece.prices).toEqual({ EUR: 9999, CHF: 10990 });
     expect(livePriceMap([piece]).get('p1')).toEqual({ EUR: 9999, CHF: 10990 });
+  });
+});
+
+describe('prices across variants and diagnostics', () => {
+  const noPrice = (sku: string) => variant(sku, '34', 1, { prices: [] });
+
+  it('takes the price from another variant when the master variant has none', () => {
+    const piece = toPiece(
+      product(noPrice('a-34'), [variant('a-36', '36', 1)]),
+      cfg,
+      ['EUR', 'CHF']
+    );
+    expect(piece.prices).toEqual({ EUR: 9999, CHF: 10990 });
+  });
+
+  it('prefers the master variant per currency', () => {
+    const master = variant('a-34', '34', 1, {
+      prices: [{ value: { currencyCode: 'EUR', centAmount: 100 } }],
+    });
+    const piece = toPiece(product(master, [variant('a-36', '36', 1)]), cfg, [
+      'EUR',
+      'CHF',
+    ]);
+    expect(piece.prices).toEqual({ EUR: 100, CHF: 10990 });
+  });
+
+  it('keeps country prices per currency and country cell', () => {
+    const v = variant('a', '34', 1, {
+      prices: [
+        { value: { currencyCode: 'EUR', centAmount: 1500 }, country: 'DE' },
+        { value: { currencyCode: 'GBP', centAmount: 1300 }, country: 'GB' },
+      ],
+    });
+    expect(toPiece(product(v), cfg, ['EUR', 'GBP', 'USD']).prices).toEqual({
+      'EUR/DE': 1500,
+      'GBP/GB': 1300,
+    });
+  });
+
+  it('reads the project example: EUR per country, GBP without customer-group and expired prices', () => {
+    const gb = (centAmount: number, extra = {}) => ({
+      value: { currencyCode: 'GBP', centAmount },
+      country: 'GB',
+      ...extra,
+    });
+    const master = variant('a-34', '34', 1, {
+      prices: [
+        { value: { currencyCode: 'EUR', centAmount: 3299 }, country: 'DE' },
+        { value: { currencyCode: 'EUR', centAmount: 2639 }, country: 'FR' },
+        gb(3000, { customerGroupRef: { id: 'g' } }),
+        gb(2899, {
+          validFrom: '2025-09-29T13:55:00.000Z',
+          validUntil: '2025-09-29T14:00:00.000Z',
+        }),
+        gb(3199),
+      ],
+    });
+    const piece = toPiece(product(master), cfg, ['EUR', 'GBP']);
+    expect(piece.prices).toEqual({
+      'EUR/DE': 3299,
+      'EUR/FR': 2639,
+      'GBP/GB': 3199,
+    });
+    expect(livePriceMap([piece]).get('p1')).toEqual(piece.prices);
+  });
+
+  it('uses no price restricted to a customer group or channel', () => {
+    const master = variant('a-34', '34', 1, {
+      prices: [
+        {
+          value: { currencyCode: 'EUR', centAmount: 100 },
+          customerGroupRef: { id: 'g' },
+        },
+        {
+          value: { currencyCode: 'USD', centAmount: 300 },
+          channelRef: { id: 'c' },
+        },
+      ],
+    });
+    expect(toPiece(product(master), cfg, ['EUR', 'USD']).prices).toEqual({});
+  });
+});
+
+describe('Maya Pillow Cover as stored in tech-sales-good-store', () => {
+  const cfg = resolveConfig({
+    variantAttributes: 'search-color,search-finish,size',
+    colorNameAttribute: 'color-label',
+    colorAttribute: 'search-color',
+  });
+  const variant = (sku: string, key: string, de: string, quantity: number) => ({
+    sku,
+    prices: [
+      { value: { currencyCode: 'EUR', centAmount: 899 }, country: 'DE' },
+      { value: { currencyCode: 'EUR', centAmount: 719 }, country: 'FR' },
+    ],
+    attributesRaw: [
+      {
+        name: 'search-color',
+        value: { key, label: { 'en-US': key, 'de-DE': de } },
+      },
+      { name: 'color-label', value: { 'en-US': key, 'de-DE': de } },
+    ],
+    availability: { noChannel: { availableQuantity: quantity } },
+  });
+
+  it('lists both colour variants, labelled in the data locale', () => {
+    const piece = pieceFromProduct(
+      {
+        id: 'maya',
+        masterData: {
+          current: {
+            name: 'Maya-Kissenbezug',
+            masterVariant: variant('MPC-02', 'purple', 'Violett', 98),
+            variants: [variant('MPC-07', 'yellow', 'Gelb', 100)],
+          },
+        },
+      },
+      cfg,
+      'de-DE'
+    );
+    expect(piece.oneSize).toBe(false);
+    expect(piece.sizes.map((size) => size.label)).toEqual(['Violett', 'Gelb']);
+    expect(piece.colour).toBe('Violett');
   });
 });

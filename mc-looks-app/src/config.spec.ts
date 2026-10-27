@@ -5,7 +5,7 @@ import { CONFIG_VARIABLES, resolveConfig } from './config';
 describe('config', () => {
   it('has the documented defaults', () => {
     expect(resolveConfig()).toEqual({
-      sizeAttribute: 'size',
+      variantAttributes: ['size'],
       colorNameAttribute: 'color-name',
       colorAttribute: 'color',
       shopOrigin: '',
@@ -15,18 +15,21 @@ describe('config', () => {
   it('takes overrides, trims them, and strips trailing slashes from the origin', () => {
     expect(
       resolveConfig({
-        sizeAttribute: ' groesse ',
+        variantAttributes: ' searchColor , finishColor,size ',
         shopOrigin: 'https://shop.example.com//',
       })
     ).toMatchObject({
-      sizeAttribute: 'groesse',
+      variantAttributes: ['searchColor', 'finishColor', 'size'],
       shopOrigin: 'https://shop.example.com',
     });
   });
 
   it('fails loudly and names the variable when a required value is empty', () => {
-    expect(() => resolveConfig({ sizeAttribute: '' })).toThrow(
-      CONFIG_VARIABLES.sizeAttribute
+    expect(() => resolveConfig({ variantAttributes: '' })).toThrow(
+      CONFIG_VARIABLES.variantAttributes
+    );
+    expect(() => resolveConfig({ variantAttributes: ' , ' })).toThrow(
+      'VARIANT_ATTRIBUTES'
     );
     expect(() => resolveConfig({ colorNameAttribute: '  ' })).toThrow(
       'COLOR_NAME_ATTRIBUTE'
