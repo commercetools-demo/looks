@@ -1,5 +1,5 @@
 import { useIntl } from 'react-intl';
-import { LOOK_MAX_PIECES, LOOK_MIN_PIECES } from '../../domain/limits';
+import { LOOK_MIN_PIECES } from '../../domain/limits';
 import type { ValidationError } from '../../domain/validate';
 import type { Money } from '../../domain/types';
 import { splitPriceKey } from '../../domain/prices';
@@ -23,15 +23,10 @@ export function useValidationText() {
       case 'name-missing':
         return intl.formatMessage(messages.errorName);
       case 'pieces-count':
-        return context.pieceCount < LOOK_MIN_PIECES
-          ? intl.formatMessage(messages.errorPiecesMin, {
-              min: LOOK_MIN_PIECES,
-              count: context.pieceCount,
-            })
-          : intl.formatMessage(messages.errorPiecesMax, {
-              max: LOOK_MAX_PIECES,
-              count: context.pieceCount,
-            });
+        return intl.formatMessage(messages.errorPiecesMin, {
+          min: LOOK_MIN_PIECES,
+          count: context.pieceCount,
+        });
       case 'piece-duplicate':
         return intl.formatMessage(messages.errorDuplicate, { piece });
       case 'set-price-none':

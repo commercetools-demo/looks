@@ -117,7 +117,7 @@ async function addPiece(user: User, name: string) {
 async function gotoPieces(user: User) {
   await fillBasics(user);
   await next(user);
-  await screen.findByRole('heading', { name: 'Teile wählen (2 bis 5)' });
+  await screen.findByRole('heading', { name: 'Teile wählen (mindestens 2)' });
 }
 
 async function gotoSetPrice(user: User, names = ['Jacke Cleo', 'Hose Bea']) {
@@ -204,7 +204,9 @@ describe('Neuer Look: step 1, basics', () => {
     await fillBasics(user);
     await next(user);
     expect(
-      await screen.findByRole('heading', { name: 'Teile wählen (2 bis 5)' })
+      await screen.findByRole('heading', {
+        name: 'Teile wählen (mindestens 2)',
+      })
     ).toBeInTheDocument();
   });
 
@@ -370,7 +372,7 @@ describe('Neuer Look: step 2, pieces', () => {
     );
   });
 
-  it('scenario 4: refuses fewer than two pieces naming limit and count; at most five can be added', async () => {
+  it('scenario 4: refuses fewer than two pieces naming limit and count', async () => {
     const user = userEvent.setup();
     const { fake } = setup({
       pieces: [jacket, trousers, scarf, coat, ...extras],
@@ -389,16 +391,60 @@ describe('Neuer Look: step 2, pieces', () => {
         'Ein Look braucht mindestens 2 Teile, gewählt sind 1.'
       )
     ).toBeInTheDocument();
-    for (const name of ['Hose Bea', 'Schal Dora', 'Mantel Eva', 'Extra a']) {
+    expect(writes(fake)).toHaveLength(0);
+  });
+
+  it('has no maximum: a sixth and seventh piece can be added and saved with a pattern of all of them', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup({
+      pieces: [jacket, trousers, scarf, coat, ...extras],
+    });
+    await gotoPieces(user);
+    const chosen = [
+      'Jacke Cleo',
+      'Hose Bea',
+      'Schal Dora',
+      'Mantel Eva',
+      'Extra a',
+      'Extra b',
+      'Extra c',
+    ];
+    for (const name of chosen) {
+      const results = within(
+        await screen.findByRole('list', { name: 'Suchergebnisse' })
+      );
+      expect(
+        results.getByRole('button', {
+          name: new RegExp(`^Hinzufügen: ${name}`),
+        })
+      ).toBeEnabled();
       await addPiece(user, name);
     }
-    const results = within(
-      screen.getByRole('list', { name: 'Suchergebnisse' })
+    expect(await screen.findByTestId('pieces-chosen')).toHaveTextContent(
+      '7 Teile gewählt'
     );
     expect(
-      results.getByRole('button', { name: /^Hinzufügen: Extra b/ })
-    ).toBeDisabled();
-    expect(writes(fake)).toHaveLength(0);
+      within(screen.getByRole('list', { name: 'Suchergebnisse' })).getByRole(
+        'button',
+        { name: /^Hinzufügen: Extra d/ }
+      )
+    ).toBeEnabled();
+    await next(user);
+    await screen.findAllByRole('group', { name: /^Setpreis/ });
+    await typeAmount(user, 'EUR', '50');
+    await typeAmount(user, 'CHF', '55');
+    await next(user);
+    await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    const draft = fake.callsTo('createCartDiscount')[0].args[0] as {
+      target: { pattern: { targetPattern: unknown[] } };
+    };
+    expect(draft.target.pattern.targetPattern).toHaveLength(7);
+    const object = fake.callsTo('writeLookObject')[0].args[0] as {
+      value?: { componentProductIds?: string[] };
+    };
+    expect(JSON.stringify(object)).toContain('extra-c');
   });
 
   it('scenario 5: a piece without sizes reads "Einheitsgröße"', async () => {
@@ -1072,7 +1118,7 @@ describe('Neuer Look: name in the project languages', () => {
     expect(nameInput('FR')).toBeInTheDocument();
     await fillBasics(user, { fr: 'Look veste' });
     await next(user);
-    await screen.findByRole('heading', { name: 'Teile wählen (2 bis 5)' });
+    await screen.findByRole('heading', { name: 'Teile wählen (mindestens 2)' });
     for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
     await next(user);
     await screen.findByRole('group', { name: 'Setpreis EUR' });
@@ -1106,7 +1152,7 @@ describe('Neuer Look: name in the project languages', () => {
     await user.type(nameInput('EN'), 'Only look');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(
-      await screen.findByRole('heading', { name: 'Choose pieces (2 to 5)' })
+      await screen.findByRole('heading', { name: 'Choose pieces (at least 2)' })
     ).toBeInTheDocument();
   });
 });
@@ -1155,7 +1201,7 @@ describe('Neuer Look: description in the project languages', () => {
       'description'
     );
     await next(user);
-    await screen.findByRole('heading', { name: 'Teile wählen (2 bis 5)' });
+    await screen.findByRole('heading', { name: 'Teile wählen (mindestens 2)' });
     for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
     await next(user);
     await screen.findByRole('group', { name: 'Setpreis EUR' });
@@ -1295,7 +1341,7 @@ describe('Neuer Look: the look key', () => {
       )
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: 'Teile wählen (2 bis 5)' })
+      screen.queryByRole('heading', { name: 'Teile wählen (mindestens 2)' })
     ).not.toBeInTheDocument();
     expect(writes(fake)).toHaveLength(0);
   });
@@ -1319,7 +1365,7 @@ describe('Neuer Look: the look key', () => {
     ).toBeInTheDocument();
     await next(user);
     expect(
-      screen.queryByRole('heading', { name: 'Teile wählen (2 bis 5)' })
+      screen.queryByRole('heading', { name: 'Teile wählen (mindestens 2)' })
     ).not.toBeInTheDocument();
   });
 

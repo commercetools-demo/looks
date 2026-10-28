@@ -187,6 +187,22 @@ describe('look detail', () => {
         expect(screen.getAllByText(`Piece ${id}`).length).toBeGreaterThan(0);
     });
 
+    it('shows a card for every piece of a seven-piece look', async () => {
+      const seven = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
+      renderLooks({
+        api: seed({
+          pieceIds: seven,
+          pieces: seven.map((id) => buildPiece(id)),
+          setPrice: { EUR: 60000, CHF: 66000 },
+          amount: { EUR: 10000, CHF: 11000 },
+        }).api,
+        path: '/a',
+      });
+      expect(await screen.findByText('Teile (7)')).toBeInTheDocument();
+      for (const id of seven)
+        expect(screen.getAllByText(`Piece ${id}`).length).toBeGreaterThan(0);
+    });
+
     it('shows price per currency and colour on the card', async () => {
       renderLooks({ api: seed().api, path: '/a' });
       await screen.findByText('Teile (2)');

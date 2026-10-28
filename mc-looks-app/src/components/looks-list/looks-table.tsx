@@ -115,6 +115,9 @@ const LookCell: FC<LookCellProps> = ({ look }) => {
   );
 };
 
+/** The strip shows this many piece images; further pieces are counted (+N). */
+const STRIP_MAX_IMAGES = 5;
+
 type PieceStripProps = { look: LookRow; loading: boolean };
 
 const PieceStrip: FC<PieceStripProps> = ({ look, loading }) => {
@@ -129,20 +132,29 @@ const PieceStrip: FC<PieceStripProps> = ({ look, loading }) => {
       aria-label={intl.formatMessage(messages.piecesStrip, { names })}
       gap={`${STRIP_GAP}px`}
     >
-      {look.pieceIds.map((id, i) =>
-        loading && !look.pieces[i] ? (
-          <Skeleton
-            key={id}
-            width={`${STRIP_IMAGE_WIDTH}px`}
-            style={{ aspectRatio: '4 / 5' }}
-          />
-        ) : (
-          <PieceImage
-            key={id}
-            src={look.pieces[i]?.imageUrl}
-            width={STRIP_IMAGE_WIDTH}
-          />
-        )
+      {look.pieceIds
+        .slice(0, STRIP_MAX_IMAGES)
+        .map((id, i) =>
+          loading && !look.pieces[i] ? (
+            <Skeleton
+              key={id}
+              width={`${STRIP_IMAGE_WIDTH}px`}
+              style={{ aspectRatio: '4 / 5' }}
+            />
+          ) : (
+            <PieceImage
+              key={id}
+              src={look.pieces[i]?.imageUrl}
+              width={STRIP_IMAGE_WIDTH}
+            />
+          )
+        )}
+      {look.pieceIds.length > STRIP_MAX_IMAGES && (
+        <Text fontSize="300" color="neutral.11" alignSelf="center">
+          {intl.formatMessage(messages.piecesMore, {
+            count: look.pieceIds.length - STRIP_MAX_IMAGES,
+          })}
+        </Text>
       )}
     </Flex>
   );

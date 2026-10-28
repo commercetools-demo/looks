@@ -482,7 +482,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
         </Stack>
       </ModalPage.Content>
       <ModalPage.Footer>
-        <Flex gap="200" justifyContent="flex-end" width="100%">
+        <Flex gap={'200'} justifyContent={'flex-end'} width={'full'}>
           <Button variant="ghost" onPress={close}>
             {intl.formatMessage(messages.cancel)}
           </Button>

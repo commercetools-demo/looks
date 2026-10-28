@@ -1,6 +1,6 @@
 import { isValidLookKey } from './keys';
 import { isLookImagePath } from './look-value';
-import { LOOK_MAX_PIECES, LOOK_MIN_PIECES } from './limits';
+import { LOOK_MIN_PIECES } from './limits';
 import { sumListPrices } from './prices';
 import type { Money, NewLook } from './types';
 
@@ -63,7 +63,7 @@ export function validateLook(
   }
 
   const ids = look.componentProductIds;
-  if (ids.length < LOOK_MIN_PIECES || ids.length > LOOK_MAX_PIECES) {
+  if (ids.length < LOOK_MIN_PIECES) {
     errors.push({ code: 'pieces-count', field: 'pieces' });
   }
   const seen = new Set<string>();

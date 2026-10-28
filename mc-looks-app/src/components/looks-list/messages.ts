@@ -26,6 +26,10 @@ export default defineMessages({
   columnStatus: { id: 'Looks.list.columnStatus', defaultMessage: 'Status' },
   columnActive: { id: 'Looks.list.columnActive', defaultMessage: 'Aktiv' },
   savingValue: { id: 'Looks.list.savingValue', defaultMessage: '{percent} %' },
+  piecesMore: {
+    id: 'Looks.list.piecesMore',
+    defaultMessage: '+{count}',
+  },
   piecesStrip: {
     id: 'Looks.list.piecesStrip',
     defaultMessage: 'Teile: {names}',
@@ -55,7 +59,7 @@ export default defineMessages({
   emptyDescription: {
     id: 'Looks.list.emptyDescription',
     defaultMessage:
-      'Ein Look fasst zwei bis fünf Teile zu einem Set mit eigenem Preis zusammen. Legen Sie den ersten Look an.',
+      'Ein Look fasst mindestens zwei Teile zu einem Set mit eigenem Preis zusammen. Legen Sie den ersten Look an.',
   },
   noActive: {
     id: 'Looks.list.noActive',

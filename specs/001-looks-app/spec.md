@@ -12,7 +12,7 @@
 
 ## Overview
 
-A **look** is a curated outfit: 2 to 5 products sold as a set at a set price below the sum of the single prices. The shop shows the look on each piece's product page ("Shop the look"), and in the cart, where the set price applies automatically once every piece is in the cart.
+A **look** is a curated outfit: at least 2 products (no upper limit) sold as a set at a set price below the sum of the single prices. The shop shows the look on each piece's product page ("Shop the look"), and in the cart, where the set price applies automatically once every piece is in the cart.
 
 Today the platform's standard Merchant Center covers only half of this: the set-price discount can be maintained in the Discounts application, but the look itself (which pieces, which photo) has no business screen. Merchandisers need a ticket and a developer to create or retire a look.
 
@@ -32,7 +32,7 @@ A merchandiser opens "Looks" in the Merchant Center main menu and sees every act
 
 1. **Given** a project with eight active looks, **When** the user opens the app, **Then** the table lists all eight, each with set price per project currency, live sum, saving in percent and status "Aktiv"/"Active", and the header reads "8 Looks".
 2. **Given** a look has a look photo, **When** the list renders, **Then** the photo is shown in the Look column in 2:3 portrait; **Given** a look has no photo, **Then** the first piece images stand in the same box.
-3. **Given** a look has five pieces, **When** the list renders, **Then** all five piece images are visible without being cut.
+3. **Given** a look has up to five pieces, **When** the list renders, **Then** all piece images are visible without being cut; a look with more pieces shows the first five and "+N".
 4. **Given** the user types part of a name, **When** the filter applies, **Then** only matching looks remain and the count updates; if none match, an empty-filter message is shown.
 4a. **Given** more looks than fit on one page, **When** the list renders, **Then** it shows one page with page controls and a page-size choice, and the count states the total ("8 Looks" total, not the page size).
 4b. **Given** a sortable column header (Look, Setpreis, Summe, Ersparnis, Status), **When** the user activates it, **Then** the list is sorted by that column, ascending then descending, the sort state is announced and visible, and the default order is by name ascending.
@@ -219,7 +219,7 @@ A user with View permission only sees the same list, section and details, but al
 - **FR-032**: Step 2 MUST search products and show per product: image, name, colour (the variant's colour name in the data locale, falling back to the colour attribute's label (attribute names per FR-084), so colourways of one model can be told apart), and sizes with availability from the default inventory. Sizes are the variants having a default inventory entry, labelled by their variant attributes (FR-084); several variants without any such attribute are listed by SKU, and only a product with a single such variant is one size. Pieces MUST be reorderable (drag). A look MUST have 2 to 5 pieces, no duplicates. The step shows no prices and no sum; prices appear from the set price step on.
 - **FR-033**: Step 3 MUST collect one set price per project currency and show the sum of the pieces and the saving.
 - **FR-034**: Step 4 MUST show a summary and the switch "Nach dem Anlegen aktiv" (default off).
-- **FR-035**: Saving MUST be refused unless: at least one name is present; there are 2 to 5 distinct pieces; every piece has a list price (FR-008) in every project currency; the set price in each currency is a positive integer amount strictly below the live sum of the pieces in that currency; and the sum the user saw still equals the live sum at save time.
+- **FR-035**: Saving MUST be refused unless: at least one name is present; there are at least 2 distinct pieces (no upper limit); every piece has a list price (FR-008) in every project currency; the set price in each currency is a positive integer amount strictly below the live sum of the pieces in that currency; and the sum the user saw still equals the live sum at save time.
 - **FR-036**: The look key MUST be shown and editable while the look is created: step 1 has a field "Key" that suggests the slug of the English name, else the German one, else the first translation (lowercase ASCII letters, digits and single hyphens; umlauts transliterated; at most 40 characters; `-2`, `-3`, … appended while taken) and follows the name until the user edits it. A key the user typed MUST follow the shared key rule (letters, digits, `-` and `_` only, trimmed, the whole key with its prefix at most 256 characters), MUST be unique (a taken key is flagged and refused, never renamed), and is saved as given. The field states how the key is stored and that it cannot be changed after creation; afterwards the key is shown read-only. Look definition and discount share the key `look-<lookKey>`.
 
 #### Saving and consistency
@@ -269,7 +269,7 @@ A user with View permission only sees the same list, section and details, but al
 
 ### Key Entities *(include if feature involves data)*
 
-- **Look**: a curated set of 2–5 products. Attributes: look key, name per project language, ordered pieces, set price per project currency, optional look photo (path, width, height), optional switch-off time. It is the pairing of a *look definition* and a *set-price discount*; neither alone is a complete look.
+- **Look**: a curated set of at least 2 products. Attributes: look key, name per project language, ordered pieces, set price per project currency, optional look photo (path, width, height), optional switch-off time. It is the pairing of a *look definition* and a *set-price discount*; neither alone is a complete look.
 - **Look definition**: the key-value document in the container `look`, key `look-<lookKey>`, value `{ componentProductIds[], setPrice{<currency>: cent amount}, image?{path,width,height}, endedAt? (ISO time) }`. Written by the app; read by the storefront.
 - **Set-price discount**: the Cart Discount with the same key. It decides what the shopper pays and whether the look is live (`isActive`). Its name carries the look name (FR-043).
 - **Piece**: a product as the app shows it: image, localized name, colour, list prices per currency, sizes with default-inventory stock, sold-out-everywhere flag.
@@ -305,7 +305,7 @@ A user with View permission only sees the same list, section and details, but al
 - **Seeding**: no seed, demo-data or reset tooling is built or maintained. Looks exist only through the app.
 - **Resolved source conflicts**:
   - Column widths: the later spec decision wins over the design board (Ersparnis 100 px, Status 120 px, Aktiv 88 px) because "Aktiv" broke across lines at 60 px. The Marke column is removed with brands.
-  - Piece limit: 2 to 5 pieces (earlier version allowed 2 or 3).
+  - Piece count: at least 2, no upper limit (earlier versions allowed 2 to 5, and 2 or 3). The list strip shows the first five piece images and counts the rest (+N).
   - Look and product names follow the data locale (not the UI language).
   - Design placeholder text (e.g. the step 2 error "Aktuell sind 6 gewählt") is an example; the built wording wins.
   - The detail's stock text in the design ("Größen … verfügbar") is a summary; the real app shows per-size stock from inventory.

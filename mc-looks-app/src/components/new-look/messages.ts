@@ -53,10 +53,6 @@ export default defineMessages({
     defaultMessage: 'Dieser Key ist schon vergeben.',
   },
   reviewKey: { id: 'Looks.newLook.reviewKey', defaultMessage: 'Key' },
-  nameHelp: {
-    id: 'Looks.newLook.nameHelp',
-    defaultMessage: 'Der englische Name bestimmt den Schlüssel des Looks.',
-  },
   photoLabel: { id: 'Looks.newLook.photoLabel', defaultMessage: 'Look-Foto' },
   photoOptional: {
     id: 'Looks.newLook.photoOptional',
@@ -94,7 +90,7 @@ export default defineMessages({
   },
   piecesTitle: {
     id: 'Looks.newLook.piecesTitle',
-    defaultMessage: 'Teile wählen ({min} bis {max})',
+    defaultMessage: 'Teile wählen (mindestens {min})',
   },
   selectedHeading: {
     id: 'Looks.newLook.selectedHeading',
@@ -159,10 +155,6 @@ export default defineMessages({
     id: 'Looks.newLook.errorPiecesMin',
     defaultMessage:
       'Ein Look braucht mindestens {min} Teile, gewählt sind {count}.',
-  },
-  errorPiecesMax: {
-    id: 'Looks.newLook.errorPiecesMax',
-    defaultMessage: 'Ein Look hat höchstens {max} Teile, gewählt sind {count}.',
   },
   errorDuplicate: {
     id: 'Looks.newLook.errorDuplicate',

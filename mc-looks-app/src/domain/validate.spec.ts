@@ -35,15 +35,21 @@ describe('validateLook', () => {
     expect(codes({ ...valid, label: { fr: 'x' } })).toEqual([]);
   });
 
-  it('requires 2 to 5 pieces', () => {
+  it('requires at least 2 pieces and has no upper limit', () => {
+    const prices = (ids: string[]) =>
+      new Map(ids.map((id) => [id, { EUR: 100, CHF: 100 }]));
+    expect(codes({ ...valid, componentProductIds: [] })).toContain(
+      'pieces-count'
+    );
     expect(codes({ ...valid, componentProductIds: ['a'] })).toContain(
       'pieces-count'
     );
-    const six = ['a', 'b', 'a2', 'b2', 'a3', 'b3'];
-    const many = new Map(six.map((id) => [id, { EUR: 100, CHF: 100 }]));
-    expect(codes({ ...valid, componentProductIds: six }, many)).toContain(
-      'pieces-count'
-    );
+    for (const count of [2, 5, 6, 10]) {
+      const ids = Array.from({ length: count }, (_, i) => `p${i}`);
+      expect(
+        codes({ ...valid, componentProductIds: ids }, prices(ids))
+      ).not.toContain('pieces-count');
+    }
   });
 
   it('rejects duplicate pieces', () => {

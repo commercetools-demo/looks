@@ -8,7 +8,7 @@ import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import messages from './messages';
 
-export type CardState = 'available' | 'in-look' | 'full';
+export type CardState = 'available' | 'in-look';
 
 type PieceResultCardProps = {
   piece: Piece;
@@ -139,7 +139,7 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
             aria-label={`${intl.formatMessage(messages.add)}: ${piece.name}${
               piece.colour ? ` (${piece.colour})` : ''
             }`}
-            isDisabled={props.isDisabled || props.state === 'full'}
+            isDisabled={props.isDisabled}
             onPress={props.onAdd}
           >
             <Icon size="2xs">

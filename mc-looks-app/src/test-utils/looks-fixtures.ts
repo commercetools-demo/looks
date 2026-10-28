@@ -1,7 +1,7 @@
 import type { LookDiscount, LookObject, Piece } from '../domain/types';
 import { buildDiscount, buildObject, buildPiece } from './fixtures';
 
-export const PIECE_IDS = ['p1', 'p2', 'p3', 'p4', 'p5'];
+export const PIECE_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
 
 export const pieces = (): Piece[] => PIECE_IDS.map((id) => buildPiece(id));
 

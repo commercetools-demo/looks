@@ -12,8 +12,8 @@ export const LOOK_KEY_MAX_LENGTH = 40;
 export const LOOK_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
 export const LOOK_KEY_MAX_CHOSEN_LENGTH = 256 - LOOK_KEY_PREFIX.length;
 
+/** A look has at least this many pieces; there is no upper limit. */
 export const LOOK_MIN_PIECES = 2;
-export const LOOK_MAX_PIECES = 5;
 
 /** Page size of every GraphQL list read. */
 export const PAGE = 500;

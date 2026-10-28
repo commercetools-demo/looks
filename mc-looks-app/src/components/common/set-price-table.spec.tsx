@@ -113,6 +113,22 @@ describe('SetPriceTable', () => {
     });
   });
 
+  it('has one column per piece, however many there are', async () => {
+    const seven = Array.from({ length: 7 }, (_, i) =>
+      buildPiece(`m${i}`, {
+        name: `Teil ${i}`,
+        prices: { 'EUR/DE': 1000, 'EUR/FR': 1000, 'GBP/GB': 1000 },
+      })
+    );
+    renderTable(<Host pieces={seven} />);
+    await screen.findByTestId('price-row-EUR/DE');
+    for (let i = 0; i < 7; i += 1) {
+      expect(
+        screen.getByRole('columnheader', { name: `Teil ${i}` })
+      ).toBeInTheDocument();
+    }
+  });
+
   it('omits a row in which a piece has no price', async () => {
     renderTable(<Host pieces={[shirt, skirt, hat]} />);
     await screen.findByTestId('price-row-EUR/DE');

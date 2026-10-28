@@ -9,7 +9,6 @@
     "componentProductIds": {
       "type": "array",
       "minItems": 2,
-      "maxItems": 5,
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 },
       "description": "Product ids, in look order."

@@ -14,7 +14,7 @@ import {
   Stack,
   Text,
 } from '@commercetools/nimbus';
-import { LOOK_MAX_PIECES, LOOK_MIN_PIECES } from '../../domain/limits';
+import { LOOK_MIN_PIECES } from '../../domain/limits';
 import type { Piece } from '../../domain/types';
 import { useLookApi } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
@@ -85,7 +85,6 @@ export const PiecesStep: FC<PiecesStepProps> = (props) => {
   }, [api, text, intl]);
 
   const chosenIds = new Set(pieces.map((piece) => piece.id));
-  const full = pieces.length >= LOOK_MAX_PIECES;
   const items = useMemo<ChosenItem[]>(
     () => pieces.map((piece) => ({ key: piece.id, label: piece.name, piece })),
     [pieces]
@@ -106,7 +105,6 @@ export const PiecesStep: FC<PiecesStepProps> = (props) => {
       <Heading as="h2" size="md">
         {intl.formatMessage(messages.piecesTitle, {
           min: LOOK_MIN_PIECES,
-          max: LOOK_MAX_PIECES,
         })}
       </Heading>
       <Stack gap="300">
@@ -253,13 +251,7 @@ export const PiecesStep: FC<PiecesStepProps> = (props) => {
                 <PieceResultCard
                   piece={piece}
                   isDisabled={props.isDisabled}
-                  state={
-                    chosenIds.has(piece.id)
-                      ? 'in-look'
-                      : full
-                      ? 'full'
-                      : 'available'
-                  }
+                  state={chosenIds.has(piece.id) ? 'in-look' : 'available'}
                   onAdd={() => onPiecesChange([...pieces, piece])}
                 />
               </Flex>

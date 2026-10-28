@@ -50,7 +50,6 @@ export const BasicsStep: FC<BasicsStepProps> = (props) => {
       <Stack gap="500" maxWidth="520px" flex="1" minWidth="280px">
         <LookNameField
           label={intl.formatMessage(messages.name)}
-          description={intl.formatMessage(messages.nameHelp)}
           value={label}
           onChange={props.onLabelChange}
           error={nameError}

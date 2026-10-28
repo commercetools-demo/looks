@@ -16,7 +16,7 @@ The app owns no database. A **look** is two platform resources joined by key, pl
 
 | Field | Type | Rules |
 |---|---|---|
-| `componentProductIds` | `string[]` | 2–5 distinct product ids, in look order |
+| `componentProductIds` | `string[]` | at least 2 distinct product ids (no upper limit), in look order |
 | `setPrice` | `{ [currency]: integer }` | cent amounts; one entry per project currency; each > 0 and < live sum in that currency |
 | `image` | `{ path, width, height }` (optional) | `path` matches `^looks/[A-Za-z0-9._-]+\.(webp\|jpg\|png)$`; width/height positive integers read from the loaded file |
 | `endedAt` | ISO 8601 string (optional) | set when switched off, removed when switched on; kept by price/photo changes |

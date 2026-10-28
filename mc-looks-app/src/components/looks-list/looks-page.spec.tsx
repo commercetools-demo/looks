@@ -14,7 +14,12 @@ import {
 } from '../../test-utils';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
 import { buildDiscount } from '../../test-utils/fixtures';
-import { buildLook, buildLooks, pieces } from '../../test-utils/looks-fixtures';
+import {
+  buildLook,
+  buildLooks,
+  PIECE_IDS,
+  pieces,
+} from '../../test-utils/looks-fixtures';
 import { LOOK_TABLE_COLUMN_WIDTHS } from './looks-table';
 
 const NAMES = [
@@ -140,6 +145,29 @@ describe('looks list', () => {
     ) as HTMLElement;
     expect(strip.querySelectorAll('img')).toHaveLength(5);
     expect(strip).toHaveAccessibleName(/Teile: Piece p1, Piece p2/);
+  });
+
+  it('shows at most five piece images and counts the further pieces as +N', async () => {
+    setup(
+      buildLooks([
+        buildLook('seven', 'Sieben Teile', PIECE_IDS, {
+          setPrice: { EUR: 60000, CHF: 66000 },
+        }),
+      ])
+    );
+    const row = await rowOf('Sieben Teile');
+    const strip = row.querySelector(
+      '[data-custom-composition="piece-strip"]'
+    ) as HTMLElement;
+    expect(strip.querySelectorAll('img')).toHaveLength(5);
+    expect(within(strip).getByText('+2')).toBeInTheDocument();
+    expect(strip).toHaveAccessibleName(/Piece p6, Piece p7/);
+  });
+
+  it('shows no +N for a look with exactly five pieces', async () => {
+    setup(buildLooks([buildLook('five', 'Fünf Teile', PIECE_IDS.slice(0, 5))]));
+    const row = await rowOf('Fünf Teile');
+    expect(within(row).queryByText(/^\+\d+$/)).not.toBeInTheDocument();
   });
 
   it('filters by name, updates the count and says so when nothing matches', async () => {

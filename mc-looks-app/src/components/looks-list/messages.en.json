@@ -18,9 +18,10 @@
   "Looks.list.pricesLoading": "Loading prices",
   "Looks.list.pagination": "Pages of looks",
   "Looks.list.emptyTitle": "No looks yet",
-  "Looks.list.emptyDescription": "A look combines two to five pieces into a set with its own price. Create the first look.",
+  "Looks.list.emptyDescription": "A look combines at least two pieces into a set with its own price. Create the first look.",
   "Looks.list.noActive": "No look is active at the moment.",
   "Looks.list.emptyFiltered": "No look matches your search.",
   "Looks.list.loadErrorTitle": "The looks could not be loaded",
-  "Looks.list.loadErrorNote": "No incomplete list is shown."
+  "Looks.list.loadErrorNote": "No incomplete list is shown.",
+  "Looks.list.piecesMore": "+{count}"
 }
