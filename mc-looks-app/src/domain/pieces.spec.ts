@@ -21,13 +21,7 @@ const variant = (
     { value: { currencyCode: 'EUR', centAmount: 9999 } },
     { value: { currencyCode: 'CHF', centAmount: 10990 } },
   ],
-  attributesRaw: [
-    ...(size ? [{ name: 'size', value: size }] : []),
-    {
-      name: 'color-name',
-      value: { de: 'natürliche Glasur', en: 'natural glaze' },
-    },
-  ],
+  attributesRaw: [...(size ? [{ name: 'size', value: size }] : [])],
   availability: qty === null ? null : { noChannel: { availableQuantity: qty } },
   ...extra,
 });
@@ -43,7 +37,7 @@ const product = (
 });
 
 describe('pieceFromProduct', () => {
-  it('lists sizes from variants with default inventory and the colour name in the data locale', () => {
+  it('lists sizes from variants with default inventory', () => {
     const piece = pieceFromProduct(
       product(
         variant('a-34', '34', 5, { images: [{ url: 'http://i/1.jpg' }] }),
@@ -56,13 +50,9 @@ describe('pieceFromProduct', () => {
       { sku: 'a-34', label: '34', availableQuantity: 5 },
       { sku: 'a-36', label: '36', availableQuantity: 0 },
     ]);
-    expect(piece.colour).toBe('natürliche Glasur');
     expect(piece.oneSize).toBe(false);
     expect(piece.soldOutEverywhere).toBe(false);
     expect(piece.imageUrl).toBe('http://i/1.jpg');
-    expect(
-      pieceFromProduct(product(variant('a-34', '34', 5)), cfg, 'en').colour
-    ).toBe('natural glaze');
   });
 
   it('does not list a ghost colour group without inventory entries (no size appears twice)', () => {
@@ -100,19 +90,6 @@ describe('pieceFromProduct', () => {
       cfg
     );
     expect(piece.soldOutEverywhere).toBe(true);
-  });
-
-  it('falls back to the colour attribute label when there is no colour name', () => {
-    const v = variant('a-34', '34', 1, {
-      attributesRaw: [
-        { name: 'size', value: '34' },
-        {
-          name: 'color',
-          value: { key: 'beige', label: { de: 'Beige', en: 'Beige' } },
-        },
-      ],
-    });
-    expect(pieceFromProduct(product(v), cfg, 'de').colour).toBe('Beige');
   });
 
   it('reads the variant label from a configured attribute name and enum labels', () => {
@@ -320,8 +297,6 @@ describe('prices across variants and diagnostics', () => {
 describe('Maya Pillow Cover as stored in tech-sales-good-store', () => {
   const cfg = resolveConfig({
     variantAttributes: 'search-color,search-finish,size',
-    colorNameAttribute: 'color-label',
-    colorAttribute: 'search-color',
   });
   const variant = (sku: string, key: string, de: string, quantity: number) => ({
     sku,
@@ -334,7 +309,6 @@ describe('Maya Pillow Cover as stored in tech-sales-good-store', () => {
         name: 'search-color',
         value: { key, label: { 'en-US': key, 'de-DE': de } },
       },
-      { name: 'color-label', value: { 'en-US': key, 'de-DE': de } },
     ],
     availability: { noChannel: { availableQuantity: quantity } },
   });
@@ -356,6 +330,5 @@ describe('Maya Pillow Cover as stored in tech-sales-good-store', () => {
     );
     expect(piece.oneSize).toBe(false);
     expect(piece.sizes.map((size) => size.label)).toEqual(['Violett', 'Gelb']);
-    expect(piece.colour).toBe('Violett');
   });
 });

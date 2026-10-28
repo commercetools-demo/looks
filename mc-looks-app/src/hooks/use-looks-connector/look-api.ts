@@ -20,6 +20,7 @@ import {
   type RawLookDiscount,
   type RawLookObject,
 } from './conversion';
+import { buildPieceSearchQuery } from './search-query';
 import FetchLookObjectsQuery from './fetch-look-objects.graphql';
 import FetchCartDiscountsQuery from './fetch-cart-discounts.graphql';
 import FetchDiscountQuery from './fetch-discount.graphql';
@@ -44,10 +45,7 @@ export const ORDERS_PAGE_LIMIT = 4;
 export interface LookApiContext {
   currencies: string[];
   dataLocale?: string;
-  config: Pick<
-    AppConfig,
-    'variantAttributes' | 'colorNameAttribute' | 'colorAttribute'
-  >;
+  config: Pick<AppConfig, 'variantAttributes'>;
 }
 
 type Client = Pick<ApolloClient<unknown>, 'query' | 'mutate'>;
@@ -303,23 +301,15 @@ export function createLookApi(
 
     async searchPieces(text) {
       const language = context.dataLocale ?? 'de';
-      const term = text.trim();
-      const query = term
-        ? {
-            wildcard: {
-              field: 'name',
-              language,
-              value: `*${term}*`,
-              caseInsensitive: true,
-            },
-          }
-        : { exists: { field: 'name', language } };
       const data = await read<{
         productsSearch: {
           total: number;
           results: Array<{ product: RawProduct }>;
         };
-      }>('searchProducts', SearchPiecesQuery, { query, acceptLanguage });
+      }>('searchProducts', SearchPiecesQuery, {
+        query: buildPieceSearchQuery(text, language),
+        acceptLanguage,
+      });
       return {
         total: data.productsSearch.total,
         pieces: data.productsSearch.results.map(({ product }) =>

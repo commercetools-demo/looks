@@ -25,7 +25,6 @@ type User = ReturnType<typeof userEvent.setup>;
 
 const jacket = buildPiece('jacket', {
   name: 'Jacke Cleo',
-  colour: 'camel',
   prices: { EUR: 12999, CHF: 14290 },
 });
 const trousers = buildPiece('trousers', {
@@ -225,7 +224,7 @@ describe('Neuer Look: step 1, basics', () => {
 });
 
 describe('Neuer Look: step 2, pieces', () => {
-  it('scenario 3: finds products with image, name, colour and sizes, without prices; adds them and states the count', async () => {
+  it('scenario 3: finds products with image, name and sizes, without prices; adds them and states the count', async () => {
     const user = userEvent.setup();
     const { fake } = setup();
     await gotoPieces(user);
@@ -233,7 +232,6 @@ describe('Neuer Look: step 2, pieces', () => {
     expect(fake.callsTo('searchPieces')[0].args).toEqual(['']);
     const card = within(results).getAllByRole('listitem')[0];
     expect(within(card).getByText('Jacke Cleo')).toBeInTheDocument();
-    expect(within(card).getByText('camel')).toBeInTheDocument();
     expect(card).not.toHaveTextContent(/€|CHF/);
     expect(within(card).getByText('36')).toBeInTheDocument();
     expect(within(card).getByText('38: nur noch 2')).toBeInTheDocument();

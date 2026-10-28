@@ -25,8 +25,6 @@ const createApi = () =>
       dataLocale: 'de',
       config: {
         variantAttributes: ['size'],
-        colorNameAttribute: 'color-name',
-        colorAttribute: 'color',
       },
     }
   );
@@ -509,6 +507,82 @@ describe('createLookApi', () => {
     await expect(createApi().fetchLookObjects()).rejects.toMatchObject({
       kind: 'forbidden',
       operation: 'readLooks',
+    });
+  });
+
+  describe('searchPieces', () => {
+    const product = (id: string) => ({
+      __typename: 'ProductSearchResult',
+      id,
+      product: {
+        __typename: 'Product',
+        id,
+        masterData: {
+          __typename: 'ProductCatalogData',
+          current: {
+            __typename: 'ProductData',
+            name: `Product ${id}`,
+            masterVariant: {
+              __typename: 'ProductVariant',
+              sku: `${id}-1`,
+              images: [],
+              prices: [],
+              attributesRaw: [],
+              availability: null,
+            },
+            variants: [],
+          },
+        },
+      },
+    });
+
+    it('searches name and SKU together', async () => {
+      const queries: unknown[] = [];
+      server.use(
+        graphql.query('SearchPieces', (req, res, ctx) => {
+          queries.push(req.variables.query);
+          return res(
+            ctx.data({ productsSearch: { total: 1, results: [product('a')] } })
+          );
+        })
+      );
+      const found = await createApi().searchPieces('mpc-02');
+      expect(found.pieces.map((piece) => piece.id)).toEqual(['a']);
+      expect(queries).toHaveLength(1);
+      const fields = (
+        queries[0] as { or: Array<{ wildcard: { field: string } }> }
+      ).or.map((clause) => clause.wildcard.field);
+      expect(fields).toEqual([
+        'name',
+        'description',
+        'slug',
+        'searchKeywords',
+        'key',
+        'id',
+        'variants.sku',
+      ]);
+    });
+
+    it('does not search again when the failure is a missing permission', async () => {
+      let calls = 0;
+      server.use(
+        graphql.query('SearchPieces', (_req, res, ctx) => {
+          calls += 1;
+          return res(
+            ctx.errors([
+              {
+                message: 'no scope',
+                extensions: { code: 'InsufficientScope' },
+              },
+            ])
+          );
+        })
+      );
+      await expect(createApi().searchPieces('maya')).rejects.toMatchObject({
+        kind: 'forbidden',
+        operation: 'searchProducts',
+      });
+      expect(calls).toBe(1);
     });
   });
 

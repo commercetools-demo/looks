@@ -58,7 +58,6 @@ export interface Piece {
   id: string;
   name: string;
   imageUrl?: string;
-  colour?: string;
   prices: Money;
   sizes: PieceSize[];
   /** No variant has a size attribute: shown as "Einheitsgröße". */

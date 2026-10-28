@@ -10,7 +10,6 @@ export function buildPiece(id: string, overrides: Partial<Piece> = {}): Piece {
     id,
     name: `Piece ${id}`,
     imageUrl: `https://img.example.com/${id}.jpg`,
-    colour: 'braun',
     prices,
     sizes: [
       { sku: `${id}-36`, label: '36', availableQuantity: 5 },

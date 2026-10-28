@@ -13,7 +13,7 @@ type PieceCardProps = {
   pieceId: string;
 };
 
-/** One piece of a look: image, name, colour, list prices and stock per size. */
+/** One piece of a look: image, name, list prices and stock per size. */
 export const PieceCard: FC<PieceCardProps> = ({ piece, pieceId }) => {
   const intl = useIntl();
   const sizes = (piece?.sizes ?? []).map((size) => ({
@@ -61,11 +61,6 @@ export const PieceCard: FC<PieceCardProps> = ({ piece, pieceId }) => {
       <Stack gap="200" minWidth={0}>
         <Box minWidth={0}>
           <Text fontWeight="600">{piece?.name ?? pieceId}</Text>
-          {piece?.colour && (
-            <Text fontSize="300" color="neutral.11">
-              {piece.colour}
-            </Text>
-          )}
         </Box>
         <MoneyLines value={piece?.prices} align="flex-start" />
         <Stack gap="0" fontSize="300">

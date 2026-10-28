@@ -25,9 +25,9 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 - **Alternatives**: server paging on Custom Objects by key — gives only name order and makes the other sortable columns wrong. Storing the sum on the look — stale the moment a price changes, rejected.
 - **Consequence**: SC-004 is met by tier 1 (first page) and by tier 2 for the visible page; sorting by Summe/Ersparnis may show a loading state for large projects. Page and size are kept in the URL query so a return from detail restores them.
 
-## R4. Pieces, size attribute, colour, stock
+## R4. Pieces, variant attributes, stock
 
-- **Decision**: product reads use `products` (by ids) and `productsSearch` (text) returning `masterData.current` with `masterVariant`/`variants` including `prices`, `images`, `attributesRaw`, and `availability { noChannel { availableQuantity } }`. Size label from the configured size attribute; colour from the configured colour-name attribute, then the configured colour attribute's label; sizeless products show "Einheitsgröße". A size exists only for a variant with a default-inventory entry (`availability.noChannel` present); if no variant has one, all variants are listed as sold out. Image: master variant's, else first variant's with an image.
+- **Decision**: product reads use `products` (by ids) and `productsSearch` (text) returning `masterData.current` with `masterVariant`/`variants` including `prices`, `images`, `attributesRaw`, and `availability { noChannel { availableQuantity } }`. Size label from the configured variant attributes; sizeless products show "Einheitsgröße". A size exists only for a variant with a default-inventory entry (`availability.noChannel` present); if no variant has one, all variants are listed as sold out. Image: master variant's, else first variant's with an image.
 - **Rationale**: spec FR-032, FR-084, and the source's "ghost colour group" handling. Default inventory means `noChannel`, so no channel lookup request is needed (the source needed one).
 - **Alternatives**: `inventoryEntries(where: sku in (…) and supplyChannel is not defined)` — validated and kept as the fallback if `availability.noChannel` proves empty for a project; not the default because it adds a round trip per chunk.
 - **Search**: `productsSearch` with a case-insensitive wildcard on the localized name in the data locale (`*term*`), limit 20, so parts of compound words match. No product selection filter (no brands).
@@ -67,7 +67,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R10. Configuration module and `.env` path
 
-- **Decision**: `src/config.ts` is the only reader of per-project values: `SIZE_ATTRIBUTE` (default `size`), `COLOR_NAME_ATTRIBUTE` (default `color-name`), `COLOR_ATTRIBUTE` (default `color`), `SHOP_ORIGIN`. For now it exports typed defaults; the same file switches to `process.env` reads (`mc-scripts` inlines `${env:…}`/`process.env` at build) when the variables are introduced, with a committed `.env` of defaults and `.env.local` overrides, as is common for Merchant Center apps. A required value that is missing or empty throws at build/start-up naming the variable. A unit test fails if any other file reads `process.env` or contains a literal of these defaults.
+- **Decision**: `src/config.ts` is the only reader of per-project values: `VARIANT_ATTRIBUTES` (default `size`), `SHOP_ORIGIN`. For now it exports typed defaults; the same file switches to `process.env` reads (`mc-scripts` inlines `${env:…}`/`process.env` at build) when the variables are introduced, with a committed `.env` of defaults and `.env.local` overrides, as is common for Merchant Center apps. A required value that is missing or empty throws at build/start-up naming the variable. A unit test fails if any other file reads `process.env`.
 - **Rationale**: FR-084/085 ("move to `.env` later without touching callers").
 - **Alternatives**: scatter `process.env` reads — rejected; fetching configuration at runtime from a Custom Object — over-engineering for a developer-only setting.
 

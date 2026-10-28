@@ -196,12 +196,11 @@ describe('look detail', () => {
         expect(screen.getAllByText(`Piece ${id}`).length).toBeGreaterThan(0);
     });
 
-    it('shows price per currency and colour on the card', async () => {
+    it('shows price per currency on the card', async () => {
       renderLooks({ api: seed().api, path: '/a' });
       await screen.findByText('Teile (2)');
       expect(screen.getAllByText(/100,00\s€/).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/110,00\sCHF/).length).toBeGreaterThan(0);
-      expect(screen.getAllByText('braun')).toHaveLength(2);
     });
 
     it('US5.2: one size left shows quantities and sold out, without warning', async () => {

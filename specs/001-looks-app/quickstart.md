@@ -5,7 +5,7 @@ A run and validation guide. Contracts: [operations.graphql](./contracts/operatio
 ## Prerequisites
 
 - Node 22, npm.
-- A commercetools sandbox project with: at least 2 currencies, 6+ products with prices in every project currency and images, default inventory entries (no supply channel) for their variants, a size attribute and colour attributes (names as configured).
+- A commercetools sandbox project with: at least 2 currencies, 6+ products with prices in every project currency and images, default inventory entries (no supply channel) for their variants, variant attributes such as size (names as configured).
 - A Merchant Center user with the app's **Manage** permission, and a second user with **View** only.
 - A registered custom application in Draft (see `docs/SETUP.md` once written): entry point `looks`, scopes from FR-080.
 
@@ -14,7 +14,7 @@ A run and validation guide. Contracts: [operations.graphql](./contracts/operatio
 ```shell
 cd mc-looks-app
 npm install
-cp ../.env.example .env.local     # set INITIAL_PROJECT_KEY, CLOUD_IDENTIFIER, size/colour attributes, shop origin
+cp ../.env.example .env.local     # set INITIAL_PROJECT_KEY, CLOUD_IDENTIFIER, variant attributes, shop origin
 npm run generate-types:ctp         # interactive browser login; do not run headless
 npm run extract-intl
 ```

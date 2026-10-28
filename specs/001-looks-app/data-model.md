@@ -75,7 +75,6 @@ Only `complete` looks can be switched. Transitions: create writes discount (→ 
 | Field | Rule |
 |---|---|
 | `id`, `name` (localized), `imageUrl` | image: master variant's, else first variant's with one |
-| `colour` | variant's `config.colorNameAttribute` (localized), else `config.colorAttribute` label |
 | `prices` | `{ [currency]: cent }` per R5 rule |
 | `sizes[]` | `{ sku, label, availableQuantity }` from variants with default inventory; label from `config.sizeAttribute`; empty ⇒ "Einheitsgröße" |
 | `soldOutEverywhere` | every size ≤ 0 |
@@ -92,7 +91,7 @@ Stock state: `sold-out` ≤ 0, `low` 1–3, `ok` > 3.
 
 ### Configuration (`src/config.ts`)
 
-`sizeAttribute` (`size`), `colorNameAttribute` (`color-name`), `colorAttribute` (`color`), `shopOrigin`. Plus build-time: `entryPointUriPath`, `applicationId`, `applicationUrl`, `cloudIdentifier`, `initialProjectKey`.
+`variantAttributes` (`size`), `shopOrigin`. Plus build-time: `entryPointUriPath`, `applicationId`, `applicationUrl`, `cloudIdentifier`, `initialProjectKey`.
 
 ## Validation rules (single module `validate.ts`)
 

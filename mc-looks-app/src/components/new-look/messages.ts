@@ -72,7 +72,7 @@ export default defineMessages({
   },
   searchPlaceholder: {
     id: 'Looks.newLook.searchPlaceholder',
-    defaultMessage: 'Name, Farbe oder Artikelnummer',
+    defaultMessage: 'Name, Beschreibung, Produkt-ID oder Artikelnummer',
   },
   noProducts: {
     id: 'Looks.newLook.noProducts',
@@ -103,10 +103,6 @@ export default defineMessages({
     id: 'Looks.newLook.soldOutBody',
     defaultMessage:
       'Solange das so ist, kann das Set nicht zum Setpreis gekauft werden. Das Speichern ist trotzdem möglich.',
-  },
-  pieceColour: {
-    id: 'Looks.newLook.pieceColour',
-    defaultMessage: 'Farbe: {colour}',
   },
   errorName: {
     id: 'Looks.newLook.errorName',

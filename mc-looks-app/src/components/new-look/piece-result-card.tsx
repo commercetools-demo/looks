@@ -25,7 +25,7 @@ type PieceResultCardProps = {
   onAdd: () => void;
 };
 
-/** One search result: image, name, colour, prices per currency and country, size chips
+/** One search result: image, name, prices per currency and country, size chips
  *  with "nur noch N" and "ausverkauft", and the add action. */
 export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
   const intl = useIntl();
@@ -70,18 +70,6 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
             <Text fontWeight="500" truncate title={piece.name}>
               {piece.name}
             </Text>
-            {piece.colour && (
-              <Text
-                fontSize="300"
-                color="neutral.11"
-                truncate
-                aria-label={intl.formatMessage(messages.pieceColour, {
-                  colour: piece.colour,
-                })}
-              >
-                {piece.colour}
-              </Text>
-            )}
           </Box>
           {piece.oneSize ? (
             <Text fontSize="300">
@@ -153,9 +141,7 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
             <Button
               size="xs"
               variant="outline"
-              aria-label={`${intl.formatMessage(messages.add)}: ${piece.name}${
-                piece.colour ? ` (${piece.colour})` : ''
-              }`}
+              aria-label={`${intl.formatMessage(messages.add)}: ${piece.name}`}
               isDisabled={props.isDisabled}
               onPress={props.onAdd}
             >

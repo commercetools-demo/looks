@@ -6,8 +6,6 @@ describe('config', () => {
   it('has the documented defaults', () => {
     expect(resolveConfig()).toEqual({
       variantAttributes: ['size'],
-      colorNameAttribute: 'color-name',
-      colorAttribute: 'color',
       shopOrigin: '',
     });
   });
@@ -30,12 +28,6 @@ describe('config', () => {
     );
     expect(() => resolveConfig({ variantAttributes: ' , ' })).toThrow(
       'VARIANT_ATTRIBUTES'
-    );
-    expect(() => resolveConfig({ colorNameAttribute: '  ' })).toThrow(
-      'COLOR_NAME_ATTRIBUTE'
-    );
-    expect(() => resolveConfig({ colorAttribute: '' })).toThrow(
-      'COLOR_ATTRIBUTE'
     );
   });
 
@@ -67,14 +59,6 @@ describe('config guard (FR-084/085)', () => {
       .filter((f) => /process\.env/.test(fs.readFileSync(f, 'utf8')))
       .map((f) => path.basename(f))
       .filter((name) => !['config.ts', 'constants.ts'].includes(name));
-    expect(offenders).toEqual([]);
-  });
-
-  it('no file other than config.ts hard-codes the default attribute names', () => {
-    const offenders = production
-      .filter((f) => path.basename(f) !== 'config.ts')
-      .filter((f) => /['"`](color-name)['"`]/.test(fs.readFileSync(f, 'utf8')))
-      .map((f) => path.relative(srcDir, f));
     expect(offenders).toEqual([]);
   });
 

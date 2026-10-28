@@ -24,10 +24,7 @@ export interface RawProduct {
   };
 }
 
-type AttributeConfig = Pick<
-  AppConfig,
-  'variantAttributes' | 'colorNameAttribute' | 'colorAttribute'
->;
+type AttributeConfig = Pick<AppConfig, 'variantAttributes'>;
 
 const attributeOf = (variant: RawVariant | undefined, name: string): unknown =>
   variant?.attributesRaw?.find((attribute) => attribute.name === name)?.value;
@@ -109,11 +106,6 @@ export function pieceFromProduct(
         availableQuantity: stockOf(variant) ?? 0,
       }));
 
-  const colourVariant = stocked[0] ?? current.masterVariant;
-  const colour =
-    textOf(attributeOf(colourVariant, config.colorNameAttribute), locales) ??
-    textOf(attributeOf(colourVariant, config.colorAttribute), locales);
-
   const imageUrl = [current.masterVariant, ...stocked, ...variants].find(
     (variant) => variant.images?.[0]?.url
   )?.images?.[0]?.url;
@@ -122,7 +114,6 @@ export function pieceFromProduct(
     id: product.id,
     name: current.name ?? product.id,
     imageUrl,
-    colour,
     prices: {}, // filled by `withPrices`, which needs the project currencies
     sizes,
     oneSize,
