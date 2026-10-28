@@ -6,154 +6,150 @@
 
 import { defineMessages } from 'react-intl';
 
-// German is the reference language; English lives in messages.en.json.
+// English is the reference language (the default messages); the German texts live in src/i18n/data/de.json.
 export default defineMessages({
   backToList: {
     id: 'Looks.detail.backToList',
-    defaultMessage: 'Zurück zu Looks',
+    defaultMessage: 'Back to looks',
   },
   statusLabel: { id: 'Looks.detail.statusLabel', defaultMessage: 'Status' },
   loadErrorTitle: {
     id: 'Looks.detail.loadErrorTitle',
-    defaultMessage: 'Der Look konnte nicht geladen werden',
+    defaultMessage: 'The look could not be loaded',
   },
   notFoundTitle: {
     id: 'Looks.detail.notFoundTitle',
-    defaultMessage: 'Look nicht gefunden',
+    defaultMessage: 'Look not found',
   },
   notFoundDescription: {
     id: 'Looks.detail.notFoundDescription',
     defaultMessage:
-      'Zum Schlüssel „{key}“ gibt es weder eine Look-Definition noch einen Setpreis-Rabatt.',
+      'There is neither a look definition nor a set-price discount for the key "{key}".',
   },
   piecesTitle: {
     id: 'Looks.detail.piecesTitle',
-    defaultMessage: 'Teile ({count})',
+    defaultMessage: 'Pieces ({count})',
   },
   soldOutAlertTitle: {
     id: 'Looks.detail.soldOutAlertTitle',
-    defaultMessage: '{piece} ist in allen Größen ausverkauft',
+    defaultMessage: '{piece} is sold out in every size',
   },
   soldOutAlertDescription: {
     id: 'Looks.detail.soldOutAlertDescription',
     defaultMessage:
-      'Ein Set braucht jedes Teil in einer Größe. Das Set ist nicht zum Setpreis kaufbar.',
+      'A set needs every piece in one size. The set cannot be bought at the set price.',
   },
   driftDescription: {
     id: 'Looks.detail.driftDescription',
     defaultMessage:
-      'Die Einzelpreise haben sich seit dem Anlegen geändert: Der Rabatt führt nicht mehr auf den gespeicherten Setpreis.',
+      'The single prices changed since the look was set up: the discount no longer lands on the stored set price.',
   },
   recalculate: {
     id: 'Looks.detail.recalculate',
-    defaultMessage: 'Setpreis neu berechnen',
+    defaultMessage: 'Recalculate set price',
   },
   deleteDescription: {
     id: 'Looks.detail.deleteDescription',
     defaultMessage:
-      'Entfernt die Look-Definition, alle Rabatte der Länder und die Rabattgruppe. Das lässt sich nicht rückgängig machen.',
+      'Removes the look definition, the discounts of all countries and the discount group. This cannot be undone.',
   },
   deleteActiveWarning: {
     id: 'Looks.detail.deleteActiveWarning',
     defaultMessage:
-      'Der Look ist aktiv: Seine Rabatte verschwinden sofort aus dem Shop.',
+      'The look is on: its discounts disappear from the shop at once.',
   },
   deleteButton: {
     id: 'Looks.detail.deleteButton',
-    defaultMessage: 'Look löschen',
+    defaultMessage: 'Delete look',
   },
   deleteConfirm: {
     id: 'Looks.detail.deleteConfirm',
-    defaultMessage: 'Look „{name}“ endgültig löschen?',
+    defaultMessage: 'Delete look “{name}” for good?',
   },
   deleteConfirmButton: {
     id: 'Looks.detail.deleteConfirmButton',
-    defaultMessage: 'Endgültig löschen',
+    defaultMessage: 'Delete for good',
   },
   deleted: {
     id: 'Looks.detail.deleted',
-    defaultMessage: 'Look „{name}“ gelöscht',
+    defaultMessage: 'Look “{name}” deleted',
   },
   setPriceTitle: {
     id: 'Looks.detail.setPriceTitle',
-    defaultMessage: 'Setpreis',
+    defaultMessage: 'Set price',
   },
   setPriceLabel: {
     id: 'Looks.detail.setPriceLabel',
-    defaultMessage: 'Setpreis in {currency}',
+    defaultMessage: 'Set price in {currency}',
   },
   setPriceSave: {
     id: 'Looks.detail.setPriceSave',
-    defaultMessage: 'Setpreis speichern',
+    defaultMessage: 'Save set price',
   },
   setPriceSaved: {
     id: 'Looks.detail.setPriceSaved',
-    defaultMessage: 'Setpreis gespeichert',
+    defaultMessage: 'Set price saved',
   },
-  noChange: { id: 'Looks.detail.noChange', defaultMessage: 'Keine Änderung' },
+  noChange: { id: 'Looks.detail.noChange', defaultMessage: 'No change' },
   staleTitle: {
     id: 'Looks.detail.staleTitle',
-    defaultMessage: 'Setpreis im Shop noch nicht aktualisiert',
+    defaultMessage: 'Set price not yet updated in the shop',
   },
   staleDescription: {
     id: 'Looks.detail.staleDescription',
     defaultMessage:
-      'Der Rabatt ist geändert, die Look-Definition noch nicht. Bitte erneut versuchen.',
+      'The discount is changed, the look definition is not yet. Please try again.',
   },
   errNotPositive: {
     id: 'Looks.detail.errNotPositive',
-    defaultMessage: 'Bitte einen Setpreis über 0 eingeben',
+    defaultMessage: 'Please enter a set price above 0',
   },
   errPercent: {
     id: 'Looks.detail.errPercent',
-    defaultMessage:
-      'Die Ersparnis muss größer als 0 % und kleiner als 100 % sein',
+    defaultMessage: 'The saving must be above 0% and below 100%',
   },
   errModeMixed: {
     id: 'Looks.detail.errModeMixed',
-    defaultMessage:
-      'Pro Land nutzt ein Look entweder Beträge oder einen einzigen Prozentwert',
+    defaultMessage: 'Per country a look uses either amounts or one percentage',
   },
   errNotBelowSum: {
     id: 'Looks.detail.errNotBelowSum',
     defaultMessage:
-      'Der Setpreis muss unter der Summe der Einzelpreise liegen ({sum})',
+      'The set price must be below the sum of the single prices ({sum})',
   },
   errSumNotLive: {
     id: 'Looks.detail.errSumNotLive',
-    defaultMessage:
-      'Die Einzelpreise haben sich geändert. Bitte die Seite neu laden.',
+    defaultMessage: 'The single prices changed. Please reload the page.',
   },
   errPieces: {
     id: 'Looks.detail.errPieces',
-    defaultMessage:
-      'Mindestens ein Teil hat keinen Preis oder ist nicht geladen.',
+    defaultMessage: 'At least one piece has no price or is not loaded.',
   },
   completeMissingObject: {
     id: 'Looks.detail.completeMissingObject',
     defaultMessage:
-      'Zu diesem Setpreis-Rabatt fehlt die Look-Definition. Vervollständigen legt sie aus dem Rabatt an. Der Look bleibt, wie er ist.',
+      'The look definition for this set-price discount is missing. Completing creates it from the discount. The look stays as it is.',
   },
   completeMissingDiscount: {
     id: 'Looks.detail.completeMissingDiscount',
     defaultMessage:
-      'Zu dieser Look-Definition fehlt der Setpreis-Rabatt. Vervollständigen legt ihn inaktiv an. Der Look bleibt ausgeschaltet.',
+      'The set-price discount for this look definition is missing. Completing creates it inactive. The look stays switched off.',
   },
   completeInconsistent: {
     id: 'Looks.detail.completeInconsistent',
     defaultMessage:
-      'Look-Definition und Setpreis-Rabatt nennen verschiedene Teile. Der Look lässt sich hier nicht schalten; bitte im Merchant Center prüfen.',
+      'The look definition and the set-price discount name different pieces. The look cannot be switched here; please check it in the Merchant Center.',
   },
   completeAction: {
     id: 'Looks.detail.completeAction',
-    defaultMessage: 'Vervollständigen',
+    defaultMessage: 'Complete',
   },
   completeName: {
     id: 'Looks.detail.completeName',
-    defaultMessage: 'Look-Name',
+    defaultMessage: 'Look name',
   },
   completed: {
     id: 'Looks.detail.completed',
-    defaultMessage: 'Look vervollständigt',
+    defaultMessage: 'Look completed',
   },
 });

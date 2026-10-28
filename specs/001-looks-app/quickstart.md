@@ -16,7 +16,7 @@ cd mc-looks-app
 npm install
 cp ../.env.example .env.local     # set INITIAL_PROJECT_KEY, CLOUD_IDENTIFIER, variant attributes
 npm run generate-types:ctp         # interactive browser login; do not run headless
-npm run build-i18n
+npm run extract-intl
 ```
 
 ## Automated checks

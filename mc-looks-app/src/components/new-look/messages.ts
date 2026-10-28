@@ -6,238 +6,235 @@
 
 import { defineMessages } from 'react-intl';
 
-// German is the reference language; English lives in messages.en.json.
+// English is the reference language (the default messages); the German texts live in src/i18n/data/de.json.
 export default defineMessages({
-  newLook: { id: 'Looks.newLook.newLook', defaultMessage: 'Neuer Look' },
-  stepBasics: { id: 'Looks.newLook.stepBasics', defaultMessage: 'Grunddaten' },
-  stepPieces: { id: 'Looks.newLook.stepPieces', defaultMessage: 'Teile' },
+  newLook: { id: 'Looks.newLook.newLook', defaultMessage: 'New look' },
+  stepBasics: { id: 'Looks.newLook.stepBasics', defaultMessage: 'Basics' },
+  stepPieces: { id: 'Looks.newLook.stepPieces', defaultMessage: 'Pieces' },
   stepSetPrice: {
     id: 'Looks.newLook.stepSetPrice',
-    defaultMessage: 'Setpreis',
+    defaultMessage: 'Set price',
   },
-  stepReview: { id: 'Looks.newLook.stepReview', defaultMessage: 'Prüfen' },
-  cancel: { id: 'Looks.newLook.cancel', defaultMessage: 'Abbrechen' },
-  back: { id: 'Looks.newLook.back', defaultMessage: 'Zurück' },
-  next: { id: 'Looks.newLook.next', defaultMessage: 'Weiter' },
-  saveLook: { id: 'Looks.newLook.saveLook', defaultMessage: 'Look speichern' },
+  stepReview: { id: 'Looks.newLook.stepReview', defaultMessage: 'Review' },
+  cancel: { id: 'Looks.newLook.cancel', defaultMessage: 'Cancel' },
+  back: { id: 'Looks.newLook.back', defaultMessage: 'Back' },
+  next: { id: 'Looks.newLook.next', defaultMessage: 'Next' },
+  saveLook: { id: 'Looks.newLook.saveLook', defaultMessage: 'Save look' },
   name: { id: 'Looks.newLook.name', defaultMessage: 'Name' },
   description: {
     id: 'Looks.newLook.description',
-    defaultMessage: 'Beschreibung',
+    defaultMessage: 'Description',
   },
   descriptionHelp: {
     id: 'Looks.newLook.descriptionHelp',
     defaultMessage:
-      'Optional, in den Projektsprachen. Wird als Beschreibung der Rabattgruppe gespeichert.',
+      'Optional, in the project languages. Saved as the description of the discount group.',
   },
   reviewDescription: {
     id: 'Looks.newLook.reviewDescription',
-    defaultMessage: 'Beschreibung',
+    defaultMessage: 'Description',
   },
   keyLabel: { id: 'Looks.newLook.keyLabel', defaultMessage: 'Key' },
   keyHelp: {
     id: 'Looks.newLook.keyHelp',
     defaultMessage:
-      'Wird als {fullKey} gespeichert. Der Key kann nach dem Anlegen nicht mehr geändert werden.',
+      'Saved as {fullKey}. The key cannot be changed after the look is created.',
   },
   keyHelpEmpty: {
     id: 'Looks.newLook.keyHelpEmpty',
     defaultMessage:
-      'Der Vorschlag entsteht aus dem Namen. Der Key kann nach dem Anlegen nicht mehr geändert werden.',
+      'The suggestion is derived from the name. The key cannot be changed after the look is created.',
   },
   keyReset: {
     id: 'Looks.newLook.keyReset',
-    defaultMessage: 'Vorschlag übernehmen',
+    defaultMessage: 'Use suggestion',
   },
   errorKeyInvalid: {
     id: 'Looks.newLook.errorKeyInvalid',
     defaultMessage:
-      'Der Key darf nur Buchstaben, Ziffern, Bindestriche und Unterstriche enthalten.',
+      'The key may only contain letters, digits, hyphens and underscores.',
   },
   errorKeyTaken: {
     id: 'Looks.newLook.errorKeyTaken',
-    defaultMessage: 'Dieser Key ist schon vergeben.',
+    defaultMessage: 'This key is already taken.',
   },
   reviewKey: { id: 'Looks.newLook.reviewKey', defaultMessage: 'Key' },
   selectedHeading: {
     id: 'Looks.newLook.selectedHeading',
-    defaultMessage: 'Gewählte Teile',
+    defaultMessage: 'Chosen pieces',
   },
   piecesCount: {
     id: 'Looks.newLook.piecesCount',
     defaultMessage:
-      '{count, plural, one {# Teil gewählt} other {# Teile gewählt}}',
+      '{count, plural, one {# piece chosen} other {# pieces chosen}}',
   },
   dropHint: {
     id: 'Looks.newLook.dropHint',
-    defaultMessage: 'Teil aus der Suche hinzufügen',
+    defaultMessage: 'Add a piece from the search',
   },
   searchLabel: {
     id: 'Looks.newLook.searchLabel',
-    defaultMessage: 'Produktsuche',
+    defaultMessage: 'Product search',
   },
   searchPlaceholder: {
     id: 'Looks.newLook.searchPlaceholder',
-    defaultMessage: 'Name, Beschreibung, Produkt-ID oder Artikelnummer',
+    defaultMessage: 'Name, description, product ID or SKU',
   },
   noProducts: {
     id: 'Looks.newLook.noProducts',
-    defaultMessage: 'Keine Produkte gefunden.',
+    defaultMessage: 'No products found.',
   },
   resultsLabel: {
     id: 'Looks.newLook.resultsLabel',
-    defaultMessage: 'Suchergebnisse',
+    defaultMessage: 'Search results',
   },
-  add: { id: 'Looks.newLook.add', defaultMessage: 'Hinzufügen' },
-  inLook: { id: 'Looks.newLook.inLook', defaultMessage: 'Im Look' },
-  remove: { id: 'Looks.newLook.remove', defaultMessage: 'Entfernen' },
-  moveUp: { id: 'Looks.newLook.moveUp', defaultMessage: 'Nach oben' },
-  moveDown: { id: 'Looks.newLook.moveDown', defaultMessage: 'Nach unten' },
+  add: { id: 'Looks.newLook.add', defaultMessage: 'Add' },
+  inLook: { id: 'Looks.newLook.inLook', defaultMessage: 'In the look' },
+  remove: { id: 'Looks.newLook.remove', defaultMessage: 'Remove' },
+  moveUp: { id: 'Looks.newLook.moveUp', defaultMessage: 'Move up' },
+  moveDown: { id: 'Looks.newLook.moveDown', defaultMessage: 'Move down' },
   stockLow: {
     id: 'Looks.newLook.stockLow',
-    defaultMessage: '{size}: nur noch {count}',
+    defaultMessage: '{size}: only {count} left',
   },
   stockSoldOut: {
     id: 'Looks.newLook.stockSoldOut',
-    defaultMessage: 'ausverkauft: {sizes}',
+    defaultMessage: 'sold out: {sizes}',
   },
   soldOutTitle: {
     id: 'Looks.newLook.soldOutTitle',
-    defaultMessage: '{piece} ist in allen Größen ausverkauft',
+    defaultMessage: '{piece} is sold out in every size',
   },
   soldOutBody: {
     id: 'Looks.newLook.soldOutBody',
     defaultMessage:
-      'Solange das so ist, kann das Set nicht zum Setpreis gekauft werden. Das Speichern ist trotzdem möglich.',
+      'As long as this lasts, the set cannot be bought at the set price. Saving is still possible.',
   },
   errorName: {
     id: 'Looks.newLook.errorName',
-    defaultMessage: 'Bitte mindestens einen Namen eingeben.',
+    defaultMessage: 'Please enter at least one name.',
   },
   errorPiecesMin: {
     id: 'Looks.newLook.errorPiecesMin',
-    defaultMessage:
-      'Ein Look braucht mindestens {min} Teile, gewählt sind {count}.',
+    defaultMessage: 'A look needs at least {min} pieces, {count} chosen.',
   },
   errorDuplicate: {
     id: 'Looks.newLook.errorDuplicate',
-    defaultMessage: '{piece} ist mehrfach im Look.',
+    defaultMessage: '{piece} is in the look more than once.',
   },
   errorPriceNone: {
     id: 'Looks.newLook.errorPriceNone',
     defaultMessage:
-      'Tragen Sie in mindestens einer Zeile einen Setpreis ein. Zeilen gibt es nur für Währung und Land, in denen alle Teile einen Preis haben.',
+      'Enter a set price in at least one row. Rows exist only for a currency and country in which every piece has a price.',
   },
   errorNotPositive: {
     id: 'Looks.newLook.errorNotPositive',
-    defaultMessage: '{currency}: Der Setpreis muss größer als 0 sein.',
+    defaultMessage: '{currency}: The set price must be greater than 0.',
   },
   errorPercentInvalid: {
     id: 'Looks.newLook.errorPercentInvalid',
     defaultMessage:
-      '{currency}: Die Ersparnis in Prozent muss größer als 0 und kleiner als 100 sein.',
+      '{currency}: The saving in percent must be above 0 and below 100.',
   },
   errorModeMixed: {
     id: 'Looks.newLook.errorModeMixed',
     defaultMessage:
-      '{currency}: Pro Land nutzt ein Look entweder Beträge oder einen einzigen Prozentwert.',
+      '{currency}: Per country a look uses either amounts or one percentage.',
   },
   reviewCellPercent: {
     id: 'Looks.newLook.reviewCellPercent',
     defaultMessage:
-      '{cell}: −{percent} % → {setPrice} (Summe {sum}, Ersparnis {saving})',
+      '{cell}: −{percent}% → {setPrice} (sum {sum}, saving {saving})',
   },
   errorNotBelowSum: {
     id: 'Looks.newLook.errorNotBelowSum',
     defaultMessage:
-      '{currency}: Der Setpreis muss unter der Summe der Teile ({sum}) liegen.',
+      '{currency}: The set price must be below the sum of the pieces ({sum}).',
   },
   errorSumChanged: {
     id: 'Looks.newLook.errorSumChanged',
     defaultMessage:
-      '{currency}: Die Summe der Teile hat sich geändert. Bitte den Setpreis prüfen.',
+      '{currency}: The sum of the pieces has changed. Please check the set price.',
   },
   errorAmountFormat: {
     id: 'Looks.newLook.errorAmountFormat',
-    defaultMessage: '{currency}: Bitte einen Betrag wie 189,90 eingeben.',
+    defaultMessage: '{currency}: Please enter an amount like 189.90.',
   },
   setPriceHeading: {
     id: 'Looks.newLook.setPriceHeading',
-    defaultMessage: 'Setpreis je Währung und Land',
+    defaultMessage: 'Set price per currency and country',
   },
   setPriceLabel: {
     id: 'Looks.newLook.setPriceLabel',
-    defaultMessage: 'Setpreis {currency}',
+    defaultMessage: 'Set price {currency}',
   },
   setPriceSum: {
     id: 'Looks.newLook.setPriceSum',
-    defaultMessage: '{currency}: Summe der Teile {sum}',
+    defaultMessage: '{currency}: sum of the pieces {sum}',
   },
   setPriceSaving: {
     id: 'Looks.newLook.setPriceSaving',
-    defaultMessage: 'Ersparnis {amount} ({percent} %)',
+    defaultMessage: 'Saving {amount} ({percent}%)',
   },
   reviewCell: {
     id: 'Looks.newLook.reviewCell',
-    defaultMessage: '{cell}: {setPrice} (Summe {sum}, Ersparnis {saving})',
+    defaultMessage: '{cell}: {setPrice} (sum {sum}, saving {saving})',
   },
   reviewTitle: {
     id: 'Looks.newLook.reviewTitle',
-    defaultMessage: 'Zusammenfassung',
+    defaultMessage: 'Summary',
   },
   reviewName: { id: 'Looks.newLook.reviewName', defaultMessage: 'Name' },
-  reviewPieces: { id: 'Looks.newLook.reviewPieces', defaultMessage: 'Teile' },
+  reviewPieces: { id: 'Looks.newLook.reviewPieces', defaultMessage: 'Pieces' },
   reviewSum: {
     id: 'Looks.newLook.reviewSum',
-    defaultMessage: 'Summe der Teile',
+    defaultMessage: 'Sum of the pieces',
   },
   reviewSetPrice: {
     id: 'Looks.newLook.reviewSetPrice',
-    defaultMessage: 'Setpreis',
+    defaultMessage: 'Set price',
   },
   reviewSaving: {
     id: 'Looks.newLook.reviewSaving',
-    defaultMessage: 'Ersparnis',
+    defaultMessage: 'Saving',
   },
   activateLabel: {
     id: 'Looks.newLook.activateLabel',
-    defaultMessage: 'Nach dem Anlegen aktiv',
+    defaultMessage: 'Active after creating',
   },
   activateHelp: {
     id: 'Looks.newLook.activateHelp',
     defaultMessage:
-      'Aus: Der Look wird inaktiv angelegt und kann danach in der Liste eingeschaltet werden.',
+      'Off: the look is created inactive and can be switched on in the list afterwards.',
   },
   saveFailedTitle: {
     id: 'Looks.newLook.saveFailedTitle',
-    defaultMessage: 'Der Look ist nur teilweise gespeichert',
+    defaultMessage: 'The look is only partly saved',
   },
   saveFailedNoneTitle: {
     id: 'Looks.newLook.saveFailedNoneTitle',
-    defaultMessage: 'Der Look konnte nicht gespeichert werden',
+    defaultMessage: 'The look could not be saved',
   },
   failedDiscount: {
     id: 'Looks.newLook.failedDiscount',
-    defaultMessage: 'Fehlgeschlagen ist der Schritt: Setpreis-Rabatt anlegen.',
+    defaultMessage: 'The failed step: create the set-price discount.',
   },
   failedObject: {
     id: 'Looks.newLook.failedObject',
-    defaultMessage:
-      'Fehlgeschlagen ist der Schritt: Look-Definition speichern.',
+    defaultMessage: 'The failed step: save the look definition.',
   },
   failedActivation: {
     id: 'Looks.newLook.failedActivation',
-    defaultMessage: 'Fehlgeschlagen ist der Schritt: Look aktivieren.',
+    defaultMessage: 'The failed step: activate the look.',
   },
-  saved: { id: 'Looks.newLook.saved', defaultMessage: 'Look gespeichert' },
+  saved: { id: 'Looks.newLook.saved', defaultMessage: 'Look saved' },
   savedActive: {
     id: 'Looks.newLook.savedActive',
-    defaultMessage: '{name} ist aktiv.',
+    defaultMessage: '{name} is active.',
   },
   savedInactive: {
     id: 'Looks.newLook.savedInactive',
-    defaultMessage:
-      '{name} ist inaktiv und kann in der Liste eingeschaltet werden.',
+    defaultMessage: '{name} is inactive and can be switched on in the list.',
   },
-  stepsLabel: { id: 'Looks.newLook.stepsLabel', defaultMessage: 'Schritte' },
+  stepsLabel: { id: 'Looks.newLook.stepsLabel', defaultMessage: 'Steps' },
 });

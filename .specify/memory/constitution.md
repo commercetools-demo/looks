@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-- Version change: none → 1.0.0 (initial ratification; Development Workflow amended in place on 2026-10-27 for the Connect folder layout, before first use)
+- Version change: 1.0.0 → 1.0.1 on 2026-10-28 (PATCH: English is now the reference language and the catalogs are `src/i18n/data/{en,de}.json`, `en.json` extracted, `de.json` by hand; wording only, no principle changed). Earlier: none → 1.0.0 (initial ratification; Development Workflow amended in place on 2026-10-27 for the Connect folder layout, before first use)
 - Modified principles: none
 - Added sections: Core Principles I–VIII, Data Layer Conventions, Development Workflow,
   Governance, commercetools Platform Skills overlay
@@ -62,11 +62,11 @@ collisions with *different* `defaultMessage` text are invisible in dev (react-in
 falls back to each call site's own local `defaultMessage` when the compiled catalog
 has no matching entry, so nothing breaks until a catalog actually populates that id)
 but silently show the wrong text once one does. The catalogs are flat per-locale JSON
-files at `src/i18n/data/{core,en,de}.json`, regenerated from every `messages.ts` via
-`npm run extract-intl`; `en.json` and `de.json` MUST carry the exact same key set with
+files at `src/i18n/data/{en,de}.json`; `en.json` is regenerated from every `messages.ts` via
+`npm run extract-intl` (English is the reference: the `defaultMessage`s) and `de.json` is
+maintained by hand; they MUST carry the exact same key set with
 matching `{placeholder}` tokens (verify programmatically, not by eye — a full pass is
-one `Object.keys` diff plus a placeholder-regex diff, not something to skip). German is the reference second locale: keep it fully in sync
-whenever messages change. Rationale: empty or local-fallback catalogs mask missing-translation and
+one `Object.keys` diff plus a placeholder-regex diff, not something to skip). Keep German fully in sync whenever messages change. Rationale: empty or local-fallback catalogs mask missing-translation and
 id-collision bugs until a locale is actually populated, so completeness must be
 verified rather than assumed.
 
@@ -162,7 +162,7 @@ inconsistent cache behavior and drift between features.
 - `npm run extract-intl`'s glob MUST exclude `.d.ts` files
   (`src/**/!(*.spec|*.d).(ts|tsx)`). Including them can crash `formatjs`'s TypeScript
   extraction on ambient-only declarations while still exiting 0 and silently
-  overwriting `src/i18n/data/core.json` with `{}`. Skim the diff after running it;
+  overwriting `src/i18n/data/en.json` with `{}`. Skim the diff after running it;
   don't assume a clean exit means it worked.
 
 ## Governance
@@ -183,7 +183,7 @@ connector fragment structure MUST be checked against the relevant principle abov
 before merge. Deviations require an explicit rationale in the PR description, not
 silent drift.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27
+**Version**: 1.0.1 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-28
 
 <!-- commercetools-spec-extension:begin v=1 id=platform-skills-constitution -->
 ## commercetools Platform Skills (commercetools-spec-extension overlay)

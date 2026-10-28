@@ -6,195 +6,194 @@
 
 import { defineMessages } from 'react-intl';
 
-// German is the reference language; English lives in messages.en.json.
+// English is the reference language (the default messages); the German texts live in src/i18n/data/de.json.
 export default defineMessages({
   appTitle: { id: 'Looks.common.appTitle', defaultMessage: 'Looks' },
-  viewOnly: { id: 'Looks.common.viewOnly', defaultMessage: 'Nur Lesezugriff' },
-  loading: { id: 'Looks.common.loading', defaultMessage: 'Wird geladen' },
-  retry: { id: 'Looks.common.retry', defaultMessage: 'Erneut versuchen' },
-  noValue: { id: 'Looks.common.noValue', defaultMessage: 'nicht verfügbar' },
+  viewOnly: { id: 'Looks.common.viewOnly', defaultMessage: 'Read only' },
+  loading: { id: 'Looks.common.loading', defaultMessage: 'Loading' },
+  retry: { id: 'Looks.common.retry', defaultMessage: 'Try again' },
+  noValue: { id: 'Looks.common.noValue', defaultMessage: 'not available' },
   imageMissing: {
     id: 'Looks.common.imageMissing',
-    defaultMessage: 'Bild folgt',
+    defaultMessage: 'Image to follow',
   },
   unnamedLook: { id: 'Looks.common.unnamedLook', defaultMessage: 'Look {key}' },
-  oneSize: { id: 'Looks.common.oneSize', defaultMessage: 'Einheitsgröße' },
-  statusActive: { id: 'Looks.common.statusActive', defaultMessage: 'Aktiv' },
+  oneSize: { id: 'Looks.common.oneSize', defaultMessage: 'One size' },
+  statusActive: { id: 'Looks.common.statusActive', defaultMessage: 'Active' },
   statusInactive: {
     id: 'Looks.common.statusInactive',
-    defaultMessage: 'Inaktiv',
+    defaultMessage: 'Inactive',
   },
   incomplete: {
     id: 'Looks.common.incomplete',
-    defaultMessage: 'Unvollständig',
+    defaultMessage: 'Incomplete',
   },
   priceDrift: {
     id: 'Looks.common.priceDrift',
-    defaultMessage: 'Setpreis weicht ab',
+    defaultMessage: 'Set price differs',
   },
   settingsLoadError: {
     id: 'Looks.common.settingsLoadError',
     defaultMessage:
-      'Währungen und Sprachen des Projekts konnten nicht geladen werden',
+      "The project's currencies and languages could not be loaded",
   },
   languagesMissing: {
     id: 'Looks.common.languagesMissing',
-    defaultMessage: 'Das Projekt hat keine Sprache.',
+    defaultMessage: 'The project has no language.',
   },
   currenciesMissing: {
     id: 'Looks.common.currenciesMissing',
-    defaultMessage: 'Das Projekt hat keine Währung.',
+    defaultMessage: 'The project has no currency.',
   },
   switchLabel: {
     id: 'Looks.common.switchLabel',
-    defaultMessage: '{name} aktiv',
+    defaultMessage: '{name} active',
   },
   switchConflict: {
     id: 'Looks.common.switchConflict',
     defaultMessage:
-      'Der Rabatt wurde inzwischen geändert. Angezeigt wird jetzt sein aktueller Stand.',
+      'The discount was changed in the meantime. Its current state is shown now.',
   },
   switchedOn: {
     id: 'Looks.common.switchedOn',
-    defaultMessage: '{name} ist aktiv',
+    defaultMessage: '{name} is active',
   },
   switchedOff: {
     id: 'Looks.common.switchedOff',
-    defaultMessage: '{name} ist ausgeschaltet',
+    defaultMessage: '{name} is switched off',
   },
   errorForbidden: {
     id: 'Looks.common.errorForbidden',
     defaultMessage:
-      'Keine Berechtigung für: {operation}. Die Registrierung der App braucht den passenden Scope.',
+      "No permission for: {operation}. The app's registration needs the matching scope.",
   },
   errorConflict: {
     id: 'Looks.common.errorConflict',
     defaultMessage:
-      '{operation}: Die Daten wurden inzwischen geändert. Bitte neu laden.',
+      '{operation}: The data was changed in the meantime. Please reload.',
   },
   errorLimit: {
     id: 'Looks.common.errorLimit',
     defaultMessage:
-      '{operation}: Es sind bereits 100 Rabatte ohne Code aktiv. Bitte zuerst einen ausschalten.',
+      '{operation}: 100 discounts without a code are already active. Please switch one off first.',
   },
   errorNetwork: {
     id: 'Looks.common.errorNetwork',
-    defaultMessage:
-      '{operation}: Keine Verbindung. Bitte noch einmal versuchen.',
+    defaultMessage: '{operation}: No connection. Please try again.',
   },
   errorGeneric: {
     id: 'Looks.common.errorGeneric',
-    defaultMessage: '{operation} ist fehlgeschlagen: {message}',
+    defaultMessage: '{operation} failed: {message}',
   },
   errorSortOrderExhausted: {
     id: 'Looks.common.errorSortOrderExhausted',
-    defaultMessage: 'Für Look-Rabatte ist kein Rang mehr frei (0,7 bis 0,799).',
+    defaultMessage: 'No rank is left for look discounts (0.7 to 0.799).',
   },
   opReadProject: {
     id: 'Looks.common.opReadProject',
-    defaultMessage: 'Projekt lesen',
+    defaultMessage: 'Read project',
   },
   opReadLooks: {
     id: 'Looks.common.opReadLooks',
-    defaultMessage: 'Looks lesen',
+    defaultMessage: 'Read looks',
   },
   opReadProducts: {
     id: 'Looks.common.opReadProducts',
-    defaultMessage: 'Produkte lesen',
+    defaultMessage: 'Read products',
   },
   opSearchProducts: {
     id: 'Looks.common.opSearchProducts',
-    defaultMessage: 'Produktsuche',
+    defaultMessage: 'Product search',
   },
   opReadOrders: {
     id: 'Looks.common.opReadOrders',
-    defaultMessage: 'Bestellungen lesen',
+    defaultMessage: 'Read orders',
   },
   opCreateDiscount: {
     id: 'Looks.common.opCreateDiscount',
-    defaultMessage: 'Setpreis-Rabatt anlegen',
+    defaultMessage: 'Create set-price discount',
   },
   opActivateDiscount: {
     id: 'Looks.common.opActivateDiscount',
-    defaultMessage: 'Rabatt aktivieren',
+    defaultMessage: 'Activate discount',
   },
   opSwitchDiscount: {
     id: 'Looks.common.opSwitchDiscount',
-    defaultMessage: 'Look ein- oder ausschalten',
+    defaultMessage: 'Switch look on or off',
   },
   opChangeDiscountValue: {
     id: 'Looks.common.opChangeDiscountValue',
-    defaultMessage: 'Rabattbetrag ändern',
+    defaultMessage: 'Change discount amount',
   },
   opCreateDiscountGroup: {
     id: 'Looks.common.opCreateDiscountGroup',
-    defaultMessage: 'Rabattgruppe anlegen',
+    defaultMessage: 'Creating the discount group',
   },
   opSwitchDiscountGroup: {
     id: 'Looks.common.opSwitchDiscountGroup',
-    defaultMessage: 'Rabattgruppe umschalten',
+    defaultMessage: 'Switching the discount group',
   },
   opCompleteDiscount: {
     id: 'Looks.common.opCompleteDiscount',
-    defaultMessage: 'Look vervollständigen',
+    defaultMessage: 'Complete look',
   },
-  cancel: { id: 'Looks.common.cancel', defaultMessage: 'Abbrechen' },
+  cancel: { id: 'Looks.common.cancel', defaultMessage: 'Cancel' },
   opDeleteLook: {
     id: 'Looks.common.opDeleteLook',
-    defaultMessage: 'Look löschen',
+    defaultMessage: 'Deleting the look',
   },
   opWriteLookObject: {
     id: 'Looks.common.opWriteLookObject',
-    defaultMessage: 'Look-Definition speichern',
+    defaultMessage: 'Save look definition',
   },
   priceTableCurrency: {
     id: 'Looks.common.priceTableCurrency',
-    defaultMessage: 'Währung',
+    defaultMessage: 'Currency',
   },
   priceTableCountry: {
     id: 'Looks.common.priceTableCountry',
-    defaultMessage: 'Land',
+    defaultMessage: 'Country',
   },
   priceTableCountryAll: {
     id: 'Looks.common.priceTableCountryAll',
-    defaultMessage: 'ohne Land',
+    defaultMessage: 'no country',
   },
-  priceTableSum: { id: 'Looks.common.priceTableSum', defaultMessage: 'Summe' },
+  priceTableSum: { id: 'Looks.common.priceTableSum', defaultMessage: 'Sum' },
   priceTableSetPrice: {
     id: 'Looks.common.priceTableSetPrice',
-    defaultMessage: 'Setpreis',
+    defaultMessage: 'Set price',
   },
   priceTableSaving: {
     id: 'Looks.common.priceTableSaving',
-    defaultMessage: 'Ersparnis %',
+    defaultMessage: 'Saving %',
   },
   priceTableCellLabel: {
     id: 'Looks.common.priceTableCellLabel',
-    defaultMessage: 'Setpreis {currency} {country}',
+    defaultMessage: 'Set price {currency} {country}',
   },
   priceTablePercentLabel: {
     id: 'Looks.common.priceTablePercentLabel',
-    defaultMessage: 'Ersparnis in Prozent {currency} {country}',
+    defaultMessage: 'Saving in percent {currency} {country}',
   },
   priceTableGlobalPercent: {
     id: 'Looks.common.priceTableGlobalPercent',
-    defaultMessage: 'Prozent für alle Zeilen',
+    defaultMessage: 'Percentage for all rows',
   },
   priceTableDiscount: {
     id: 'Looks.common.priceTableDiscount',
-    defaultMessage: 'Rabatt',
+    defaultMessage: 'Discount',
   },
   priceTableModePercent: {
     id: 'Looks.common.priceTableModePercent',
-    defaultMessage: 'Prozent',
+    defaultMessage: 'Percent',
   },
   priceTableModeAmount: {
     id: 'Looks.common.priceTableModeAmount',
-    defaultMessage: 'Betrag',
+    defaultMessage: 'Amount',
   },
   priceTableHint: {
     id: 'Looks.common.priceTableHint',
     defaultMessage:
-      'Preise der Master-Variante; Zeilen gibt es nur, wenn alle Teile dort einen Preis haben. Tragen Sie den Setpreis oder die Ersparnis in Prozent ein, das andere Feld rechnet mit. Eine leere Zeile bekommt keinen Discount.',
+      'Prices of the master variant; a row exists only where every piece has a price. Enter the set price or the saving in percent, the other field follows. An empty row gets no discount.',
   },
 });

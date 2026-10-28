@@ -17,7 +17,7 @@ npm test -- path/to/file.spec.tsx
 npm run lint                # eslint, prettier rules included
 npm run format              # prettier --write
 npm run typecheck           # tsc --noEmit
-npm run build-i18n          # extract messages to core.json/de.json, merge messages.en.json into en.json
+npm run extract-intl        # extract the messages (English defaults) into src/i18n/data/en.json
 npm run generate-types:ctp  # interactive browser login, then graphql-codegen; do not run headless
 ```
 
@@ -36,7 +36,7 @@ CI (`.github/workflows/ci.yml`) runs build, lint, typecheck and test on PRs into
 - **Product search** (`src/hooks/use-looks-connector/search-query.ts`) uses `productsSearch` over name, description, slug, searchKeywords, key, product id and variant SKU.
 - **Routes**: `/` list, `/new/:step?` creation (`/new`, `/new/pieces`, `/new/price`, `/new/review`; a step opened without entered data shows step 1), `/:lookKey` detail (header with status, switch and a trash icon button that opens a Nimbus `ConfirmationDialog`).
 - **Configuration** (only `VARIANT_ATTRIBUTES`) is read only in `src/config.ts`; `config.spec.ts` guards that no other file reads `process.env` and that production code contains no currency code literal.
-- **Rules from the constitution** (`.specify/memory/constitution.md`): View/Manage with controls disabled, never hidden; every UI string through react-intl in German and English (`messages.ts` next to the component, English in `messages.en.json`, run `npm run build-i18n`); updates send the current version and make no call when nothing changed.
+- **Rules from the constitution** (`.specify/memory/constitution.md`): View/Manage with controls disabled, never hidden; every UI string through react-intl in English and German (`messages.ts` next to the component holds the English default messages, `src/i18n/data/de.json` the German texts; run `npm run extract-intl` after changing a message and add the German text by hand); updates send the current version and make no call when nothing changed.
 - **Components** are arrow functions typed with `FC`, props in a `type <Name>Props` above them: `const NewLookButton: FC<NewLookButtonProps> = ({ onPress }) => { ... };` (define a component before the one that uses it; default exports as `export default Name;` after the definition).
 
 ## Testing

@@ -79,7 +79,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R12. i18n and tests
 
-- **Decision**: react-intl `defineMessages` next to each component, unique ids prefixed `Looks.`; German is the reference; `npm run extract-intl` (`.d.ts` excluded) writes `core.json`; `en.json`/`de.json` parity (keys and `{placeholders}`) checked by a spec. Component specs use `msw` GraphQL handlers with `onUnhandledRequest: 'error'` and assert mutation variables; pure logic has plain specs; a spec validates every `.graphql` document against `schemas/ctp.json`.
+- **Decision**: react-intl `defineMessages` next to each component, unique ids prefixed `Looks.`; English is the reference (the `defaultMessage`); `npm run extract-intl` (`.d.ts` excluded) writes `src/i18n/data/en.json`; the German texts are kept by hand in `src/i18n/data/de.json`; `en.json`/`de.json` parity (keys and `{placeholders}`) is checked by a spec. Component specs use `msw` GraphQL handlers with `onUnhandledRequest: 'error'` and assert mutation variables; pure logic has plain specs; a spec validates every `.graphql` document against `schemas/ctp.json`.
 - **Rationale**: constitution principle IV and Development Workflow.
 
 ## R13. Shop preview (removed)
