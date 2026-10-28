@@ -321,24 +321,15 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
         <ModalPage.Title>
           {intl.formatMessage(messages.newLook)}
         </ModalPage.Title>
-      </ModalPage.Header>
-      <ModalPage.Content>
-        <Stack gap="600">
-          {!canManage && (
-            <Alert.Root colorPalette="info">
-              <Alert.Description>
-                {intl.formatMessage(commonMessages.viewOnly)}
-              </Alert.Description>
-            </Alert.Root>
-          )}
+        <ModalPage.Subtitle marginTop={'400'}>
           <Steps.Root count={STEP_TITLES.length} step={step} linear>
             <Steps.List aria-label={intl.formatMessage(messages.stepsLabel)}>
               {STEP_TITLES.map((title, index) => (
                 <Steps.Item key={title.id} index={index}>
                   <Steps.Trigger>
                     {/* The indicator recipe highlights the current step only
-                        through data-state="open", which Steps sets on the
-                        trigger but not on the indicator. */}
+                      through data-state="open", which Steps sets on the
+                      trigger but not on the indicator. */}
                     <Steps.Indicator
                       data-state={index === step ? 'open' : undefined}
                     >
@@ -351,6 +342,17 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
               ))}
             </Steps.List>
           </Steps.Root>
+        </ModalPage.Subtitle>
+      </ModalPage.Header>
+      <ModalPage.Content>
+        <Stack gap="600">
+          {!canManage && (
+            <Alert.Root colorPalette="info">
+              <Alert.Description>
+                {intl.formatMessage(commonMessages.viewOnly)}
+              </Alert.Description>
+            </Alert.Root>
+          )}
 
           <Grid
             templateColumns="minmax(0, 3fr) minmax(0, 2fr)"
