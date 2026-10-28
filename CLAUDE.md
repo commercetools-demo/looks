@@ -52,6 +52,6 @@ CI (`.github/workflows/ci.yml`) runs build, lint, typecheck and test on PRs into
 
 ## Environment notes
 
-- No `.env` is tracked: copy `.env.example` to `mc-looks-app/.env.local` (gitignored) and fill it in. CI sets the variables it needs in `.github/workflows/ci.yml`, Netlify and Connect in their settings.
+- `mc-looks-app/.env` is tracked and holds only non-secret build flags: `ENABLE_NEW_JSX_TRANSFORM="true"` (without it `mc-scripts` compiles JSX with the classic runtime, the build still succeeds, and the browser fails with "React is not defined"; `src/build-flags.spec.ts` guards it), `FAST_REFRESH` and `ENTRY_POINT_URI_PATH`. Per-project values go into `mc-looks-app/.env.local` (copy of `.env.example`, gitignored, wins). CI sets the variables it needs in `.github/workflows/ci.yml`, Netlify and Connect in their settings.
 - If npm fails with `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` behind a TLS-inspecting proxy, run npm with `NODE_OPTIONS=--use-system-ca` (keeps verification on). The registry may refuse very recent releases; pin the offending package in `overrides`.
 - `tsconfig` `typeRoots` includes `@types-extensions`; TypeScript loads every folder in a type root, so a stray empty folder there aborts `tsc`.
