@@ -35,11 +35,6 @@ type Row = DataTableRowItem<{ look: LookRow; position: number }>;
 /** One piece image in the Teile column and the gap between two (px). */
 export const STRIP_IMAGE_WIDTH = 36;
 export const STRIP_GAP = 4;
-/** The piece box in the Look column: 64 px wide, 2:3 portrait. */
-export const LOOK_BOX_WIDTH = 64;
-export const LOOK_BOX_RATIO = { width: 2, height: 3 };
-/** Piece images stacked in the box of the Look column. */
-const LOOK_BOX_PIECES = 2;
 
 /**
  * Column widths in px. The Look column has no width: it takes the rest of
@@ -68,32 +63,10 @@ const LookCell: FC<LookCellProps> = ({ look }) => {
   return (
     <Flex
       data-custom-composition="look-cell"
-      gap="350"
       alignItems="center"
       minWidth={0}
       py="100"
     >
-      <Flex
-        data-look-pieces=""
-        direction="column"
-        justifyContent="center"
-        gap="1px"
-        px="14px"
-        bg="neutral.3"
-        flexShrink={0}
-        width={`${LOOK_BOX_WIDTH}px`}
-        style={{
-          aspectRatio: `${LOOK_BOX_RATIO.width} / ${LOOK_BOX_RATIO.height}`,
-        }}
-      >
-        {look.pieces.slice(0, LOOK_BOX_PIECES).map((piece, i) => (
-          <PieceImage
-            key={look.pieceIds[i]}
-            src={piece?.imageUrl}
-            width="100%"
-          />
-        ))}
-      </Flex>
       <Stack gap="50" minWidth={0}>
         <Text fontWeight="600" truncate title={title}>
           {title}

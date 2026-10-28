@@ -8,7 +8,7 @@ How it is built, in short: a look is a Custom Object `look-<key>` (container `lo
 
 ![Looks list](docs/screenshots/list.png)
 
-- One row per look: the first piece images, name and key, all piece images (first five, then `+N`), set price, sum, saving, status.
+- One row per look: name and key, the piece images (first five, then `+N`), set price, sum, saving, status.
 - Status switch per row, plus the warnings "Unvollständig" (half-written look) and "Setpreis weicht ab" (price drifted).
 - Search by look name, sorting by look, set price, sum, saving and status, pagination (20, 50, 100). Page, size, sort and search survive switching a look and coming back from a detail.
 - Loading, empty, filtered-empty and error states with retry.

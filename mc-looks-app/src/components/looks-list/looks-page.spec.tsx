@@ -102,13 +102,17 @@ describe('looks list', () => {
     );
   });
 
-  it('shows the first two piece images in the box of the Look column', async () => {
-    setup(buildLooks([buildLook('plain', 'Ohne Foto', ['p1', 'p2', 'p3'])]));
-    const box = (await rowOf('Ohne Foto')).querySelector(
-      '[data-look-pieces]'
+  it('shows only the name and the key in the Look column, no image', async () => {
+    setup(buildLooks([buildLook('plain', 'Ohne Bild', ['p1', 'p2', 'p3'])]));
+    const row = await rowOf('Ohne Bild');
+    const cell = row.querySelector(
+      '[data-custom-composition="look-cell"]'
     ) as HTMLElement;
-    expect(box).toHaveStyle({ aspectRatio: '2 / 3' });
-    expect(box.querySelectorAll('img')).toHaveLength(2);
+    expect(cell.querySelector('img')).toBeNull();
+    expect(within(cell).getByText('Ohne Bild')).toBeInTheDocument();
+    expect(within(cell).getByText('plain')).toBeInTheDocument();
+    // The piece images are in the Teile column only.
+    expect(row.querySelectorAll('img')).toHaveLength(3);
   });
 
   it('shows all five piece images of a look', async () => {

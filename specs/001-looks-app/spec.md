@@ -31,7 +31,7 @@ A merchandiser opens "Looks" in the Merchant Center main menu and sees every act
 **Acceptance Scenarios**:
 
 1. **Given** a project with eight active looks, **When** the user opens the app, **Then** the table lists all eight, each with set price per project currency, live sum, saving in percent and status "Aktiv"/"Active", and the header reads "8 Looks".
-2. **Given** a look, **When** the list renders, **Then** the first piece images stand in the 2:3 box of the Look column. (The look photo was removed.)
+2. **Given** a look, **When** the list renders, **Then** the Look column shows the name and the key only, without an image; the piece images are in the Teile column. (The look photo and the image box were removed.)
 3. **Given** a look has up to five pieces, **When** the list renders, **Then** all piece images are visible without being cut; a look with more pieces shows the first five and "+N".
 4. **Given** the user types part of a name, **When** the filter applies, **Then** only matching looks remain and the count updates; if none match, an empty-filter message is shown.
 4a. **Given** more looks than fit on one page, **When** the list renders, **Then** it shows one page with page controls and a page-size choice, and the count states the total ("8 Looks" total, not the page size).
@@ -195,14 +195,14 @@ A user with View permission only sees the same list, section and details, but al
 
 #### Looks list
 
-- **FR-010**: The list MUST show one row per look (a look definition joined with its same-key set-price discount) with the columns, in order: **Look** (a 64 px wide 2:3 box with the first piece images, name and key; takes remaining width, minimum 200 px), **Teile** (all piece images, 36 px wide 4:5, 4 px apart, up to five), **Setpreis** (one line per currency), **Summe** (live sum per currency), **Ersparnis** (percent, of the sum in the first currency), **Status**, and **Aktiv** (switch; Manage only).
+- **FR-010**: The list MUST show one row per look (a look definition joined with its same-key set-price discount) with the columns, in order: **Look** (name and key, no image; takes remaining width, minimum 200 px), **Teile** (all piece images, 36 px wide 4:5, 4 px apart, up to five), **Setpreis** (one line per currency), **Summe** (live sum per currency), **Ersparnis** (percent, of the sum in the first currency), **Status**, and **Aktiv** (switch; Manage only).
 - **FR-011**: The table MUST span the full content width; only the Look column grows. No column header MAY wrap in German or English; each fixed column MUST be at least as wide as its header in both languages. The look name MUST be cut with an ellipsis on one line.
 - **FR-012**: Status MUST be read from the discount's active flag (the discount decides what the shopper pays), shown as "Aktiv"/"Inaktiv" plus the warnings "Unvollständig" and "Setpreis weicht ab".
 - **FR-013**: The page MUST offer search by look name (field at most 360 px wide) and a count of all matching looks ("8 Looks") on the right. "Neuer Look" MUST sit at the right of the page heading (Manage only).
 - **FR-013a**: The list MUST be paginated (page-size choice of 20, 50, 100; default 20; the page and size are kept while the user filters, sorts, switches a look, or returns from a detail) and sortable by Look (name in the data locale), Setpreis, Summe, Ersparnis and Status. Sorting and filtering apply to all looks, not only the visible page. Columns whose values are not comparable (Teile, Aktiv) are not sortable. The default sort is name ascending; a changed sort or filter returns to page 1. "Frühere Looks" is exempt from pagination and sorting: it is ordered by sets sold (FR-021), and shows all past looks.
 - **FR-014**: The main list MUST contain active looks and incomplete looks (whatever their state); complete looks that are switched off MUST appear only under "Frühere Looks". With no active look the list MUST say "Zurzeit ist kein Look aktiv."
 - **FR-015**: The list MUST show loading (skeleton rows), empty, filtered-empty, and error-with-retry states. Row click MUST open the look's detail.
-- **FR-016**: The Look column MUST show the first two piece images stacked in a 64 × 96 px box. (The look photo was removed.)
+- **FR-016**: ~~The Look column shows the first two piece images in a 64 × 96 px box~~ (removed: the Look column shows name and key only; the piece images are in the Teile column).
 
 #### Frühere Looks
 
