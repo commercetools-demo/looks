@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { useEffect, useMemo, useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import { ArrowDownward, ArrowUpward, Close } from '@commercetools/nimbus-icons';

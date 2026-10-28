@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 /**
  * `sortOrder` range reserved for looks created by the app: `0.7` to
  * `0.7999` in steps of `0.0001`, written without trailing zeros (`0.7`,

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { useIntl } from 'react-intl';
 import { formatMoney, localized } from '../../domain/format';
 import type { LookRow } from '../../domain/look-rows';

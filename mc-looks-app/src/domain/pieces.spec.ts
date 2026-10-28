@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { resolveConfig } from '../config';
 import {
   livePriceMap,
@@ -294,7 +300,7 @@ describe('prices across variants and diagnostics', () => {
   });
 });
 
-describe('Maya Pillow Cover as stored in tech-sales-good-store', () => {
+describe('A pillow cover with colour variants and country prices', () => {
   const cfg = resolveConfig({
     variantAttributes: 'search-color,search-finish,size',
   });

@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 /* eslint-disable testing-library/no-node-access -- the step indicator and the result cards have no role to query */
 import userEvent from '@testing-library/user-event';
 import {

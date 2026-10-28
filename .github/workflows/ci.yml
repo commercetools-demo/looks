@@ -11,6 +11,7 @@ jobs:
 
     env:
       CLOUD_IDENTIFIER: gcp-eu
+      ENTRY_POINT_URI_PATH: looks
       CUSTOM_APPLICATION_ID: TODO
       APPLICATION_URL: https://your_app_hostname.com
       INITIAL_PROJECT_KEY: todo

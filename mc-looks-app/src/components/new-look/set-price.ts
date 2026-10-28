@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 /**
  * Cent amount of an amount typed by a person: digits with an optional decimal
  * part of one or two digits, separated by a comma or a dot ("189,90",

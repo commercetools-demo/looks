@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 /** One `SearchQueryInput` of the product search: what a typed text is matched
  *  against. */
 export type PieceSearchQuery = Record<string, unknown>;

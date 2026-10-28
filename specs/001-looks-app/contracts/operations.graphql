@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+# Freely available, AS IS and UNSUPPORTED. See LICENSE.
+
 # GraphQL operations of the Looks app, run through the Merchant Center `ctp` proxy.
 # They mirror the documents under `mc-looks-app/src/hooks/**/*.graphql` (names
 # differ slightly: fragments are called `Look...Fragment` there). Validated

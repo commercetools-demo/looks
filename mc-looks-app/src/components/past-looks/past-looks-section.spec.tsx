@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 /* eslint-disable testing-library/no-node-access -- rows, piece boxes and figures are located structurally */
 import userEvent from '@testing-library/user-event';
 import {

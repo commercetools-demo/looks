@@ -64,12 +64,12 @@ How it is built, in short: a look is a Custom Object `look-<key>` (container `lo
 
 ## Screenshots
 
-The images in `docs/screenshots/` come from the demo looks of the sample project and are regenerated with the Playwright scripts in [`mc-looks-app/scripts/screenshots`](./mc-looks-app/scripts/screenshots) (the signed-in user's profile picture is masked).
+The images in `docs/screenshots/` come from sample looks in a commercetools sample project and are regenerated with the Playwright scripts in [`mc-looks-app/scripts/screenshots`](./mc-looks-app/scripts/screenshots) (the signed-in user's profile picture is masked).
 
 ## Not included
 
 - Changing a look's name, description or key after it was created; duplicating a look.
-- Seeding or demo data.
+- Seeding or sample data.
 - Meta title and meta description in the product search (the product search API does not offer them).
 
 ## Known limits and open checks

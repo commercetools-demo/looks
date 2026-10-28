@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 // Captures the docs screenshots against a locally running dev server, reusing
 // the session saved by login.mjs. It only navigates the UI: the creation flow
 // is always left with "Abbrechen" and the delete dialog is never confirmed, so
@@ -15,7 +21,11 @@ import { chromium } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const PROJECT_KEY = process.env.MC_PROJECT_KEY || 'tech-sales-good-store';
+const PROJECT_KEY = process.env.MC_PROJECT_KEY;
+if (!PROJECT_KEY) {
+  console.error('Set MC_PROJECT_KEY to the key of the project to open.');
+  process.exit(1);
+}
 const PORT = process.env.MC_PORT || 3001;
 const LOOK_KEY = process.env.LOOK_KEY || 'demo-look-01';
 // Matched against names in the data language; without hits the search is cleared.
@@ -71,8 +81,12 @@ async function shot(name, { fullPage = false, height = 900 } = {}) {
     path: path.join(OUTPUT_DIR, name),
     fullPage,
     type: 'png',
-    // The signed-in user's profile picture never goes into the docs.
-    mask: [page.locator('img[class*="GravatarImg"]')],
+    // The signed-in user's profile picture and the project key never go into
+    // the docs.
+    mask: [
+      page.locator('img[class*="GravatarImg"]'),
+      page.getByText(PROJECT_KEY, { exact: true }),
+    ],
     maskColor: '#d6d6e0',
   });
   console.log('shot:', name, '| url:', page.url());

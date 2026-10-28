@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { useMcQuery } from '@commercetools-frontend/application-shell-connectors';
 import { mcApiContext } from '../shared/mc-api-context';
 import FetchProjectSettingsQuery from './fetch-project-settings.graphql';

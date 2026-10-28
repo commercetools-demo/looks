@@ -17,15 +17,15 @@ headlessly, with Playwright.
 ```shell
 cd mc-looks-app/scripts/screenshots
 NODE_OPTIONS=--use-system-ca npm install   # the option only behind a TLS-inspecting proxy
-npm run login      # headed browser: log into the Merchant Center by hand, the
+MC_PROJECT_KEY=<project-key> npm run login      # headed browser: log into the Merchant Center by hand, the
                    # session is saved to auth-state.json (gitignored, never commit it)
-npm run capture    # headless; writes docs/screenshots/*.png
+MC_PROJECT_KEY=<project-key> npm run capture    # headless; writes docs/screenshots/*.png
 ```
 
-Override project, port, look and search term with environment variables:
+`MC_PROJECT_KEY` is required (the project whose looks are shown). Port, look and search term can be overridden with environment variables:
 
 ```shell
-MC_PROJECT_KEY=other-project MC_PORT=3002 LOOK_KEY=my-look SEARCH_TERM=lamp npm run capture
+MC_PROJECT_KEY=<project-key> MC_PORT=3002 LOOK_KEY=my-look SEARCH_TERM=lamp npm run capture
 ```
 
 ## Notes
@@ -48,3 +48,5 @@ MC_PROJECT_KEY=other-project MC_PORT=3002 LOOK_KEY=my-look SEARCH_TERM=lamp npm 
   localized fields and picks the first three search results for `SEARCH_TERM`
   (default `pillow`, matched against names in the data language; without hits
   it lists all products).
+- The profile picture of the signed-in user and the project key are masked in
+  every screenshot, so the images can be committed.

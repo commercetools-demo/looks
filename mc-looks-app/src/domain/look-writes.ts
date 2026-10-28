@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { isConflict, LookApiError } from './errors';
 import { lookDiscountKey, lookObjectKey } from './keys';
 import { priceKey, splitPriceKey } from './prices';

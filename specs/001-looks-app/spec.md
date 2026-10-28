@@ -6,9 +6,9 @@
 
 **Status**: Draft
 
-**Input**: User description: "Create a specification for Looks, based on the current-state captures (`sim-pot/docs/design/current-state/mc-looks`), the design round 2 (`sim-pot/docs/design/2026-10-06-looks-r2/Looks.dc.html` and `HANDOFF.md`), and the existing implementation in `sim-pot` (`frontend/mc-look-builder`, `packages/shared/src/looks`, the `mc-look-builder` OpenSpec, and the storefront readers of looks)." Follow-up decisions (2026-10-27): follow the project's currencies; no brands for now; no `sim` naming, plain `look-`; seeding is not required.
+**Input**: User description: "Create a specification for Looks, based on the current-state captures of an earlier internal prototype, its design round 2 (boards 1a–3b and its handoff notes) and its implementation (look builder, shared look module, OpenSpec, and the storefront readers of looks)." Follow-up decisions (2026-10-27): follow the project's currencies; no brands for now; no `sim` naming, plain `look-`; seeding is not required.
 
-**Sources and precedence**: Where sources disagree, the order is: running code in `sim-pot` > design round 2 (boards 1a–3b) > the older `mc-look-builder` OpenSpec text > the 2026-10-01 captures. The decisions above override all of them. Everything about brands in the sources (brand badge, brand filter, brand-pure looks, brand assortments, brand-themed shop preview, brand-prefixed keys) is intentionally dropped.
+**Sources and precedence**: Where sources disagree, the order is: the prototype's running code > design round 2 (boards 1a–3b) > the prototype's older OpenSpec text > the 2026-10-01 captures. The decisions above override all of them. Everything about brands in the sources (brand badge, brand filter, brand-pure looks, brand assortments, brand-themed shop preview, brand-prefixed keys) is intentionally dropped.
 
 ## Overview
 
@@ -316,4 +316,4 @@ A user with View permission only sees the same list, section and details, but al
 - **Developer setup**: a developer sets these values per project before first deploy; the setup checklist (FR-082) lists them for both deploy paths.
 - **Two deploy paths**: Netlify and Connect are both required (FR-081). Connect is production; Netlify is development, preview and fallback. Both serve the same bundle, so there is no code branch per host.
 - **Dependencies**: Merchant Center application shell with Nimbus support (React 19); Connect (`connect.yaml`) and Netlify (`netlify.toml`) for hosting; the Merchant Center API for project settings, products, custom objects, cart discounts, discount groups, orders; Product Search; static hosting; a manual registration by an organization admin.
-- **Design reference**: Visual detail (spacing, radius, tokens, component choice) lives in `Looks.dc.html` (boards 1a–3b) and `HANDOFF.md`, minus everything brand-related; this spec states behaviour.
+- **Design reference**: Visual detail (spacing, radius, tokens, component choice) lives in the prototype's design round 2 (boards 1a–3b) and its handoff notes, minus everything brand-related; this spec states behaviour.

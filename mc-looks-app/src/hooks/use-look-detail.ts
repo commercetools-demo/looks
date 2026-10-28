@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { lookKeyFromDiscountKey, lookObjectKey } from '../domain/keys';
 import { buildLookRows, type LookRow } from '../domain/look-rows';

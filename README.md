@@ -1,5 +1,7 @@
 # Looks
 
+> Freely available, **AS IS and UNSUPPORTED** reference code (MIT). See [`SUPPORT.md`](./SUPPORT.md) and [`LICENSE`](./LICENSE).
+
 A Merchant Center custom application for curated looks: at least 2 products sold as a set at a set price below the sum of their single prices. Merchandisers list, create, switch on and off and reprice looks, see how retired looks sold, all without a ticket and without a deployment.
 
 A look is three kinds of project resources that share the key `look-<lookKey>`:

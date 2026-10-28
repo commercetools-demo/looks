@@ -33,4 +33,4 @@
 
 - Decisions applied 2026-10-27: default inventory (no stock channel), project currencies, no brands, `look`/`look-` naming, no seeding.
 - Configuration (variant attributes, shop origin) is developer-set, one module now, `.env` later (FR-084, FR-085).
-- Sources: `sim-pot` `frontend/mc-look-builder`, `packages/shared/src/looks`, `openspec/specs/mc-look-builder/spec.md`, `docs/design/2026-10-06-looks-r2/`, `docs/design/current-state/mc-looks/`.
+- Sources: an earlier internal prototype of the look builder (implementation, OpenSpec, design round 2 and the current-state captures).

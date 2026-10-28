@@ -90,5 +90,6 @@
     "nwsapi": "2.2.7",
     "@fastify/busboy": "3.2.2"
   },
-  "packageManager": "npm@10.9.2"
+  "packageManager": "npm@10.9.2",
+  "license": "MIT"
 }

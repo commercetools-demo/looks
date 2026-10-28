@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 import { createFakeLookApi } from '../test-utils/fake-look-api';
 import { buildDiscount, buildObject, buildPiece } from '../test-utils/fixtures';
 import { toLookDiscount } from '../hooks/use-looks-connector/conversion';

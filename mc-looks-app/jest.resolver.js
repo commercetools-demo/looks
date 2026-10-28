@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 // Custom Jest resolver. It preserves the behaviour of the MC preset's resolver
 // (forcing a few faulty ESM-only packages to their CJS entry point) and adds a
 // fix for a Nimbus 3.x packaging bug.

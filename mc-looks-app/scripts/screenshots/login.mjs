@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
 // Opens a headed browser against the local dev server so you can log into the
 // Merchant Center by hand, then saves the resulting session (cookies +
 // localStorage) to auth-state.json for capture.mjs to reuse headlessly.
@@ -11,7 +17,11 @@ import { chromium } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const PROJECT_KEY = process.env.MC_PROJECT_KEY || 'tech-sales-good-store';
+const PROJECT_KEY = process.env.MC_PROJECT_KEY;
+if (!PROJECT_KEY) {
+  console.error('Set MC_PROJECT_KEY to the key of the project to open.');
+  process.exit(1);
+}
 const PORT = process.env.MC_PORT || 3001;
 const BASE = `http://localhost:${PORT}/${PROJECT_KEY}/looks`;
 const AUTH_STATE_PATH = path.join(__dirname, 'auth-state.json');

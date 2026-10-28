@@ -1,6 +1,6 @@
 # Research: Looks
 
-Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. Sources: the `sim-pot` implementation (`frontend/mc-look-builder`, `packages/shared/src/looks`), the project constitution, commercetools documentation via the Knowledge MCP and the `commercetools-connect` skill references. GraphQL claims were checked with `commercetools-graphql-validate` and the schema tool on 2026-10-27.
+Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. Sources: the implementation of an earlier internal prototype (look builder and shared look module), the project constitution, commercetools documentation via the Knowledge MCP and the `commercetools-connect` skill references. GraphQL claims were checked with `commercetools-graphql-validate` and the schema tool on 2026-10-27.
 
 ## R1. Data access: Merchant Center GraphQL proxy, not REST
 
@@ -11,7 +11,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R2. Reuse the source's pure logic, not its structure
 
-- **Decision**: port `keys`, `sort-order`, `prices`, `names`, `validate`, look-value/discount builders, `look-rows`, `past-looks`, `pieces`, `stock` from `sim-pot` into `src/domain/`, adapted: no brand, currency list from the project, attribute names from config, container `look`, prefix `look-`. Drop the seed, the registry, the font/theme/logo code, the `@sim/shared` workspace package.
+- **Decision**: port `keys`, `sort-order`, `prices`, `names`, `validate`, look-value/discount builders, `look-rows`, `past-looks`, `pieces`, `stock` from the earlier prototype into `src/domain/`, adapted: no brand, currency list from the project, attribute names from config, container `look`, prefix `look-`. Drop the seed, the registry, the font/theme/logo code, the prototype's shared workspace package.
 - **Rationale**: this logic is exactly the part that took iteration to get right (fix-rounds M1/M2/M7, the `sortOrder` trailing-zero rule CL-084, proportionate distribution, resumable save). It is already covered by specs that can be ported.
 - **Alternatives**: rewrite from the spec — slower and re-introduces solved bugs.
 

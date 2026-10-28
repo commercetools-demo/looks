@@ -1,6 +1,6 @@
 # Data Model: Looks
 
-The app owns no database. A **look** is three kinds of platform resources that share the key `look-<lookKey>` (one Custom Object, one Discount Group, one Cart Discount per country), plus read-only views onto products, inventory, orders and project settings. Field names are the platform's; the sources are the spec's Key Entities and the `sim-pot` shared module.
+The app owns no database. A **look** is three kinds of platform resources that share the key `look-<lookKey>` (one Custom Object, one Discount Group, one Cart Discount per country), plus read-only views onto products, inventory, orders and project settings. Field names are the platform's; the sources are the spec's Key Entities and the earlier prototype's shared module.
 
 A **price cell** is a currency and country: `EUR/DE`, or the bare currency (`EUR`) for a price without a country. Prices, sums, set prices and discounts are kept per cell.
 
