@@ -47,7 +47,7 @@ Technical approach, from [research.md](./research.md):
 | II | MC platform constraints | PASS | MC app shell, `dataLocale`, MC notifications, **GraphQL via the `ctp` proxy** (R1). No REST client. |
 | III | View/Manage (NON-NEGOTIABLE) | PASS | `PERMISSIONS.View` gates the route; every write control is rendered disabled without `PERMISSIONS.Manage`, never hidden (R8). |
 | IV | Localization completeness | PASS | `defineMessages` per component; flat `src/i18n/data/{core,en,de}.json`; extract script excludes `.d.ts`; automated key/placeholder parity test (SC-009). Data-level: names are required in de and en; empty translations omitted. |
-| V | Optimistic concurrency, minimal updates | PASS | Every update sends the current `version`; conflicts surface and the user reloads (R7). Set-price save and photo save compute a diff and make **no call when nothing changed**. |
+| V | Optimistic concurrency, minimal updates | PASS | Every update sends the current `version`; conflicts surface and the user reloads (R7). Set-price save computes a diff and make **no call when nothing changed**. |
 | VI | Shared key rule | PASS | Look keys are derived (`look-` + ASCII slug), match `^[a-zA-Z0-9-_]+$`, 2–256 chars (≥6, ≤45), trimmed; immutable (never written after create). Derived, not typed. |
 | VII | Feedback and error handling | PASS | `graphQLErrorHandler` + MC notifications; raw GraphQL errors mapped to readable text naming the operation; loading and error states with retry on every list/detail. |
 | VIII | List conventions | PASS | Paginated, sortable, empty state, row-click navigation (FR-013a, FR-015). "Frühere Looks" is a card section exempt by spec. |

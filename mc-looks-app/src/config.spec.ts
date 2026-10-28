@@ -39,7 +39,7 @@ describe('config', () => {
     );
   });
 
-  it('allows an empty shop origin (photos and shop links are then unavailable)', () => {
+  it('allows an empty shop origin (the shop link is then unavailable)', () => {
     expect(() => resolveConfig({ shopOrigin: '' })).not.toThrow();
   });
 });

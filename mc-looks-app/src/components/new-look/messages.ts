@@ -53,41 +53,6 @@ export default defineMessages({
     defaultMessage: 'Dieser Key ist schon vergeben.',
   },
   reviewKey: { id: 'Looks.newLook.reviewKey', defaultMessage: 'Key' },
-  photoLabel: { id: 'Looks.newLook.photoLabel', defaultMessage: 'Look-Foto' },
-  photoOptional: {
-    id: 'Looks.newLook.photoOptional',
-    defaultMessage: '(optional)',
-  },
-  photoHelp: {
-    id: 'Looks.newLook.photoHelp',
-    defaultMessage: 'Hochformat, das Model trägt den Look',
-  },
-  photoPlaceholder: {
-    id: 'Looks.newLook.photoPlaceholder',
-    defaultMessage: 'looks/name.webp',
-  },
-  photoNoShop: {
-    id: 'Looks.newLook.photoNoShop',
-    defaultMessage:
-      'Ohne Shop-Adresse kann das Foto nicht geprüft werden. Das Feld ist deaktiviert.',
-  },
-  photoInvalid: {
-    id: 'Looks.newLook.photoInvalid',
-    defaultMessage:
-      'Der Pfad muss die Form looks/<name>.webp haben (auch .jpg oder .png).',
-  },
-  photoUnreachable: {
-    id: 'Looks.newLook.photoUnreachable',
-    defaultMessage: 'Das Foto konnte nicht aus dem Shop geladen werden.',
-  },
-  photoChecking: {
-    id: 'Looks.newLook.photoChecking',
-    defaultMessage: 'Foto wird geprüft',
-  },
-  photoAlt: {
-    id: 'Looks.newLook.photoAlt',
-    defaultMessage: 'Look-Foto, Vorschau',
-  },
   piecesTitle: {
     id: 'Looks.newLook.piecesTitle',
     defaultMessage: 'Teile wählen (mindestens {min})',
@@ -208,11 +173,6 @@ export default defineMessages({
     defaultMessage: 'Zusammenfassung',
   },
   reviewName: { id: 'Looks.newLook.reviewName', defaultMessage: 'Name' },
-  reviewPhoto: { id: 'Looks.newLook.reviewPhoto', defaultMessage: 'Look-Foto' },
-  reviewNoPhoto: {
-    id: 'Looks.newLook.reviewNoPhoto',
-    defaultMessage: 'kein Foto',
-  },
   reviewPieces: { id: 'Looks.newLook.reviewPieces', defaultMessage: 'Teile' },
   reviewSum: {
     id: 'Looks.newLook.reviewSum',

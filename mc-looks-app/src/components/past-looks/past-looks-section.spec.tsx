@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-node-access -- rows, photo boxes and figures are located structurally */
+/* eslint-disable testing-library/no-node-access -- rows, piece boxes and figures are located structurally */
 import userEvent from '@testing-library/user-event';
 import {
   act,
@@ -6,7 +6,6 @@ import {
   waitFor,
   within,
 } from '@commercetools-frontend/application-shell/test-utils';
-import { config } from '../../config';
 import {
   APP_ROOT,
   renderLooks,
@@ -232,7 +231,7 @@ describe('Frühere Looks', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('lays the cards out in equal columns with a 92 px photo strip', async () => {
+  it('lays the cards out in equal columns with a 92 px piece strip', async () => {
     setup([off('a', 'Alt Eins'), off('b', 'Alt Zwei')]);
     const card = await cardOf('Alt Eins');
     const grid = screen.getByRole('list', { name: 'Frühere Looks' });
@@ -244,30 +243,9 @@ describe('Frühere Looks', () => {
     });
   });
 
-  it('shows the look photo, else piece images, in the card', async () => {
-    const shopOrigin = jest.replaceProperty(
-      config,
-      'shopOrigin',
-      'https://shop.example.com'
-    );
-    try {
-      setup([
-        off('photo', 'Mit Foto', ['p1', 'p2'], {
-          image: { path: 'looks/photo.webp', width: 800, height: 1200 },
-        }),
-        off('plain', 'Ohne Foto', ['p1', 'p2', 'p3', 'p4']),
-      ]);
-      const withPhoto = await cardOf('Mit Foto');
-      expect(within(withPhoto).getByAltText('Mit Foto')).toHaveAttribute(
-        'src',
-        'https://shop.example.com/looks/photo.webp'
-      );
-      expect((await cardOf('Ohne Foto')).querySelectorAll('img')).toHaveLength(
-        3
-      );
-    } finally {
-      shopOrigin.restore();
-    }
+  it('shows at most three piece images in the card', async () => {
+    setup([off('plain', 'Ohne Foto', ['p1', 'p2', 'p3', 'p4'])]);
+    expect((await cardOf('Ohne Foto')).querySelectorAll('img')).toHaveLength(3);
   });
 
   it('opens the detail from the card, but not from "Wieder aktivieren"', async () => {

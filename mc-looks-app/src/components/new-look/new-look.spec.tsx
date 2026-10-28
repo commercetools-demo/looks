@@ -1,14 +1,13 @@
-/* eslint-disable testing-library/no-node-access -- the step indicator, the 2:3 photo frame and the result cards have no role to query */
+/* eslint-disable testing-library/no-node-access -- the step indicator and the result cards have no role to query */
 import userEvent from '@testing-library/user-event';
 import {
+  act,
   screen,
   waitFor,
   within,
 } from '@commercetools-frontend/application-shell/test-utils';
 import { toast } from '@commercetools/nimbus';
-import { config } from '../../config';
 import { LookApiError } from '../../domain/errors';
-import { measureImage } from '../../domain/image-size';
 import { renderLooks, type RenderLooksOptions } from '../../test-utils';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
 import {
@@ -21,9 +20,6 @@ import {
   fillLookName,
   nameInput,
 } from '../../test-utils/names';
-
-jest.mock('../../domain/image-size', () => ({ measureImage: jest.fn() }));
-const measure = measureImage as jest.MockedFunction<typeof measureImage>;
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -75,8 +71,6 @@ const hat = buildPiece('hat', {
   name: 'Hut Mia',
   prices: { 'EUR/DE': 2000 },
 });
-
-const SHOP = 'https://shop.example.com';
 
 function setup(
   options: Partial<Omit<RenderLooksOptions, 'api'>> & {
@@ -165,13 +159,7 @@ const WRITE_METHODS = [
 const writes = (fake: ReturnType<typeof createFakeLookApi>) =>
   fake.calls.filter((call) => WRITE_METHODS.includes(call.method));
 
-beforeEach(() => {
-  config.shopOrigin = SHOP;
-  measure.mockReset();
-  measure.mockResolvedValue({ width: 800, height: 1200 });
-});
 afterEach(() => {
-  config.shopOrigin = '';
   toast.remove();
 });
 
@@ -207,86 +195,6 @@ describe('Neuer Look: step 1, basics', () => {
       await screen.findByRole('heading', {
         name: 'Teile wählen (mindestens 2)',
       })
-    ).toBeInTheDocument();
-  });
-
-  it('scenario 2: loads a valid photo from the shop and shows it 120 px wide in 2:3, also in the preview later', async () => {
-    const user = userEvent.setup();
-    setup();
-    await fillBasics(user);
-    await user.type(
-      screen.getByRole('textbox', { name: /^Look-Foto/ }),
-      'looks/jacket.webp'
-    );
-    const photo = await screen.findByTestId('step1-photo');
-    expect(measure).toHaveBeenCalledWith(
-      `${SHOP}/looks/jacket.webp`,
-      undefined
-    );
-    const frame = photo.querySelector('[data-look-photo]') as HTMLElement;
-    expect(frame).toHaveStyle({ width: '120px', aspectRatio: '2 / 3' });
-    expect(
-      within(photo).getByRole('img', { name: 'Look-Foto, Vorschau' })
-    ).toHaveAttribute('src', `${SHOP}/looks/jacket.webp`);
-    expect(
-      screen.getByText('Hochformat, das Model trägt den Look')
-    ).toBeInTheDocument();
-    await next(user);
-    await screen.findByRole('heading', { name: /Teile wählen/ });
-    await addPiece(user, 'Jacke Cleo');
-    const preview = await screen.findByTestId('preview-photo');
-    expect(within(preview).getByRole('img')).toHaveAttribute(
-      'src',
-      `${SHOP}/looks/jacket.webp`
-    );
-  });
-
-  it('scenario 2: an invalid path or a photo that cannot be loaded keeps step 1 with a field error', async () => {
-    const user = userEvent.setup();
-    setup();
-    await fillBasics(user);
-    const field = screen.getByRole('textbox', { name: /^Look-Foto/ });
-    await user.type(field, 'bilder/jacke.gif');
-    await next(user);
-    expect(
-      await screen.findByText(
-        /Der Pfad muss die Form looks\/<name>\.webp haben/
-      )
-    ).toBeInTheDocument();
-    expect(nameInput('DE')).toBeInTheDocument();
-
-    await user.clear(field);
-    measure.mockRejectedValue(new Error('404'));
-    await user.type(field, 'looks/gone.png');
-    await next(user);
-    expect(
-      await screen.findByText(
-        'Das Foto konnte nicht aus dem Shop geladen werden.'
-      )
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('heading', { name: /Teile wählen/ })
-    ).not.toBeInTheDocument();
-  });
-
-  it('scenario 2: an empty photo field is valid', async () => {
-    const user = userEvent.setup();
-    setup();
-    await fillBasics(user);
-    await next(user);
-    expect(
-      await screen.findByRole('heading', { name: /Teile wählen/ })
-    ).toBeInTheDocument();
-    expect(measure).not.toHaveBeenCalled();
-  });
-
-  it('disables the photo field with a hint without a shop origin', async () => {
-    config.shopOrigin = '';
-    setup();
-    const field = await screen.findByRole('textbox', { name: /^Look-Foto/ });
-    expect(field).toBeDisabled();
-    expect(
-      screen.getByText(/Ohne Shop-Adresse kann das Foto nicht geprüft werden/)
     ).toBeInTheDocument();
   });
 
@@ -512,18 +420,6 @@ describe('Neuer Look: step 2, pieces', () => {
       screen.getByRole('button', { name: 'Entfernen: Hose Bea' })
     );
     expect(chosen()).toEqual(['Schal Dora', 'Jacke Cleo']);
-  });
-
-  it('shows the preview beside the form with "Setpreis folgt" until a set price is entered', async () => {
-    const user = userEvent.setup();
-    setup();
-    await gotoPieces(user);
-    expect(screen.getByTestId('shop-preview-placeholder')).toBeInTheDocument();
-    await addPiece(user, 'Jacke Cleo');
-    const preview = await screen.findByTestId('shop-preview');
-    expect(within(preview).getByText('Setpreis folgt')).toBeInTheDocument();
-    expect(within(preview).getByText('Jacke Cleo')).toBeInTheDocument();
-    expect(screen.getByText('Shop-Vorschau')).toBeInTheDocument();
   });
 });
 
@@ -869,16 +765,10 @@ describe('Neuer Look: step 4, review and save', () => {
     expect(screen.queryByText(/ist inaktiv und kann/)).not.toBeInTheDocument();
   });
 
-  it('saves the photo with its pixel size', async () => {
+  it('saves a look value without an image key', async () => {
     const user = userEvent.setup();
     const { fake } = setup();
-    await fillBasics(user);
-    await user.type(
-      screen.getByRole('textbox', { name: /^Look-Foto/ }),
-      'looks/jacket.webp'
-    );
-    await next(user);
-    await screen.findByRole('heading', { name: /Teile wählen/ });
+    await gotoPieces(user);
     await addPiece(user, 'Jacke Cleo');
     await addPiece(user, 'Hose Bea');
     await next(user);
@@ -889,11 +779,9 @@ describe('Neuer Look: step 4, review and save', () => {
       await screen.findByRole('button', { name: 'Look speichern' })
     );
     await screen.findByText('Look gespeichert');
-    expect(fake.objects.get('look-jacket-look')?.value.image).toEqual({
-      path: 'looks/jacket.webp',
-      width: 800,
-      height: 1200,
-    });
+    expect(fake.objects.get('look-jacket-look')?.value).not.toHaveProperty(
+      'image'
+    );
   });
 
   it('writes one amount per currency for a project with three currencies', async () => {
@@ -1434,32 +1322,74 @@ describe('Neuer Look: permissions and language', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Nur Lesezugriff')).toBeInTheDocument();
     expect(nameInput('DE')).toBeDisabled();
-    expect(screen.getByRole('textbox', { name: /^Look-Foto/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(
       await screen.findByText('Bitte mindestens einen Namen eingeben.')
     ).toBeInTheDocument();
   });
+});
 
-  it('shows the preview card in the language of the profile, like every other label', async () => {
+describe('Neuer Look: the step is part of the URL', () => {
+  const pathOf = (view: ReturnType<typeof setup>) =>
+    view.history.location.pathname.replace(/^.*\/looks/, '/looks');
+
+  it('shows step 1 at /new and moves to /new/pieces and back', async () => {
     const user = userEvent.setup();
-    setup({ locale: 'en' });
-    await fillLookName(user, { de: 'Jacken-Look', en: 'Jacket look' });
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    const results = await screen.findByRole('list', { name: 'Search results' });
-    await user.click(
-      within(results).getByRole('button', { name: /^Add: Jacke Cleo/ })
-    );
-    const preview = await screen.findByTestId('shop-preview');
+    const view = setup();
+    expect(pathOf(view)).toBe('/looks/new');
+    await gotoPieces(user);
+    expect(pathOf(view)).toBe('/looks/new/pieces');
+    await user.click(screen.getByRole('button', { name: 'Zurück' }));
+    expect(pathOf(view)).toBe('/looks/new');
     expect(
-      within(preview).getByText('Set price to follow')
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: 'Zurück' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('walks the steps with the browser back and forward buttons', async () => {
+    const user = userEvent.setup();
+    const view = setup();
+    await gotoPieces(user);
+    act(() => view.history.goBack());
+    expect(pathOf(view)).toBe('/looks/new');
     expect(
-      within(preview).getByRole('button', { name: 'Add set to cart' })
-    ).toBeInTheDocument();
+      screen.queryByRole('heading', { name: 'Teile wählen (mindestens 2)' })
+    ).not.toBeInTheDocument();
+    act(() => view.history.goForward());
     expect(
-      screen.getByText('How the look appears in the shop')
+      await screen.findByRole('heading', {
+        name: 'Teile wählen (mindestens 2)',
+      })
     ).toBeInTheDocument();
+    expect(pathOf(view)).toBe('/looks/new/pieces');
+  });
+
+  it('uses /new/price and /new/review for the later steps', async () => {
+    const user = userEvent.setup();
+    const view = setup();
+    await gotoSetPrice(user);
+    expect(pathOf(view)).toBe('/looks/new/price');
+    await typeAmount(user, 'EUR', '189,90');
+    await typeAmount(user, 'CHF', '209,90');
+    await next(user);
+    await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    expect(pathOf(view)).toBe('/looks/new/review');
+  });
+
+  it('opens step 1 for a step address without entered data and fixes the URL', async () => {
+    const view = setup({ path: '/new/review' });
+    await waitFor(() => expect(pathOf(view)).toBe('/looks/new'));
+    expect(
+      screen.queryByRole('switch', { name: 'Nach dem Anlegen aktiv' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Weiter' })).toBeInTheDocument();
+  });
+
+  it('keeps the list query in the step addresses', async () => {
+    const user = userEvent.setup();
+    const view = setup({ path: '/new?q=jacke' });
+    await gotoPieces(user);
+    expect(view.history.location.search).toBe('?q=jacke');
   });
 });

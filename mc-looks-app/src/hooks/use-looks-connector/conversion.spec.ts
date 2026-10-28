@@ -1,4 +1,5 @@
-import { countryOfPredicate, toLookDiscount } from './conversion';
+import { countryOfPredicate, toLookDiscount, toLookObject } from './conversion';
+import { buildLookValue } from '../../domain/look-value';
 
 describe('countryOfPredicate', () => {
   it('reads the country of a country predicate', () => {
@@ -40,5 +41,23 @@ describe('toLookDiscount', () => {
       amount: { EUR: 639 },
     });
     expect(toLookDiscount({ ...raw, cartPredicate: 'true' }).country).toBe('');
+  });
+});
+
+describe('toLookObject', () => {
+  it('still reads an object that carries a legacy image field, and rewriting drops it', () => {
+    const object = toLookObject({
+      id: 'o1',
+      version: 3,
+      key: 'look-a',
+      value: {
+        componentProductIds: ['p1', 'p2'],
+        setPrice: { EUR: 18000 },
+        image: { path: 'looks/a.webp', width: 800, height: 1200 },
+      },
+    } as never);
+    expect(object?.value.componentProductIds).toEqual(['p1', 'p2']);
+    expect(object?.value.setPrice).toEqual({ EUR: 18000 });
+    expect(buildLookValue(object!.value)).not.toHaveProperty('image');
   });
 });

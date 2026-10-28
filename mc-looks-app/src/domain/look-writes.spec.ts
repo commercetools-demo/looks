@@ -9,7 +9,6 @@ import {
 import { buildLookRows } from './look-rows';
 import type { LookDiscountGroup } from './types';
 import {
-  changePhoto,
   changeSetPrice,
   completeLook,
   deleteLook,
@@ -317,36 +316,6 @@ describe('changeSetPrice', () => {
     await expect(
       changeSetPrice(fake.api, row, { EUR: 1, CHF: 1 }, liveSum)
     ).rejects.toThrow('complete look');
-  });
-});
-
-describe('changePhoto', () => {
-  const image = { path: 'looks/x.webp', width: 10, height: 15 };
-
-  it('sets, keeps no call when unchanged, and clears the photo; endedAt survives', async () => {
-    const { fake } = setup();
-    fake.objects.set('look-x', {
-      ...fake.objects.get('look-x')!,
-      value: {
-        ...fake.objects.get('look-x')!.value,
-        endedAt: '2026-10-06T10:00:00.000Z',
-      },
-    });
-    expect((await changePhoto(fake.api, 'look-x', image)).unchanged).toBe(
-      false
-    );
-    expect(fake.objects.get('look-x')!.value).toMatchObject({
-      image,
-      endedAt: '2026-10-06T10:00:00.000Z',
-    });
-    const writes = fake.callsTo('writeLookObject').length;
-    expect((await changePhoto(fake.api, 'look-x', image)).unchanged).toBe(true);
-    expect(fake.callsTo('writeLookObject')).toHaveLength(writes);
-    await changePhoto(fake.api, 'look-x', undefined);
-    expect(fake.objects.get('look-x')!.value.image).toBeUndefined();
-    expect(fake.objects.get('look-x')!.value.endedAt).toBe(
-      '2026-10-06T10:00:00.000Z'
-    );
   });
 });
 

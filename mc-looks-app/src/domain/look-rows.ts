@@ -16,7 +16,6 @@ import {
 import type {
   LocalizedValue,
   LookDiscount,
-  LookImage,
   LookObject,
   Money,
   Piece,
@@ -40,7 +39,6 @@ export interface LookRow {
   pieceIds: string[];
   /** `undefined` entries are pieces whose data is not loaded (yet). */
   pieces: Array<Piece | undefined>;
-  image?: LookImage;
   /** Set price and live sum per price cell (currency and country, or the currency alone). */
   setPrice?: Money;
   liveSum: Money;
@@ -146,7 +144,6 @@ export function buildLookRows(input: {
       name: lookNameFromDiscount(discount ?? countryDiscounts[0]),
       pieceIds,
       pieces: pieceIds.map((id) => input.pieces.get(id)),
-      ...(value?.image ? { image: value.image } : {}),
       setPrice,
       liveSum,
       referenceSetPrice,

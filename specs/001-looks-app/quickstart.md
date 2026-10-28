@@ -46,15 +46,15 @@ cd mc-looks-app && npm start              # mc-scripts dev server on the configu
 
 ## Manual scenarios (map to the spec's user stories)
 
-1. **List (US1)**: open Looks. Active looks show name, key, photo or piece strip, set price per currency, sum, saving, status. Search narrows; header count shows the total. Change page size and sort by Setpreis, Summe, Ersparnis, Status; page returns to 1 on sort/filter. At 1440 px no header wraps in de or en.
-2. **Create (US2)**: "Neuer Look" → the name in the project languages (at least one), check or change the suggested key, optional photo path → search and add 2–5 pieces, drag to reorder → set prices per currency below the sums → review, leave "Nach dem Anlegen aktiv" off → "Look speichern". Expect: look appears under **Frühere Looks** as inactive; in the project, a Cart Discount `look-<slug>` (inactive, rank in 0.7–0.799) and a Custom Object `look` / `look-<slug>`.
+1. **List (US1)**: open Looks. Active looks show name, key, piece images, set price per currency, sum, saving, status. Search narrows; header count shows the total. Change page size and sort by Setpreis, Summe, Ersparnis, Status; page returns to 1 on sort/filter. At 1440 px no header wraps in de or en.
+2. **Create (US2)**: "Neuer Look" → the name in the project languages (at least one), check or change the suggested key → search and add 2–5 pieces, drag to reorder → set prices per currency below the sums → review, leave "Nach dem Anlegen aktiv" off → "Look speichern". Expect: look appears under **Frühere Looks** as inactive; in the project, a Cart Discount `look-<slug>` (inactive, rank in 0.7–0.799) and a Custom Object `look` / `look-<slug>`.
 3. **Refusals (US2)**: one piece, six pieces, set price ≥ sum, a piece without a price in one currency, a duplicate piece. Each is refused with a field error and nothing is written.
 4. **Switch (US3)**: switch the new look on from "Wieder aktivieren". It joins the main list; `endedAt` is cleared. Add one unit of each piece to a cart in the shop: the cart lands on the set price. Switch off: the look moves to Frühere Looks with an end date; the cart no longer gets the set price.
 5. **Conflict (US3)**: open the same look in two tabs, switch in one, then the other: a conflict notice, current state shown, no blind retry.
 6. **Past looks (US4)**: with orders that carry a look's discount, the card shows sets, orders, revenue per currency; best seller first with "Bester Look"; a look with no sale reads "Kein Set verkauft". Cut the `view_orders` scope or block the request: an error with "Erneut versuchen", cards still usable.
 7. **Detail (US5)**: opens from row or card; pieces show stock per size ("nur noch N", "ausverkauft"), sizeless pieces "Einheitsgröße"; change the set price and save; the cart price follows. Fail the object write after the discount write: "Setpreis im Shop noch nicht aktualisiert" with retry, list shows "Setpreis weicht ab". Change a product price: "Setpreis neu berechnen" realigns.
 8. **Repair (US6)**: delete a look's Custom Object (or its discount) in the sandbox: row shows "Unvollständig" and "Vervollständigen"; completing never switches the look on.
-9. **Read-only (US7)**: sign in with the View-only user: "Nur Lesezugriff" shown; "Neuer Look", switches, "Wieder aktivieren", set-price and photo inputs are visible and disabled.
+9. **Read-only (US7)**: sign in with the View-only user: "Nur Lesezugriff" shown; "Neuer Look", switches, "Wieder aktivieren", set-price inputs are visible and disabled.
 10. **Language**: profile language en with data locale de: labels and the shop preview texts english, look and product names german.
 
 ## Deploy checks

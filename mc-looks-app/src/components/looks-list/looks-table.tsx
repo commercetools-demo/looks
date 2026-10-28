@@ -13,14 +13,11 @@ import {
   type DataTableColumnItem,
   type DataTableRowItem,
 } from '@commercetools/nimbus';
-import { config } from '../../config';
 import type { LookRow } from '../../domain/look-rows';
 import type { SortKey, SortState } from '../../domain/sorting';
-import { lookImageUrl } from '../../domain/look-value';
 import type { LookDiscount, LookObject } from '../../domain/types';
 import { useCanManage } from '../../hooks/context';
 import { useLookTitle } from '../common/look-hooks';
-import { LookPhoto } from '../common/look-photo';
 import { LookStatusBadges, LookStatusSwitch } from '../common/look-status';
 import { MoneyLines } from '../common/money-lines';
 import commonMessages from '../common/messages';
@@ -32,11 +29,11 @@ type Row = DataTableRowItem<{ look: LookRow; position: number }>;
 /** One piece image in the Teile column and the gap between two (px). */
 export const STRIP_IMAGE_WIDTH = 36;
 export const STRIP_GAP = 4;
-/** The look photo in the Look column: 64 px wide, 2:3 portrait. */
-export const LOOK_PHOTO_WIDTH = 64;
-export const LOOK_PHOTO_RATIO = { width: 2, height: 3 };
-/** Piece images stacked in the photo box of a look without photo. */
-const PHOTO_BOX_FALLBACK_PIECES = 2;
+/** The piece box in the Look column: 64 px wide, 2:3 portrait. */
+export const LOOK_BOX_WIDTH = 64;
+export const LOOK_BOX_RATIO = { width: 2, height: 3 };
+/** Piece images stacked in the box of the Look column. */
+const LOOK_BOX_PIECES = 2;
 
 /**
  * Column widths in px. The Look column has no width: it takes the rest of
@@ -62,9 +59,6 @@ type LookCellProps = { look: LookRow };
 
 const LookCell: FC<LookCellProps> = ({ look }) => {
   const title = useLookTitle()(look);
-  const photoUrl = look.image
-    ? lookImageUrl(look.image.path, config.shopOrigin)
-    : undefined;
   return (
     <Flex
       data-custom-composition="look-cell"
@@ -73,36 +67,27 @@ const LookCell: FC<LookCellProps> = ({ look }) => {
       minWidth={0}
       py="100"
     >
-      {photoUrl && look.image ? (
-        <LookPhoto
-          src={photoUrl}
-          alt={title}
-          width={LOOK_PHOTO_WIDTH}
-          ratio={LOOK_PHOTO_RATIO}
-        />
-      ) : (
-        <Flex
-          data-photo-fallback=""
-          direction="column"
-          justifyContent="center"
-          gap="1px"
-          px="14px"
-          bg="neutral.3"
-          flexShrink={0}
-          width={`${LOOK_PHOTO_WIDTH}px`}
-          style={{
-            aspectRatio: `${LOOK_PHOTO_RATIO.width} / ${LOOK_PHOTO_RATIO.height}`,
-          }}
-        >
-          {look.pieces.slice(0, PHOTO_BOX_FALLBACK_PIECES).map((piece, i) => (
-            <PieceImage
-              key={look.pieceIds[i]}
-              src={piece?.imageUrl}
-              width="100%"
-            />
-          ))}
-        </Flex>
-      )}
+      <Flex
+        data-look-pieces=""
+        direction="column"
+        justifyContent="center"
+        gap="1px"
+        px="14px"
+        bg="neutral.3"
+        flexShrink={0}
+        width={`${LOOK_BOX_WIDTH}px`}
+        style={{
+          aspectRatio: `${LOOK_BOX_RATIO.width} / ${LOOK_BOX_RATIO.height}`,
+        }}
+      >
+        {look.pieces.slice(0, LOOK_BOX_PIECES).map((piece, i) => (
+          <PieceImage
+            key={look.pieceIds[i]}
+            src={piece?.imageUrl}
+            width="100%"
+          />
+        ))}
+      </Flex>
       <Stack gap="50" minWidth={0}>
         <Text fontWeight="600" truncate title={title}>
           {title}

@@ -90,27 +90,6 @@ describe('validateLook', () => {
     ]);
   });
 
-  it('rejects an invalid photo', () => {
-    expect(
-      codes({
-        ...valid,
-        image: { path: 'nope.png', width: 1, height: 1 },
-      } as never)
-    ).toContain('image-invalid');
-    expect(
-      codes({
-        ...valid,
-        image: { path: 'looks/x.webp', width: 0, height: 1 },
-      } as never)
-    ).toContain('image-invalid');
-    expect(
-      codes({
-        ...valid,
-        image: { path: 'looks/x.webp', width: 10, height: 15 },
-      } as never)
-    ).toEqual([]);
-  });
-
   it('checks only cells with a set price and a live sum', () => {
     expect(
       validateLook(

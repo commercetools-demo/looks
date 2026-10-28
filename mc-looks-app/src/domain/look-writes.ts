@@ -16,13 +16,7 @@ import type { LookApi } from './look-api';
 import { LOOK_CONTAINER } from './limits';
 import { buildLookValue } from './look-value';
 import type { LookRow } from './look-rows';
-import type {
-  LocalizedValue,
-  LookDiscount,
-  LookImage,
-  LookObject,
-  Money,
-} from './types';
+import type { LocalizedValue, LookDiscount, LookObject, Money } from './types';
 
 /**
  * Records or clears the end date of a look in its Custom Object: `endedAt`
@@ -347,29 +341,6 @@ export async function deleteLook(api: LookApi, row: LookRow): Promise<void> {
   if (group) await api.deleteDiscountGroup(group.id, group.version);
   const object = await api.getLookObject(row.objectKey);
   if (object) await api.deleteLookObject(object.key, object.version);
-}
-
-/** Sets or clears the look photo; keeps every other field (`endedAt` too).
- *  Makes no call when the photo is already as given. */
-export async function changePhoto(
-  api: LookApi,
-  objectKey: string,
-  image: LookImage | undefined
-): Promise<{ object: LookObject; unchanged: boolean }> {
-  const current = await api.getLookObject(objectKey);
-  if (!current) throw new Error('The look definition no longer exists.');
-  if (JSON.stringify(current.value.image) === JSON.stringify(image)) {
-    return { object: current, unchanged: true };
-  }
-  const { image: _old, ...rest } = current.value;
-  void _old;
-  const object = await api.writeLookObject({
-    container: LOOK_CONTAINER,
-    key: objectKey,
-    value: buildLookValue({ ...rest, ...(image ? { image } : {}) }),
-    version: current.version,
-  });
-  return { object, unchanged: false };
 }
 
 /**

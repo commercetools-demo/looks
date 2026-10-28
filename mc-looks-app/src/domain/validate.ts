@@ -1,5 +1,4 @@
 import { isValidLookKey } from './keys';
-import { isLookImagePath } from './look-value';
 import { LOOK_MIN_PIECES } from './limits';
 import { sumListPrices } from './prices';
 import type { Money, NewLook } from './types';
@@ -12,10 +11,9 @@ export type ValidationCode =
   | 'set-price-none'
   | 'set-price-not-positive'
   | 'set-price-not-below-sum'
-  | 'sum-not-live'
-  | 'image-invalid';
+  | 'sum-not-live';
 
-export type ValidationField = 'label' | 'key' | 'pieces' | 'setPrice' | 'image';
+export type ValidationField = 'label' | 'key' | 'pieces' | 'setPrice';
 
 export interface ValidationError {
   code: ValidationCode;
@@ -34,7 +32,7 @@ export interface ValidationError {
 export function validateLook(
   look: Pick<
     NewLook,
-    'key' | 'label' | 'componentProductIds' | 'setPrice' | 'sum' | 'image'
+    'key' | 'label' | 'componentProductIds' | 'setPrice' | 'sum'
   >,
   livePrices: Map<string, Money>,
   keys: string[]
@@ -48,18 +46,6 @@ export function validateLook(
 
   if (look.key !== undefined && !isValidLookKey(look.key)) {
     errors.push({ code: 'key-invalid', field: 'key' });
-  }
-
-  if (look.image) {
-    const { path, width, height } = look.image;
-    const sizeOk =
-      Number.isInteger(width) &&
-      width > 0 &&
-      Number.isInteger(height) &&
-      height > 0;
-    if (!isLookImagePath(path) || !sizeOk) {
-      errors.push({ code: 'image-invalid', field: 'image' });
-    }
   }
 
   const ids = look.componentProductIds;

@@ -166,35 +166,6 @@ export default defineMessages({
     defaultMessage:
       'Mindestens ein Teil hat keinen Preis oder ist nicht geladen.',
   },
-  photoTitle: { id: 'Looks.detail.photoTitle', defaultMessage: 'Look-Foto' },
-  photoLabel: {
-    id: 'Looks.detail.photoLabel',
-    defaultMessage: 'Look-Foto (Pfad)',
-  },
-  photoHelp: {
-    id: 'Looks.detail.photoHelp',
-    defaultMessage:
-      'Pfad im Shop, zum Beispiel looks/mein-look.webp (.webp, .jpg oder .png). Leer lassen entfernt das Foto.',
-  },
-  photoSave: { id: 'Looks.detail.photoSave', defaultMessage: 'Foto speichern' },
-  photoSaved: {
-    id: 'Looks.detail.photoSaved',
-    defaultMessage: 'Foto gespeichert',
-  },
-  photoInvalid: {
-    id: 'Looks.detail.photoInvalid',
-    defaultMessage:
-      'Der Pfad muss die Form looks/dateiname.webp, .jpg oder .png haben.',
-  },
-  photoUnloadable: {
-    id: 'Looks.detail.photoUnloadable',
-    defaultMessage: 'Das Foto konnte im Shop nicht geladen werden.',
-  },
-  photoNoShop: {
-    id: 'Looks.detail.photoNoShop',
-    defaultMessage:
-      'Ohne Shop-Adresse in der Konfiguration lässt sich kein Foto prüfen und setzen.',
-  },
   completeMissingObject: {
     id: 'Looks.detail.completeMissingObject',
     defaultMessage:

@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import {
   Alert,
-  Box,
   Button,
   Flex,
-  Grid,
   ModalPage,
   Stack,
   Steps,
   toast,
 } from '@commercetools/nimbus';
-import { config } from '../../config';
 import {
   LookKeyTakenError,
   SaveStepError,
@@ -22,11 +19,7 @@ import {
   type SavePlan,
   type SaveProgress,
 } from '../../domain/save-look';
-import {
-  lookPriceKeys,
-  referenceMoney,
-  sumListPrices,
-} from '../../domain/prices';
+import { lookPriceKeys, sumListPrices } from '../../domain/prices';
 import { livePriceMap } from '../../domain/pieces';
 import { localized } from '../../domain/format';
 import { deriveLookKey, keySourceName, lookObjectKey } from '../../domain/keys';
@@ -44,10 +37,8 @@ import {
   useDataLocale,
   useLookApi,
 } from '../../hooks/context';
-import { usePhotoCheck } from '../../hooks/use-photo-check';
 import { describeError } from '../common/describe-error';
 import commonMessages from '../common/messages';
-import { PreviewPanel } from '../shop-preview/preview-panel';
 import { BasicsStep } from './basics-step';
 import messages from './messages';
 import { PiecesStep } from './pieces-step';
@@ -60,9 +51,11 @@ const STEP_FIELDS: ValidationField[][] = [
   ['label', 'key'],
   ['pieces'],
   ['setPrice'],
-  ['label', 'key', 'pieces', 'setPrice', 'image'],
+  ['label', 'key', 'pieces', 'setPrice'],
 ];
 const LAST_STEP = STEP_FIELDS.length - 1;
+/** The step in the URL (`/new/pieces`); the first step is plain `/new`. */
+const STEP_SLUGS = ['basics', 'pieces', 'price', 'review'];
 const STEP_TITLES = [
   messages.stepBasics,
   messages.stepPieces,
@@ -89,7 +82,7 @@ type NewLookModalProps = {
 };
 
 /**
- * "Neuer Look": names and photo, pieces, set price, review and save. The
+ * "Neuer Look": names, pieces, set price, review and save. The
  * state lives here so it survives moving back and forth. A failed save is
  * resumed from where it stopped while the input still matches its plan.
  */
@@ -102,7 +95,27 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
   const canManage = useCanManage();
   const describeValidation = useValidationText();
 
-  const [step, setStep] = useState(0);
+  const location = useLocation();
+  const { step: stepSlug } = useParams<{ step?: string }>();
+  // The step lives in the URL so back and forward walk through the steps. The
+  // entered data lives in this component, so a step is only open once it was
+  // reached here; any other address (a reload, a pasted link) shows step 1.
+  const [reached, setReached] = useState(0);
+  const urlStep = Math.max(0, STEP_SLUGS.indexOf(stepSlug ?? ''));
+  const step = Math.min(urlStep, reached);
+  const stepUrl = (index: number) => ({
+    pathname:
+      index === 0 ? `${basePath}/new` : `${basePath}/new/${STEP_SLUGS[index]}`,
+    search: location.search,
+  });
+  const goToStep = (index: number) => {
+    setReached((current) => Math.max(current, index));
+    history.push(stepUrl(index));
+  };
+  useEffect(() => {
+    if (urlStep > reached) history.replace(stepUrl(reached));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlStep, reached]);
   const [label, setLabel] = useState<LocalizedValue>({});
   const [description, setDescription] = useState<LocalizedValue>({});
   // The key the user typed; `undefined` while the suggestion is used.
@@ -111,8 +124,6 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
   const [takenKeys, setTakenKeys] = useState<Set<string>>(new Set());
   // The key was taken by someone else while saving.
   const [keyRace, setKeyRace] = useState(false);
-  const [photoPath, setPhotoPath] = useState('');
-  const [photoError, setPhotoError] = useState<string | undefined>();
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [priceTexts, setPriceTexts] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<ValidationError[]>([]);
@@ -143,7 +154,6 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
   const keyTaken =
     keyRace || (chosenKey !== undefined && takenKeys.has(chosenKey));
 
-  const photo = usePhotoCheck(photoPath, config.shopOrigin);
   const close = () => history.push(basePath);
   const isDisabled = !canManage;
 
@@ -190,7 +200,6 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
       componentProductIds: pieces.map((piece) => piece.id),
       setPrice: cents,
       sum,
-      ...(photo.image ? { image: photo.image } : {}),
     };
   }
 
@@ -249,21 +258,8 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
 
   async function next() {
     if (!validate(step)) return;
-    if (step === 0) {
-      const verdict = await photo.verify();
-      if (!verdict.ok) {
-        setPhotoError(
-          intl.formatMessage(
-            verdict.reason === 'invalid'
-              ? messages.photoInvalid
-              : messages.photoUnreachable
-          )
-        );
-        return;
-      }
-    }
     setErrors([]);
-    setStep((current) => current + 1);
+    goToStep(step + 1);
   }
 
   const resumable = Boolean(
@@ -294,7 +290,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
       if (error instanceof LookKeyTakenError && chosenKey !== undefined) {
         // The chosen key was taken meanwhile: back to the field, nothing was written.
         setKeyRace(true);
-        setStep(0);
+        goToStep(0);
         return;
       }
       const stepError = error instanceof SaveStepError ? error : undefined;
@@ -309,8 +305,6 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
     }
   }
 
-  const photoUrl = photo.status === 'ready' ? photo.url : undefined;
-
   return (
     <ModalPage.Root isOpen onClose={close}>
       <ModalPage.TopBar
@@ -318,10 +312,12 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
         currentPathLabel={intl.formatMessage(messages.newLook)}
       />
       <ModalPage.Header>
-        <ModalPage.Title>
-          {intl.formatMessage(messages.newLook)}
-        </ModalPage.Title>
-        <ModalPage.Subtitle marginTop={'400'}>
+        {/* Not ModalPage.Subtitle: it renders a <p>, which cannot hold the
+          steps' <div>s. The stack keeps the steps underneath the title. */}
+        <Stack gap="400" width="full">
+          <ModalPage.Title>
+            {intl.formatMessage(messages.newLook)}
+          </ModalPage.Title>
           <Steps.Root count={STEP_TITLES.length} step={step} linear>
             <Steps.List aria-label={intl.formatMessage(messages.stepsLabel)}>
               {STEP_TITLES.map((title, index) => (
@@ -342,7 +338,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
               ))}
             </Steps.List>
           </Steps.Root>
-        </ModalPage.Subtitle>
+        </Stack>
       </ModalPage.Header>
       <ModalPage.Content>
         <Stack gap="600">
@@ -354,98 +350,73 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
             </Alert.Root>
           )}
 
-          <Grid
-            templateColumns="minmax(0, 3fr) minmax(0, 2fr)"
-            gap="800"
-            alignItems="start"
-          >
-            <Stack gap="600" minWidth={0}>
-              {step === 0 && (
-                <BasicsStep
-                  label={label}
-                  onLabelChange={setLabel}
-                  description={description}
-                  onDescriptionChange={setDescription}
-                  nameError={firstFor('label')}
-                  keyValue={keyValue}
-                  keyIsCustom={customKey !== undefined}
-                  onKeyChange={(key) => {
-                    setCustomKey(key);
-                    setKeyRace(false);
-                  }}
-                  onKeyReset={() => {
-                    setCustomKey(undefined);
-                    setKeyRace(false);
-                  }}
-                  keyError={
-                    firstFor('key') ??
-                    (keyTaken
-                      ? intl.formatMessage(messages.errorKeyTaken)
-                      : undefined)
-                  }
-                  photoPath={photoPath}
-                  onPhotoPathChange={(path) => {
-                    setPhotoPath(path);
-                    setPhotoError(undefined);
-                  }}
-                  photoError={photoError}
-                  photo={photo}
-                  photoAvailable={Boolean(config.shopOrigin)}
-                  isDisabled={isDisabled}
-                />
-              )}
-              {step === 1 && (
-                <PiecesStep
-                  pieces={pieces}
-                  onPiecesChange={(next) => {
-                    setPieces(next);
-                    // Prices start at the sums of the new pieces.
-                    setPriceTexts({});
-                  }}
-                  errors={messagesFor(['pieces'])}
-                  isDisabled={isDisabled}
-                />
-              )}
-              {step === 2 && (
-                <SetPriceStep
-                  pieces={pieces}
-                  texts={priceTexts}
-                  onTextsChange={setPriceTexts}
-                  errors={setPriceErrors}
-                  generalErrors={errors
-                    .filter(
-                      (error) => error.field === 'setPrice' && !error.currency
-                    )
-                    .map(describe)}
-                  isDisabled={isDisabled}
-                />
-              )}
-              {step === LAST_STEP && (
-                <ReviewStep
-                  name={omitEmptyTranslations(label)}
-                  description={omitEmptyTranslations(description)}
-                  fullKey={lookObjectKey(chosenKey ?? suggestedKey)}
-                  photoPath={photo.image?.path}
-                  pieces={pieces}
-                  sum={sum}
-                  setPrice={cents}
-                  activate={activate}
-                  onActivateChange={setActivate}
-                  isDisabled={isDisabled}
-                />
-              )}
-            </Stack>
-            <Box position="sticky" top="0" minWidth={0}>
-              <PreviewPanel
-                pieces={pieces}
-                setPrice={referenceMoney(cents, currencies)}
-                sum={referenceMoney(sum, currencies)}
-                photoUrl={photoUrl}
-                photoRatio={photo.image}
-                photoAlt={localized(omitEmptyTranslations(label), dataLocale)}
+          <Stack gap="600" minWidth={0}>
+            {step === 0 && (
+              <BasicsStep
+                label={label}
+                onLabelChange={setLabel}
+                description={description}
+                onDescriptionChange={setDescription}
+                nameError={firstFor('label')}
+                keyValue={keyValue}
+                keyIsCustom={customKey !== undefined}
+                onKeyChange={(key) => {
+                  setCustomKey(key);
+                  setKeyRace(false);
+                }}
+                onKeyReset={() => {
+                  setCustomKey(undefined);
+                  setKeyRace(false);
+                }}
+                keyError={
+                  firstFor('key') ??
+                  (keyTaken
+                    ? intl.formatMessage(messages.errorKeyTaken)
+                    : undefined)
+                }
+                isDisabled={isDisabled}
               />
-            </Box>
-          </Grid>
+            )}
+            {step === 1 && (
+              <PiecesStep
+                pieces={pieces}
+                onPiecesChange={(next) => {
+                  setPieces(next);
+                  // Prices start at the sums of the new pieces.
+                  setPriceTexts({});
+                }}
+                errors={messagesFor(['pieces'])}
+                isDisabled={isDisabled}
+              />
+            )}
+            {step === 2 && (
+              <SetPriceStep
+                pieces={pieces}
+                texts={priceTexts}
+                onTextsChange={setPriceTexts}
+                errors={setPriceErrors}
+                generalErrors={errors
+                  .filter(
+                    (error) => error.field === 'setPrice' && !error.currency
+                  )
+                  .map(describe)}
+                isDisabled={isDisabled}
+              />
+            )}
+            {step === LAST_STEP && (
+              <ReviewStep
+                name={omitEmptyTranslations(label)}
+                description={omitEmptyTranslations(description)}
+                fullKey={lookObjectKey(chosenKey ?? suggestedKey)}
+                pieces={pieces}
+                sum={sum}
+                setPrice={cents}
+                activate={activate}
+                onActivateChange={setActivate}
+                isDisabled={isDisabled}
+              />
+            )}
+          </Stack>
 
           {step === LAST_STEP && errors.length > 0 && (
             <Alert.Root colorPalette="critical">
@@ -494,7 +465,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
               isDisabled={busy}
               onPress={() => {
                 setErrors([]);
-                setStep((current) => current - 1);
+                goToStep(step - 1);
               }}
             >
               {intl.formatMessage(messages.back)}

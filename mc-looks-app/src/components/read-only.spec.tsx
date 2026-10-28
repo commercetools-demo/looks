@@ -39,7 +39,7 @@ describe('read-only access (US7): controls are disabled, never hidden', () => {
     expect(writeCalls(fake)).toHaveLength(0);
   });
 
-  it('detail: switch, set price and photo inputs are present and disabled', async () => {
+  it('detail: switch and set price inputs are present and disabled', async () => {
     const fake = setup();
     renderLooks({ api: fake.api, canManage: false, path: '/live' });
 

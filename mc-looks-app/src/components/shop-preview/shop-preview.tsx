@@ -109,10 +109,6 @@ export interface ShopPreviewProps {
   setPrice?: Record<string, number>;
   /** Live sum of the pieces; computed from `pieces` when omitted. */
   sum?: Record<string, number>;
-  photoUrl?: string;
-  photoRatio?: { width: number; height: number };
-  /** Alt text of the look photo; the photo is decorative without it. */
-  photoAlt?: string;
 }
 
 export const ShopPreview: FC<ShopPreviewProps> = (props) => {
@@ -153,25 +149,6 @@ export const ShopPreview: FC<ShopPreviewProps> = (props) => {
       overflow="hidden"
       bg="neutral.1"
     >
-      {props.photoUrl && (
-        <Box
-          data-testid="preview-photo"
-          position="relative"
-          overflow="hidden"
-          bg="neutral.3"
-          style={{ aspectRatio: '2 / 3' }}
-        >
-          <Image
-            src={props.photoUrl}
-            alt={props.photoAlt ?? ''}
-            position="absolute"
-            inset="0"
-            width="100%"
-            height="100%"
-            objectFit="cover"
-          />
-        </Box>
-      )}
       <Stack gap="400" p="400">
         <Flex
           wrap="wrap"

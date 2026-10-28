@@ -16,7 +16,7 @@ export const LooksRoutes: FC = () => {
       <Route exact path={path}>
         <LooksPage basePath={url} />
       </Route>
-      <Route exact path={`${path}/new`}>
+      <Route exact path={`${path}/new/:step?`}>
         <LooksPage basePath={url} showNewLook />
       </Route>
       <Route path={`${path}/:lookKey`}>

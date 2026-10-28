@@ -9,22 +9,19 @@ import {
   Text,
   toast,
 } from '@commercetools/nimbus';
-import { config } from '../../config';
 import type { PastLookRow } from '../../domain/past-looks';
-import { lookImageUrl } from '../../domain/look-value';
 import { switchLook } from '../../domain/look-writes';
 import type { LookDiscount, LookObject } from '../../domain/types';
 import { useCanManage, useCurrencies, useLookApi } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
 import { useLookTitle, useMoney } from '../common/look-hooks';
-import { LookPhoto } from '../common/look-photo';
 import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import messages from './messages';
 
-/** Height of a card's photo or piece strip (px). */
+/** Height of a card's piece strip (px). */
 export const PAST_STRIP_HEIGHT = 92;
-/** Piece images at most in a strip (a look without photo). */
+/** Piece images at most in a strip . */
 const PAST_STRIP_PIECES = 3;
 
 type FigureProps = {
@@ -95,9 +92,6 @@ export const PastLookCard: FC<PastLookCardProps> = ({
       : undefined;
   const from = day(past.activeFrom);
   const to = day(past.activeUntil);
-  const photoUrl = past.image
-    ? lookImageUrl(past.image.path, config.shopOrigin)
-    : undefined;
   const revenueLines = [
     ...currencies,
     ...Object.keys(past.revenue).filter((code) => !currencies.includes(code)),
@@ -168,24 +162,9 @@ export const PastLookCard: FC<PastLookCardProps> = ({
         alignItems="flex-start"
       >
         <Flex gap="100" flex="1" minWidth={0} overflow="hidden">
-          {photoUrl && past.image ? (
-            <LookPhoto
-              src={photoUrl}
-              alt={title}
-              width={(PAST_STRIP_HEIGHT * 2) / 3}
-              ratio={{ width: 2, height: 3 }}
-            />
-          ) : (
-            past.pieceImageUrls
-              .slice(0, PAST_STRIP_PIECES)
-              .map((src, i) => (
-                <PieceImage
-                  key={i}
-                  src={src}
-                  width={(PAST_STRIP_HEIGHT * 4) / 5}
-                />
-              ))
-          )}
+          {past.pieceImageUrls.slice(0, PAST_STRIP_PIECES).map((src, i) => (
+            <PieceImage key={i} src={src} width={(PAST_STRIP_HEIGHT * 4) / 5} />
+          ))}
         </Flex>
         {best && (
           <Box flexShrink={0}>

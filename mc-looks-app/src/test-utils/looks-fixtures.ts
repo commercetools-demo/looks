@@ -16,7 +16,6 @@ export function buildLook(
     setPrice?: Record<string, number>;
     endedAt?: string;
     createdAt?: string;
-    image?: LookObject['value']['image'];
     withoutObject?: boolean;
   } = {}
 ): { objects: LookObject[]; discounts: LookDiscount[] } {
@@ -32,7 +31,6 @@ export function buildLook(
           buildObject(key, pieceIds, {
             setPrice,
             ...(options.endedAt ? { endedAt: options.endedAt } : {}),
-            ...(options.image ? { image: options.image } : {}),
           }),
         ],
     discounts: [

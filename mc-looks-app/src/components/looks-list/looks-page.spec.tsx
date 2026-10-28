@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-node-access -- rows, photo boxes and figures are located structurally */
+/* eslint-disable testing-library/no-node-access -- rows, piece boxes and figures are located structurally */
 import userEvent from '@testing-library/user-event';
 import {
   act,
@@ -6,7 +6,6 @@ import {
   waitFor,
   within,
 } from '@commercetools-frontend/application-shell/test-utils';
-import { config } from '../../config';
 import {
   APP_ROOT,
   renderLooks,
@@ -97,40 +96,13 @@ describe('looks list', () => {
     );
   });
 
-  it('shows the look photo in the Look column, else the first piece images in the same box', async () => {
-    const shopOrigin = jest.replaceProperty(
-      config,
-      'shopOrigin',
-      'https://shop.example.com'
-    );
-    try {
-      setup(
-        buildLooks([
-          buildLook('with-photo', 'Mit Foto', ['p1', 'p2'], {
-            image: { path: 'looks/with-photo.webp', width: 800, height: 1200 },
-          }),
-          buildLook('no-photo', 'Ohne Foto', ['p1', 'p2', 'p3']),
-        ])
-      );
-      const withPhoto = await rowOf('Mit Foto');
-      const photo = within(withPhoto).getByAltText('Mit Foto');
-      expect(photo).toHaveAttribute(
-        'src',
-        'https://shop.example.com/looks/with-photo.webp'
-      );
-      expect(photo.closest('[data-look-photo]')).toHaveStyle({
-        aspectRatio: '2 / 3',
-      });
-      const withoutPhoto = await rowOf('Ohne Foto');
-      expect(withoutPhoto.querySelector('[data-look-photo]')).toBeNull();
-      const box = withoutPhoto.querySelector(
-        '[data-photo-fallback]'
-      ) as HTMLElement;
-      expect(box).toHaveStyle({ aspectRatio: '2 / 3' });
-      expect(box.querySelectorAll('img')).toHaveLength(2);
-    } finally {
-      shopOrigin.restore();
-    }
+  it('shows the first two piece images in the box of the Look column', async () => {
+    setup(buildLooks([buildLook('plain', 'Ohne Foto', ['p1', 'p2', 'p3'])]));
+    const box = (await rowOf('Ohne Foto')).querySelector(
+      '[data-look-pieces]'
+    ) as HTMLElement;
+    expect(box).toHaveStyle({ aspectRatio: '2 / 3' });
+    expect(box.querySelectorAll('img')).toHaveLength(2);
   });
 
   it('shows all five piece images of a look', async () => {

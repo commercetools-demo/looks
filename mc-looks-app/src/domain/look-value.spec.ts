@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { buildLookValue, isLookImagePath, lookImageUrl } from './look-value';
+import { buildLookValue } from './look-value';
 
 const schema = JSON.parse(
   fs.readFileSync(
@@ -17,18 +17,14 @@ describe('look value', () => {
     const value = buildLookValue({
       componentProductIds: ['a', 'b'],
       setPrice: { EUR: 100 },
-      image: { path: 'looks/x.webp', width: 10, height: 15 },
       endedAt: '2026-10-06T10:00:00.000Z',
     });
     for (const key of Object.keys(value))
       expect(Object.keys(schema.properties)).toContain(key);
     for (const key of schema.required) expect(value).toHaveProperty(key);
-    expect(Object.keys(schema.properties.image.properties)).toEqual(
-      expect.arrayContaining(Object.keys(value.image!))
-    );
   });
 
-  it('leaves image and endedAt out when absent', () => {
+  it('leaves endedAt out when absent', () => {
     expect(
       buildLookValue({ componentProductIds: ['a', 'b'], setPrice: { EUR: 1 } })
     ).toEqual({
@@ -37,19 +33,12 @@ describe('look value', () => {
     });
   });
 
-  it('accepts only relative photo paths of the allowed form', () => {
-    expect(isLookImagePath('looks/cozy-in-grey.webp')).toBe(true);
-    expect(isLookImagePath('looks/a.b_c-d.PNG')).toBe(false);
-    expect(isLookImagePath('looks/x.jpg')).toBe(true);
-    expect(isLookImagePath('looks/../secret.png')).toBe(false);
-    expect(isLookImagePath('https://evil.com/x.png')).toBe(false);
-    expect(isLookImagePath('looks/x.gif')).toBe(false);
-  });
-
-  it('resolves the photo against the shop origin', () => {
-    expect(lookImageUrl('looks/x.webp', 'https://shop.example.com')).toBe(
-      'https://shop.example.com/looks/x.webp'
-    );
-    expect(lookImageUrl('looks/x.webp', '')).toBeUndefined();
+  it('writes no image key, not even from an object that still has one', () => {
+    const legacy = {
+      componentProductIds: ['a', 'b'],
+      setPrice: { EUR: 1 },
+      image: { path: 'looks/x.webp', width: 10, height: 15 },
+    };
+    expect(buildLookValue(legacy)).not.toHaveProperty('image');
   });
 });

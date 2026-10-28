@@ -14,7 +14,7 @@
 
 A **look** is a curated outfit: at least 2 products (no upper limit) sold as a set at a set price below the sum of the single prices. The shop shows the look on each piece's product page ("Shop the look"), and in the cart, where the set price applies automatically once every piece is in the cart.
 
-Today the platform's standard Merchant Center covers only half of this: the set-price discount can be maintained in the Discounts application, but the look itself (which pieces, which photo) has no business screen. Merchandisers need a ticket and a developer to create or retire a look.
+Today the platform's standard Merchant Center covers only half of this: the set-price discount can be maintained in the Discounts application, but the look itself (which pieces) has no business screen. Merchandisers need a ticket and a developer to create or retire a look.
 
 **Looks** closes that gap: a Merchant Center custom application, in the main menu, in which merchandisers list, create, switch on and off, and reprice looks, see how retired looks sold, and preview how a look will appear in the shop, without a ticket and without a deployment.
 
@@ -22,7 +22,7 @@ Today the platform's standard Merchant Center covers only half of this: the set-
 
 ### User Story 1 - See all looks and their live status (Priority: P1)
 
-A merchandiser opens "Looks" in the Merchant Center main menu and sees every active look in one table: look photo and name, the piece images, set price per project currency, the sum of the single prices, the saving in percent, and whether the look is live in the shop. They can search by name.
+A merchandiser opens "Looks" in the Merchant Center main menu and sees every active look in one table: name, the piece images, set price per project currency, the sum of the single prices, the saving in percent, and whether the look is live in the shop. They can search by name.
 
 **Why this priority**: Without this view nothing else is discoverable. It is also the smallest slice that delivers value on its own: it replaces "ask a developer what looks exist".
 
@@ -31,7 +31,7 @@ A merchandiser opens "Looks" in the Merchant Center main menu and sees every act
 **Acceptance Scenarios**:
 
 1. **Given** a project with eight active looks, **When** the user opens the app, **Then** the table lists all eight, each with set price per project currency, live sum, saving in percent and status "Aktiv"/"Active", and the header reads "8 Looks".
-2. **Given** a look has a look photo, **When** the list renders, **Then** the photo is shown in the Look column in 2:3 portrait; **Given** a look has no photo, **Then** the first piece images stand in the same box.
+2. **Given** a look, **When** the list renders, **Then** the first piece images stand in the 2:3 box of the Look column. (The look photo was removed.)
 3. **Given** a look has up to five pieces, **When** the list renders, **Then** all piece images are visible without being cut; a look with more pieces shows the first five and "+N".
 4. **Given** the user types part of a name, **When** the filter applies, **Then** only matching looks remain and the count updates; if none match, an empty-filter message is shown.
 4a. **Given** more looks than fit on one page, **When** the list renders, **Then** it shows one page with page controls and a page-size choice, and the count states the total ("8 Looks" total, not the page size).
@@ -44,7 +44,7 @@ A merchandiser opens "Looks" in the Merchant Center main menu and sees every act
 
 ### User Story 2 - Create a new look with a live shop preview (Priority: P1)
 
-A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** (the name in every project language, optional look photo), **Pieces** (search products, choose 2 to 5, reorder), **Set price** (one price per project currency, shown against the sum), and **Review** (summary, "Nach dem Anlegen aktiv" switch, "Look speichern"). Beside the form, a shop preview shows how the look will appear on a product page, updating as they type.
+A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** (the name in every project language), **Pieces** (search products, choose 2 to 5, reorder), **Set price** (one price per project currency, shown against the sum), and **Review** (summary, "Nach dem Anlegen aktiv" switch, "Look speichern"). Beside the form, a shop preview shows how the look will appear on a product page, updating as they type.
 
 **Why this priority**: Creating looks is the core job of the app and the reason it exists.
 
@@ -53,7 +53,7 @@ A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** 
 **Acceptance Scenarios**:
 
 1. **Given** step 1, **When** the user enters a name in at least one project language and presses "Weiter", **Then** step 2 opens; if no name is entered, a field error names the problem and nothing is written.
-2. **Given** step 1 with a look-photo path of the form `looks/<name>.webp` (or jpg, png) that loads from the shop, **When** it loads, **Then** the photo appears 120 px wide in 2:3 next to the form and later in the preview; **Given** an invalid path or a photo that cannot be loaded, **Then** "Weiter" stays on step 1 with a field error. An empty field is valid (look without photo).
+2. ~~Look photo in step 1~~ (removed: the photo is not used).
 3. **Given** step 2, **When** the user searches, **Then** products are found with image, name, colour, price and sizes with availability; selecting a product adds it to the look; the step is titled "Teile wählen (2 bis 5)" and states the count ("4 Teile gewählt").
 4. **Given** fewer than 2 or more than 5 pieces, **When** the user proceeds or saves, **Then** a field error states the limit and the current count; nothing is written.
 5. **Given** a piece without sizes (e.g. an accessory), **Then** it reads "Einheitsgröße" instead of a size list.
@@ -86,7 +86,7 @@ A merchandiser (or lead) switches a look on or off from the list row or the deta
 
 ### User Story 4 - Learn from retired looks ("Frühere Looks") (Priority: P2)
 
-Below the list, the section "Frühere Looks" ("Ausgeschaltete Looks und wie sie verkauft haben") shows one card per switched-off look, best seller first: photo or piece strip, name, the period it was active, and how it sold (sets sold, orders, revenue), or "Kein Set verkauft". The best seller carries a "Bester Look" badge. It serves as an idea source ("that was a good look, that one not").
+Below the list, the section "Frühere Looks" ("Ausgeschaltete Looks und wie sie verkauft haben") shows one card per switched-off look, best seller first: piece strip, name, the period it was active, and how it sold (sets sold, orders, revenue), or "Kein Set verkauft". The best seller carries a "Bester Look" badge. It serves as an idea source ("that was a good look, that one not").
 
 **Why this priority**: High value for merchandising decisions, but the app is usable without it.
 
@@ -99,15 +99,15 @@ Below the list, the section "Frühere Looks" ("Ausgeschaltete Looks und wie sie 
 3. **Given** a look switched off on 6 Oct and renamed on 8 Oct, **Then** the card reads "aktiv 30.09.2026 bis 06.10.2026", using the recorded switch-off date, not the last-modified date.
 4. **Given** a past look without a recorded end date, **Then** no "aktiv … bis …" line is shown; everything else is unchanged.
 5. **Given** two orders carrying the look's set discount on 3 and 6 units of a 3-piece look, **Then** the card shows 2 orders and 3 sets, with revenue summed per currency (a currency line only when the look sold in it).
-6. **Given** the sales data is loading, **Then** four skeleton cards appear and the main list stays usable; **Given** there is no past look, **Then** "Noch keine früheren Looks" is shown with an explanatory line; **Given** the sales data cannot be read, **Then** an error with "Erneut versuchen" appears, while the cards, photos and "Wieder aktivieren" still work.
+6. **Given** the sales data is loading, **Then** four skeleton cards appear and the main list stays usable; **Given** there is no past look, **Then** "Noch keine früheren Looks" is shown with an explanatory line; **Given** the sales data cannot be read, **Then** an error with "Erneut versuchen" appears, while the cards and "Wieder aktivieren" still work.
 7. **Given** the sales read reaches its size bound, **Then** the section says the figures come from the most recent orders only, rather than claiming completeness.
 8. **Given** four cards per row at 1440 px, **Then** all columns shrink together (equal widths).
 
 ---
 
-### User Story 5 - Inspect a look and change its set price or photo (Priority: P2)
+### User Story 5 - Inspect a look and change its set price (Priority: P2)
 
-Opening a look shows its detail: back link "Zurück zu Looks", title and key, the "Aktiv" switch (or "Nur Lesezugriff" for view-only users), "Im Shop ansehen", the look photo (280 px, 2:3), one card per piece (image, name, colour, price per currency, stock per size), and the shop preview. With Manage permission the user can enter new set prices (one per project currency) and set or clear the look photo.
+Opening a look shows its detail: back link "Zurück zu Looks", title and key, the "Aktiv" switch (or "Nur Lesezugriff" for view-only users), "Im Shop ansehen", one card per piece (image, name, colour, price per currency, stock per size), and the shop preview. With Manage permission the user can enter new set prices (one per project currency) .
 
 **Why this priority**: Repricing and fixing a look after launch is a frequent follow-up task; creation (P1) comes first.
 
@@ -120,7 +120,7 @@ Opening a look shows its detail: back link "Zurück zu Looks", title and key, th
 3. **Given** a valid new set price, **When** the user saves, **Then** the platform's discount amount is recomputed from today's single prices first, then the look definition is updated, and the detail confirms "Setpreis gespeichert".
 4. **Given** the discount was updated but the look definition write failed, **Then** the detail says "Setpreis im Shop noch nicht aktualisiert" with a retry, and the list marks the look "Setpreis weicht ab" until the retry succeeds.
 5. **Given** a piece's price changed after authoring so the set no longer lands on the stored set price, **Then** list and detail show "Setpreis weicht ab", and "Setpreis neu berechnen" re-computes the discount amount from today's prices.
-6. **Given** a photo path that is invalid or cannot be loaded, **When** the user saves it, **Then** saving is refused with a field error; clearing the path removes the photo.
+6. ~~Photo path on the detail~~ (removed: the photo is not used).
 7. **Given** a look key that matches neither a look definition nor a discount, **When** the user opens its URL, **Then** a "Look nicht gefunden" page is shown.
 
 ---
@@ -151,7 +151,7 @@ A user with View permission only sees the same list, section and details, but al
 
 **Acceptance Scenarios**:
 
-1. **Given** View only, **Then** "Neuer Look", the "Aktiv" switches, "Wieder aktivieren", the set-price and photo inputs are disabled (not hidden), and "Nur Lesezugriff" is shown.
+1. **Given** View only, **Then** "Neuer Look", the "Aktiv" switches, "Wieder aktivieren", the set-price inputs are disabled (not hidden), and "Nur Lesezugriff" is shown.
 2. **Given** a user with neither permission, **Then** the menu entry is absent and a direct URL shows the Merchant Center's no-permission page.
 
 ---
@@ -194,28 +194,28 @@ A user with View permission only sees the same list, section and details, but al
 
 #### Looks list
 
-- **FR-010**: The list MUST show one row per look (a look definition joined with its same-key set-price discount) with the columns, in order: **Look** (photo 64 px wide 2:3 with name and key; takes remaining width, minimum 200 px), **Teile** (all piece images, 36 px wide 4:5, 4 px apart, up to five), **Setpreis** (one line per currency), **Summe** (live sum per currency), **Ersparnis** (percent, of the sum in the first currency), **Status**, and **Aktiv** (switch; Manage only).
+- **FR-010**: The list MUST show one row per look (a look definition joined with its same-key set-price discount) with the columns, in order: **Look** (a 64 px wide 2:3 box with the first piece images, name and key; takes remaining width, minimum 200 px), **Teile** (all piece images, 36 px wide 4:5, 4 px apart, up to five), **Setpreis** (one line per currency), **Summe** (live sum per currency), **Ersparnis** (percent, of the sum in the first currency), **Status**, and **Aktiv** (switch; Manage only).
 - **FR-011**: The table MUST span the full content width; only the Look column grows. No column header MAY wrap in German or English; each fixed column MUST be at least as wide as its header in both languages. The look name MUST be cut with an ellipsis on one line.
 - **FR-012**: Status MUST be read from the discount's active flag (the discount decides what the shopper pays), shown as "Aktiv"/"Inaktiv" plus the warnings "Unvollständig" and "Setpreis weicht ab".
 - **FR-013**: The page MUST offer search by look name (field at most 360 px wide) and a count of all matching looks ("8 Looks") on the right. "Neuer Look" MUST sit at the right of the page heading (Manage only).
 - **FR-013a**: The list MUST be paginated (page-size choice of 20, 50, 100; default 20; the page and size are kept while the user filters, sorts, switches a look, or returns from a detail) and sortable by Look (name in the data locale), Setpreis, Summe, Ersparnis and Status. Sorting and filtering apply to all looks, not only the visible page. Columns whose values are not comparable (Teile, Aktiv) are not sortable. The default sort is name ascending; a changed sort or filter returns to page 1. "Frühere Looks" is exempt from pagination and sorting: it is ordered by sets sold (FR-021), and shows all past looks.
 - **FR-014**: The main list MUST contain active looks and incomplete looks (whatever their state); complete looks that are switched off MUST appear only under "Frühere Looks". With no active look the list MUST say "Zurzeit ist kein Look aktiv."
 - **FR-015**: The list MUST show loading (skeleton rows), empty, filtered-empty, and error-with-retry states. Row click MUST open the look's detail.
-- **FR-016**: A look without a look photo MUST show its first piece images stacked in the same 64 × 96 px box.
+- **FR-016**: The Look column MUST show the first two piece images stacked in a 64 × 96 px box. (The look photo was removed.)
 
 #### Frühere Looks
 
-- **FR-020**: The section MUST list every complete, inactive look, one card each, four per row at 1440 px with equal columns. A card shows: photo or piece strip (92 px high), "Bester Look" badge (first card only, and only if at least one set sold), name, "aktiv <from> bis <until>" (only when both dates are known), then either the figures "Verkaufte Sets", "Bestellungen", "Umsatz" (one line per currency in which the look sold) or "Kein Set verkauft", and "Wieder aktivieren" (Manage only).
+- **FR-020**: The section MUST list every complete, inactive look, one card each, four per row at 1440 px with equal columns. A card shows: piece strip (92 px high), "Bester Look" badge (first card only, and only if at least one set sold), name, "aktiv <from> bis <until>" (only when both dates are known), then either the figures "Verkaufte Sets", "Bestellungen", "Umsatz" (one line per currency in which the look sold) or "Kein Set verkauft", and "Wieder aktivieren" (Manage only).
 - **FR-021**: Cards MUST be sorted by sets sold (descending), then by name. A card opens the look's detail.
 - **FR-022**: Sales MUST be derived from orders, read-only. A line sold as part of a set carries a portion of the look's discount; therefore: sets sold = units carrying the discount ÷ piece count, rounded down; orders = orders with at least one such unit; revenue = quantity × discounted unit price, summed per currency.
 - **FR-023**: The order read MUST be bounded: orders from the last 90 days, newest first, at most 4 pages of 500. When the last page is full, the section MUST state that figures come from the most recent 2000 orders instead of claiming completeness. The section MUST load independently so a failing read never hides the list.
-- **FR-024**: "Aktiv from" MUST be the discount's creation date. "Aktiv until" MUST be the date the look was switched off, recorded on the look definition when switched off and cleared when switched on again; it MUST NOT be the discount's last-modified date. A new set price or photo MUST keep the recorded end date.
+- **FR-024**: "Aktiv from" MUST be the discount's creation date. "Aktiv until" MUST be the date the look was switched off, recorded on the look definition when switched off and cleared when switched on again; it MUST NOT be the discount's last-modified date. A new set price MUST keep the recorded end date.
 - **FR-025**: The section MUST have loading (four skeleton cards), empty ("Noch keine früheren Looks" + "Ausgeschaltete Looks erscheinen hier mit ihren Verkäufen."), and error states ("Die Verkaufszahlen konnten nicht geladen werden." with "Erneut versuchen"; the cards and reactivation keep working).
 
 #### Creating a look
 
-- **FR-030**: "Neuer Look" MUST open a four-step flow (Grunddaten, Teile, Setpreis, Prüfen) with a step indicator that marks the current step, and the shop preview beside the form in every step.
-- **FR-031**: Step 1 MUST collect the name with one input per project language (the Nimbus localized text field: the data locale first, the other languages behind its toggle; at least one language is required, empty translations are omitted when saving) and an optional look photo path (`looks/<name>.webp|jpg|png`, help text "Hochformat, das Model trägt den Look"). The photo's pixel size MUST be read from the loaded file and stored with the path. It MUST also collect an optional description with one multi-line input per project language (same localized field). The Discount Group of the look takes the name as its name and the description as its description.
+- **FR-030**: "Neuer Look" MUST open a four-step flow (Grunddaten, Teile, Setpreis, Prüfen) with a step indicator that marks the current step, and the shop preview beside the form in every step. The current step MUST be part of the URL (`/new`, `/new/pieces`, `/new/price`, `/new/review`) so the browser's back and forward buttons move between steps and the list query is kept; a step address opened without entered data (reload, pasted link) shows step 1.
+- **FR-031**: Step 1 MUST collect the name with one input per project language (the Nimbus localized text field: the data locale first, the other languages behind its toggle; at least one language is required, empty translations are omitted when saving). It MUST also collect an optional description with one multi-line input per project language (same localized field). The Discount Group of the look takes the name as its name and the description as its description.
 - **FR-032**: Step 2 MUST search products and show per product: image, name, colour (the variant's colour name in the data locale, falling back to the colour attribute's label (attribute names per FR-084), so colourways of one model can be told apart), and sizes with availability from the default inventory. Sizes are the variants having a default inventory entry, labelled by their variant attributes (FR-084); several variants without any such attribute are listed by SKU, and only a product with a single such variant is one size. Pieces MUST be reorderable (drag). A look MUST have 2 to 5 pieces, no duplicates. The step shows no prices and no sum; prices appear from the set price step on.
 - **FR-033**: Step 3 MUST collect one set price per project currency and show the sum of the pieces and the saving.
 - **FR-034**: Step 4 MUST show a summary and the switch "Nach dem Anlegen aktiv" (default off).
@@ -235,18 +235,18 @@ A user with View permission only sees the same list, section and details, but al
 - **FR-050**: Switching MUST set the discount's active flag using its current version; the look definition MUST NOT be deleted by switching off. On a version conflict the app MUST re-read and show the current state without retrying blindly. The end-date write is best effort (see FR-024).
 - **FR-051**: The switch MUST only be offered for complete looks (definition and discount both exist and name the same pieces).
 - **FR-052**: A set-price change MUST validate as for a new look, then update the discount amount from today's live prices, then update the definition's set price using the object's current version. A failure between the two writes MUST be surfaced as in Story 5 scenario 4. "Setpreis neu berechnen" MUST perform the same with the unchanged price.
-- **FR-053**: The detail MUST offer, with Manage, a field "Look-Foto (Pfad)" to set or clear the photo, validated as in step 1, with photo size read from the loaded file; a write of a look without photo MUST leave an existing photo untouched.
+- **FR-053**: ~~Look photo field on the detail~~ (removed: the photo is not used).
 - **FR-054**: "Vervollständigen" MUST follow Story 6; completing MUST never switch a discount on.
 
 #### Look detail
 
 - **FR-060**: The detail MUST show a back link "Zurück zu Looks"; the look name as title; the look key below; on the right the "Aktiv" switch (Manage) or the tag "Nur Lesezugriff"; and "Im Shop ansehen" (link to the first piece's product page on the shop).
-- **FR-061**: Below, three columns: look photo (280 px, 2:3; alt text = look name), the pieces (one card per row: image 120 px 4:5, name, colour, price per currency, stock per size; "Einheitsgröße" for sizeless pieces; 1–3 left shown as "<size>: nur noch N", sold out sizes as "<sizes>: ausverkauft"), and the shop preview (400 px). Then the set price with the saving, and the photo field.
+- **FR-061**: Below, three columns: a 280 px box with the first two piece images, the pieces (one card per row: image 120 px 4:5, name, colour, price per currency, stock per size; "Einheitsgröße" for sizeless pieces; 1–3 left shown as "<size>: nur noch N", sold out sizes as "<sizes>: ausverkauft"), and the shop preview (400 px). Then the set price with the saving.
 - **FR-062**: The detail MUST show a warning when a piece is sold out in every size, and the "Setpreis weicht ab" notice with "Setpreis neu berechnen" when drift exists.
 
 #### Shop preview
 
-- **FR-070**: A shop preview ("Shop-Vorschau", caption "So erscheint der Look im Shop") MUST appear in every step of the new-look flow and on the detail. It mirrors the structure of the shop's product-page set block: "Set zu <set price>" with "Einzelpreise zusammen: <sum>" struck through, one row per piece with image, name and size dropdown including sold-out and low-stock states, the look photo above when there is one, and a full-width "Set in den Warenkorb" button, inert in the app. Without a set price it reads "Setpreis folgt". Without a first piece it shows a neutral placeholder.
+- **FR-070**: A shop preview ("Shop-Vorschau", caption "So erscheint der Look im Shop") MUST appear on the detail (not in the new-look flow). It mirrors the structure of the shop's product-page set block: "Set zu <set price>" with "Einzelpreise zusammen: <sum>" struck through, one row per piece with image, name and size dropdown including sold-out and low-stock states, and a full-width "Set in den Warenkorb" button, inert in the app. Without a set price it reads "Setpreis folgt". Without a first piece it shows a neutral placeholder.
 - **FR-071**: The preview is neutral (Nimbus default theme, no brand colours, fonts or logos). It shows prices in the project's default currency. Like every other text of the app, its texts and the price format follow the Merchant Center user's language (FR-004, German and English); there is no fixed shop language. The preview MUST never write anything.
 
 #### Platform integration, scopes, hosting
@@ -262,15 +262,15 @@ A user with View permission only sees the same list, section and details, but al
 - **FR-084**: Everything that differs between projects MUST be a developer-set configuration value, defined in one place and never scattered as literals through the code. The values are:
   - **Variant attributes**: the names of the product-variant attributes that tell the variants of a product apart (for example search colour, finish colour and size), in display order; a variant is shown as the values of these attributes joined with " / " (text, number, enum, localized or set values), used for the variant choice, the preview dropdown and per-variant stock;
   - **Colour attributes**: the name of the localized colour-name attribute and the name of the fallback colour attribute;
-  - **Shop origin**: where look photos are loaded from and "Im Shop ansehen" points to;
+  - **Shop origin**: the shop address "Im Shop ansehen" points to;
   - **Price country** (optional): the country whose price is used when a product has several country prices with different amounts in one currency (FR-008);
   - **Application ID** and **production URL** (FR-081).
 - **FR-085**: The configuration MUST be designed so it can move to environment variables (`.env`, with a committed example file listing every variable, a description and a default) without changing any code that reads it: all reads go through one configuration module. Until then the module holds the defaults. Missing or empty required values MUST fail loudly at start-up or build time with a message naming the variable, not silently at first use. A product that lacks the configured size attribute is shown as "Einheitsgröße" (one size).
 
 ### Key Entities *(include if feature involves data)*
 
-- **Look**: a curated set of at least 2 products. Attributes: look key, name per project language, ordered pieces, set price per project currency, optional look photo (path, width, height), optional switch-off time. It is the pairing of a *look definition* and a *set-price discount*; neither alone is a complete look.
-- **Look definition**: the key-value document in the container `look`, key `look-<lookKey>`, value `{ componentProductIds[], setPrice{<currency>: cent amount}, image?{path,width,height}, endedAt? (ISO time) }`. Written by the app; read by the storefront.
+- **Look**: a curated set of at least 2 products. Attributes: look key, name per project language, ordered pieces, set price per project currency, optional switch-off time. It is the pairing of a *look definition* and a *set-price discount*; neither alone is a complete look.
+- **Look definition**: the key-value document in the container `look`, key `look-<lookKey>`, value `{ componentProductIds[], setPrice{<currency>: cent amount}, endedAt? (ISO time) }`. Written by the app; read by the storefront.
 - **Set-price discount**: the Cart Discount with the same key. It decides what the shopper pays and whether the look is live (`isActive`). Its name carries the look name (FR-043).
 - **Piece**: a product as the app shows it: image, localized name, colour, list prices per currency, sizes with default-inventory stock, sold-out-everywhere flag.
 - **Past look sales**: per look, derived from orders: orders, sets sold, revenue per currency (see FR-022).

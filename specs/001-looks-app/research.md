@@ -18,7 +18,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 ## R3. Paging and sorting: client-side, two loading tiers
 
 - **Decision**:
-  - **Tier 1** (always, all looks): `customObjects(container:"look")` paged by 500 plus `cartDiscounts` paged by 500 filtered by key prefix `look-` in the client. Gives name, status, set price, completeness and photo path for every look.
+  - **Tier 1** (always, all looks): `customObjects(container:"look")` paged by 500 plus `cartDiscounts` paged by 500 filtered by key prefix `look-` in the client. Gives name, status, set price and completeness for every look.
   - **Tier 2** (prices and piece images): `products(where:"id in (…)")` in chunks of 100, for the pieces of the **visible page** first; when the user sorts by Summe or Ersparnis, or the drift warning must be known for all rows, all remaining pieces are loaded behind a progress state.
   - Filtering, sorting and slicing happen in memory in `src/domain/sorting.ts` and `paging.ts` (pure, tested). Default sort name ascending uses tier 1 only, so the first page renders after one round trip.
 - **Rationale**: Summe, Ersparnis, Status and drift depend on live prices and the discount state; no API can sort by them. 1,000 looks is about 2 pages of objects, 2 of discounts and up to 10 product chunks of ≤5,000 ids total (≤100 ids per call), which is fine once, and Apollo caches it. `where` on `key` with a prefix operator is not guaranteed for Cart Discounts, so filtering by prefix in the client is the safe choice (the source does the same).
@@ -48,13 +48,13 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R7. Concurrency and minimal updates
 
-- **Decision**: every update sends the resource's current `version`; a 409/`ConcurrentModification` is shown as "geändert, bitte neu laden" and the app re-reads without retrying. Set price: read current discount version, send `changeValue`, then upsert the object with its version. A set-price or photo save with no change makes no call. Switching writes `changeIsActive`, then best-effort records/clears `endedAt` on the object.
+- **Decision**: every update sends the resource's current `version`; a 409/`ConcurrentModification` is shown as "geändert, bitte neu laden" and the app re-reads without retrying. Set price: read current discount version, send `changeValue`, then upsert the object with its version. A set-price save with no change makes no call. Switching writes `changeIsActive`, then best-effort records/clears `endedAt` on the object.
 - **Rationale**: principle V and spec FR-050/052.
 - **Alternatives**: last-write-wins — rejected by the constitution.
 
 ## R8. Permissions and read-only rendering
 
-- **Decision**: route is under the app shell, which enforces View. A `useCanManage()` hook (from `useIsAuthorized` with `PERMISSIONS.Manage`) feeds every write control's `isDisabled`. Controls are never conditionally unrendered, including the "Aktiv" switch, "Neuer Look", "Wieder aktivieren", set-price and photo inputs; a "Nur Lesezugriff" badge appears in the header.
+- **Decision**: route is under the app shell, which enforces View. A `useCanManage()` hook (from `useIsAuthorized` with `PERMISSIONS.Manage`) feeds every write control's `isDisabled`. Controls are never conditionally unrendered, including the "Aktiv" switch, "Neuer Look", "Wieder aktivieren", set-price inputs; a "Nur Lesezugriff" badge appears in the header.
 - **Rationale**: principle III is non-negotiable; the source hid controls, which this plan changes on purpose.
 - **Nimbus note**: put `isDisabled` on `FormField.Root`, not on `Select.Root`, and assert `disabled` in tests.
 
@@ -84,7 +84,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R13. Shop preview
 
-- **Decision**: a neutral custom composition from Nimbus primitives mirroring the structure of the shop's set block: optional look photo above, "Set zu <price>" with struck-through sum, one row per piece (image, name, size dropdown with sold-out and low-stock states, low stock = 1 to 3), inert full-width button. All texts, including the card texts, follow the user's language through the app's message files (no fixed shop language). Prices in the project's first currency.
+- **Decision**: a neutral custom composition from Nimbus primitives mirroring the structure of the shop's set block: "Set zu <price>" with struck-through sum, one row per piece (image, name, size dropdown with sold-out and low-stock states, low stock = 1 to 3), inert full-width button. All texts, including the card texts, follow the user's language through the app's message files (no fixed shop language). Prices in the project's first currency.
 - **Rationale**: spec FR-070/071; brand styling is out of scope.
 - **Alternatives**: embed the real storefront in an iframe — needs a preview route in the shop and cross-origin auth; out of scope.
 
@@ -96,7 +96,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R15. Decisions taken while building
 
-- **Data port**: the domain flows (save, switch, reprice, photo, complete) run against a `LookApi` interface (`src/domain/look-api.ts`). `createLookApi` implements it with the Apollo client from the application shell and the `ctp` context; reads that feed a write use `fetchPolicy: 'no-cache'` so versions are never stale. The list keeps its rows in component state and replaces a discount in place after a write (same effect as the normalised-cache update the constitution asks for, without a `refetch()`).
+- **Data port**: the domain flows (save, switch, reprice, complete) run against a `LookApi` interface (`src/domain/look-api.ts`). `createLookApi` implements it with the Apollo client from the application shell and the `ctp` context; reads that feed a write use `fetchPolicy: 'no-cache'` so versions are never stale. The list keeps its rows in component state and replaces a discount in place after a write (same effect as the normalised-cache update the constitution asks for, without a `refetch()`).
 - **Tests**: component specs inject an in-memory `LookApi` (`test-utils/fake-look-api.ts`) to exercise behaviour and failure points; the GraphQL layer itself (variables, paging, error mapping, value conversion) is covered by `msw` specs of `createLookApi`.
 - **Discount value input**: `absoluteCart` (carries `applicationMode`), see `contracts/discount-shape.md`.
 - **Currencies read**: `project { currencies }` needs the `view_project_settings` scope, which is in the app's View scopes.

@@ -4,17 +4,10 @@ export type Money = Record<string, number>;
 /** A localized value as a plain record (locale to text). */
 export type LocalizedValue = Record<string, string>;
 
-export interface LookImage {
-  path: string;
-  width: number;
-  height: number;
-}
-
 /** The Custom Object value, container `look` (contracts/look-value.schema.json). */
 export interface LookValue {
   componentProductIds: string[];
   setPrice: Money;
-  image?: LookImage;
   endedAt?: string;
 }
 
@@ -87,7 +80,6 @@ export interface NewLook {
   setPrice: Money;
   /** The live sum the set price was checked against. */
   sum: Money;
-  image?: LookImage;
 }
 
 /** One look as the builders know it (key is the slug part, without prefix). */

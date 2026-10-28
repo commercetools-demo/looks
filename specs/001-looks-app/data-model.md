@@ -18,10 +18,9 @@ The app owns no database. A **look** is two platform resources joined by key, pl
 |---|---|---|
 | `componentProductIds` | `string[]` | at least 2 distinct product ids (no upper limit), in look order |
 | `setPrice` | `{ [currency]: integer }` | cent amounts; one entry per project currency; each > 0 and < live sum in that currency |
-| `image` | `{ path, width, height }` (optional) | `path` matches `^looks/[A-Za-z0-9._-]+\.(webp\|jpg\|png)$`; width/height positive integers read from the loaded file |
-| `endedAt` | ISO 8601 string (optional) | set when switched off, removed when switched on; kept by price/photo changes |
+| `endedAt` | ISO 8601 string (optional) | set when switched off, removed when switched on; kept by price changes |
 
-A write without `image` leaves an existing `image` untouched.
+The app writes no other fields. An older object that still carries an `image` field stays readable (extra fields are ignored); the next write by the app drops it.
 
 ### Set-price discount (Cart Discount)
 
@@ -46,7 +45,6 @@ Same key `look-<lookKey>`. Written once at create; afterwards only `changeIsActi
 | `name` | per language: discount `name` if `Look-Set: …` form, else `description` |
 | `pieceIds` | object `componentProductIds`, else the discount's pattern target |
 | `pieces` | tier-2 product data (may be undefined while loading) |
-| `image`, `photoUrl` | object `image`, resolved against `config.shopOrigin` |
 | `setPrice` | object value |
 | `liveSum`, `discountAmount` | per currency, from pieces and discount |
 | `savingPercent` | `round((sum₁ − set₁) / sum₁ × 100)` on the first currency |
@@ -86,11 +84,11 @@ Stock state: `sold-out` ≤ 0, `low` 1–3, `ok` > 3.
 
 ### `PastLookRow`
 
-`lookKey`, `objectKey`, `name`, `photoUrl?`, `pieceImageUrls[]`, `pieceCount`, `activeFrom` (discount `createdAt`), `activeUntil?` (object `endedAt`), `orders`, `setsSold`, `revenue: { [currency]: cents }`, `discountId`. Order: `setsSold` desc, then name. `setsSold = floor(units / pieceCount)`.
+`lookKey`, `objectKey`, `name`, `pieceImageUrls[]`, `pieceCount`, `activeFrom` (discount `createdAt`), `activeUntil?` (object `endedAt`), `orders`, `setsSold`, `revenue: { [currency]: cents }`, `discountId`. Order: `setsSold` desc, then name. `setsSold = floor(units / pieceCount)`.
 
 ### `NewLook` and `SaveProgress`
 
-`NewLook`: `{ label{de,en}, componentProductIds, setPrice{currency→cents}, sum{currency→cents}, image?, activate }`. `SaveProgress`: `{ discount?{id,version}, objectWritten, activated }`; passed back to resume after a failed step. A resume reuses the earlier plan only if the entered data still matches it.
+`NewLook`: `{ label{de,en}, componentProductIds, setPrice{currency→cents}, sum{currency→cents}, activate }`. `SaveProgress`: `{ discount?{id,version}, objectWritten, activated }`; passed back to resume after a failed step. A resume reuses the earlier plan only if the entered data still matches it.
 
 ### Configuration (`src/config.ts`)
 
@@ -108,7 +106,6 @@ Stock state: `sold-out` ≤ 0, `low` 1–3, `ok` > 3.
 | `set-price-not-below-sum` | set price < live sum per currency |
 | `sum-not-live` | entered sum equals live sum at save |
 | `key-invalid` | a chosen key: letters, digits, `-`, `_`; 1 to 251 characters after trimming (256 with the `look-` prefix) |
-| `image-invalid` | path pattern and positive size |
 
 ## Limits
 

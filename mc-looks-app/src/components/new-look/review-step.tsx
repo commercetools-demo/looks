@@ -38,7 +38,6 @@ type ReviewStepProps = {
   description: LocalizedValue;
   /** The full key, `look-<key>`. */
   fullKey: string;
-  photoPath: string | undefined;
   pieces: Piece[];
   sum: Money;
   setPrice: Money;
@@ -75,9 +74,6 @@ export const ReviewStep: FC<ReviewStepProps> = (props) => {
           )}
           <SummaryRow label={intl.formatMessage(messages.reviewKey)}>
             <Text fontFamily="mono">{props.fullKey}</Text>
-          </SummaryRow>
-          <SummaryRow label={intl.formatMessage(messages.reviewPhoto)}>
-            {props.photoPath ?? intl.formatMessage(messages.reviewNoPhoto)}
           </SummaryRow>
           <SummaryRow label={intl.formatMessage(messages.reviewSetPrice)}>
             <Stack gap="100">

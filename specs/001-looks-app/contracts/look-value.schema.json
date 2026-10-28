@@ -20,17 +20,6 @@
       "additionalProperties": { "type": "integer", "exclusiveMinimum": 0 },
       "description": "Cent amount per price cell: `EUR/DE` (currency and country) or `EUR` for a price without a country. Each is below the live sum of the pieces in that cell; a cell without an entry has no discount."
     },
-    "image": {
-      "type": "object",
-      "required": ["path", "width", "height"],
-      "additionalProperties": false,
-      "properties": {
-        "path": { "type": "string", "pattern": "^looks/[A-Za-z0-9._-]+\\.(webp|jpg|png)$" },
-        "width": { "type": "integer", "exclusiveMinimum": 0 },
-        "height": { "type": "integer", "exclusiveMinimum": 0 }
-      },
-      "description": "Optional portrait look photo, path relative to the shop origin."
-    },
     "endedAt": {
       "type": "string",
       "format": "date-time",

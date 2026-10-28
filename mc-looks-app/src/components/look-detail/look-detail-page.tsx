@@ -17,21 +17,17 @@ import {
 } from '@commercetools/nimbus';
 import { config } from '../../config';
 import type { LookRow } from '../../domain/look-rows';
-import { lookImageUrl } from '../../domain/look-value';
 import { useCanManage } from '../../hooks/context';
 import { useLookDetail } from '../../hooks/use-look-detail';
 import { describeError } from '../common/describe-error';
 import { useLookTitle } from '../common/look-hooks';
-import { LookPhoto } from '../common/look-photo';
 import { LookStatusSwitch } from '../common/look-status';
 import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import { ShopPreview } from '../shop-preview/shop-preview';
 import { CompleteLookPanel } from './complete-look-panel';
 import { DeleteLookPanel } from './delete-look-panel';
-import type { ImageLoader } from './measure-image';
 import messages from './messages';
-import { PhotoForm } from './photo-form';
 import { PieceCard } from './piece-card';
 import { SetPriceForm } from './set-price-form';
 
@@ -39,7 +35,6 @@ type LookDetailBodyProps = {
   row: LookRow;
   apply: ReturnType<typeof useLookDetail>['apply'];
   reload: () => void;
-  loadImage?: ImageLoader;
   onDeleted: () => void;
 };
 
@@ -47,15 +42,9 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
   row,
   apply,
   reload,
-  loadImage,
   onDeleted,
 }) => {
   const intl = useIntl();
-  const title = useLookTitle();
-  const name = title(row);
-  const photoUrl = row.image
-    ? lookImageUrl(row.image.path, config.shopOrigin)
-    : undefined;
   const complete = row.completeness === 'complete';
 
   return (
@@ -93,29 +82,20 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
         alignItems="start"
       >
         <Box>
-          {photoUrl ? (
-            <LookPhoto
-              src={photoUrl}
-              alt={name}
-              width={280}
-              ratio={{ width: 2, height: 3 }}
-            />
-          ) : (
-            <Flex
-              width="280px"
-              direction="column"
-              justifyContent="center"
-              gap="100"
-              px="800"
-              bg="neutral.3"
-              overflow="hidden"
-              style={{ aspectRatio: '2 / 3' }}
-            >
-              {row.pieces.slice(0, 2).map((piece, index) => (
-                <PieceImage key={row.pieceIds[index]} src={piece?.imageUrl} />
-              ))}
-            </Flex>
-          )}
+          <Flex
+            width="280px"
+            direction="column"
+            justifyContent="center"
+            gap="100"
+            px="800"
+            bg="neutral.3"
+            overflow="hidden"
+            style={{ aspectRatio: '2 / 3' }}
+          >
+            {row.pieces.slice(0, 2).map((piece, index) => (
+              <PieceImage key={row.pieceIds[index]} src={piece?.imageUrl} />
+            ))}
+          </Flex>
         </Box>
         <Stack gap="300" minWidth={0}>
           <Heading as="h2" size="md">
@@ -135,8 +115,6 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
             pieces={row.pieces}
             setPrice={row.referenceSetPrice}
             sum={row.referenceSum}
-            photoUrl={photoUrl}
-            photoRatio={row.image}
           />
         </Box>
       </Grid>
@@ -148,7 +126,6 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
           reload={reload}
         />
       )}
-      {complete && <PhotoForm row={row} apply={apply} loadImage={loadImage} />}
       <DeleteLookPanel row={row} onDeleted={onDeleted} reload={reload} />
     </Stack>
   );
@@ -156,11 +133,10 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
 
 type LookDetailPageProps = {
   basePath: string;
-  loadImage?: ImageLoader;
 };
 
 /** Detail of one look at `${basePath}/:lookKey`. */
-const LookDetailPage: FC<LookDetailPageProps> = ({ basePath, loadImage }) => {
+const LookDetailPage: FC<LookDetailPageProps> = ({ basePath }) => {
   const intl = useIntl();
   const canManage = useCanManage();
   const title = useLookTitle();
@@ -262,7 +238,6 @@ const LookDetailPage: FC<LookDetailPageProps> = ({ basePath, loadImage }) => {
             row={row}
             apply={apply}
             reload={reload}
-            loadImage={loadImage}
             onDeleted={() => history.push(`${basePath}${listSearch}`)}
           />
         )}

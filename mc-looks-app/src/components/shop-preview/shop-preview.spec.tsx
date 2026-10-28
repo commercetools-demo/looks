@@ -5,8 +5,7 @@ import {
 } from '@commercetools-frontend/application-shell/test-utils';
 import { buildPiece } from '../../test-utils/fixtures';
 import { renderUi } from '../../test-utils/render-ui';
-import { PreviewPanel } from './preview-panel';
-import type { ShopPreviewProps } from './shop-preview';
+import { ShopPreview, type ShopPreviewProps } from './shop-preview';
 
 const jacket = buildPiece('jacket', {
   name: 'Jacke Cleo',
@@ -35,7 +34,7 @@ const low = buildPiece('shirt', {
 
 describe('ShopPreview', () => {
   const host = (props: ShopPreviewProps, locale = 'de') =>
-    renderUi(<PreviewPanel {...props} />, { locale });
+    renderUi(<ShopPreview {...props} />, { locale });
 
   it('shows a neutral placeholder without a first piece', () => {
     host({ pieces: [] });
@@ -71,16 +70,7 @@ describe('ShopPreview', () => {
     expect(screen.getByText('nur noch 2')).toBeInTheDocument();
   });
 
-  it('shows the look photo above the rows only when a URL is given', () => {
-    host({
-      pieces: [jacket],
-      photoUrl: 'https://shop.example.com/looks/a.webp',
-      photoRatio: { width: 2, height: 3 },
-    });
-    expect(screen.getByTestId('preview-photo')).toBeInTheDocument();
-  });
-
-  it('follows the profile language: card texts, prices and caption are English under an English profile', async () => {
+  it('follows the profile language: card texts and prices are English under an English profile', async () => {
     host({ pieces: [jacket], setPrice: { EUR: 100 } }, 'en');
     expect(screen.getByText(/^Set for €1\.00/)).toBeInTheDocument();
     expect(screen.getByText(/Prices added up/)).toBeInTheDocument();
@@ -88,9 +78,5 @@ describe('ShopPreview', () => {
       screen.getByRole('button', { name: 'Add set to cart' })
     ).toBeInTheDocument();
     expect(screen.queryByText(/Set zu/)).not.toBeInTheDocument();
-    expect(
-      screen.getByText('How the look appears in the shop')
-    ).toBeInTheDocument();
-    expect(screen.getByText('Shop preview')).toBeInTheDocument();
   });
 });

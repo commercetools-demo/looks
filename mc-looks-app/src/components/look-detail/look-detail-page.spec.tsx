@@ -10,10 +10,6 @@ import {
 import { waitFor, within } from '@testing-library/react';
 import { renderLooks, screen } from '../../test-utils';
 import { LookApiError } from '../../domain/errors';
-import { measureImage } from './measure-image';
-
-jest.mock('./measure-image', () => ({ measureImage: jest.fn() }));
-const measure = measureImage as jest.MockedFunction<typeof measureImage>;
 
 const ids = ['p1', 'p2', 'p3', 'p4', 'p5'];
 const pieces = ids.map((id) => buildPiece(id));
@@ -31,7 +27,6 @@ function seed(
     pieces?: ReturnType<typeof buildPiece>[];
     setPrice?: Record<string, number>;
     amount?: Record<string, number>;
-    image?: { path: string; width: number; height: number };
   } = {}
 ) {
   const pieceIds = options.pieceIds ?? ['p1', 'p2'];
@@ -39,7 +34,6 @@ function seed(
     objects: [
       buildObject('a', pieceIds, {
         ...(options.setPrice ? { setPrice: options.setPrice } : {}),
-        ...(options.image ? { image: options.image } : {}),
       }),
     ],
     discounts: [
@@ -107,7 +101,6 @@ describe('look detail', () => {
   const origin = config.shopOrigin;
   afterEach(() => {
     config.shopOrigin = origin;
-    measure.mockReset();
   });
 
   describe('header and layout', () => {
@@ -262,25 +255,6 @@ describe('look detail', () => {
         path: '/a',
       });
       expect(await screen.findByText('Einheitsgröße: 4')).toBeInTheDocument();
-    });
-
-    it('shows no look photo when there is none', async () => {
-      renderLooks({ api: seed().api, path: '/a' });
-      await screen.findByText('Teile (2)');
-      expect(
-        screen.queryByRole('img', { name: 'a de' })
-      ).not.toBeInTheDocument();
-    });
-
-    it('shows the look photo with the look name as alt text', async () => {
-      config.shopOrigin = 'https://shop.example.com';
-      const image = { path: 'looks/a.webp', width: 800, height: 1200 };
-      renderLooks({ api: seed({ image }).api, path: '/a' });
-      const photo = await screen.findByRole('img', { name: 'a de' });
-      expect(photo).toHaveAttribute(
-        'src',
-        'https://shop.example.com/looks/a.webp'
-      );
     });
   });
 
@@ -806,84 +780,6 @@ describe('look detail', () => {
     });
   });
 
-  describe('photo', () => {
-    beforeEach(() => {
-      config.shopOrigin = 'https://shop.example.com';
-    });
-    const photoField = () =>
-      screen.findByRole('textbox', { name: 'Look-Foto (Pfad)' });
-    const savePhoto = () =>
-      userEvent.click(screen.getByRole('button', { name: 'Foto speichern' }));
-
-    it('US5.6: saves a valid, loadable photo with its size', async () => {
-      measure.mockResolvedValue({ width: 800, height: 1200 });
-      const fake = seed();
-      renderLooks({ api: fake.api, path: '/a' });
-      await userEvent.type(await photoField(), 'looks/a.webp');
-      await savePhoto();
-      expect(await screen.findAllByText('Foto gespeichert')).not.toHaveLength(
-        0
-      );
-      expect(measure).toHaveBeenCalledWith(
-        'https://shop.example.com/looks/a.webp'
-      );
-      expect(fake.objects.get('look-a')?.value.image).toEqual({
-        path: 'looks/a.webp',
-        width: 800,
-        height: 1200,
-      });
-    });
-
-    it('US5.6: refuses an invalid path with a field error and writes nothing', async () => {
-      const fake = seed();
-      renderLooks({ api: fake.api, path: '/a' });
-      await userEvent.type(await photoField(), 'elsewhere/a.gif');
-      await savePhoto();
-      expect(
-        await screen.findByText(/Der Pfad muss die Form looks\/dateiname/)
-      ).toBeInTheDocument();
-      expect(measure).not.toHaveBeenCalled();
-      expect(fake.callsTo('writeLookObject')).toHaveLength(0);
-    });
-
-    it('US5.6: refuses a photo that cannot be loaded', async () => {
-      measure.mockRejectedValue(new Error('load'));
-      const fake = seed();
-      renderLooks({ api: fake.api, path: '/a' });
-      await userEvent.type(await photoField(), 'looks/missing.png');
-      await savePhoto();
-      expect(
-        await screen.findByText('Das Foto konnte im Shop nicht geladen werden.')
-      ).toBeInTheDocument();
-      expect(fake.callsTo('writeLookObject')).toHaveLength(0);
-    });
-
-    it('US5.6: clearing the path removes the photo', async () => {
-      const image = { path: 'looks/a.webp', width: 800, height: 1200 };
-      const fake = seed({ image });
-      renderLooks({ api: fake.api, path: '/a' });
-      const field = await photoField();
-      expect(field).toHaveValue('looks/a.webp');
-      await userEvent.clear(field);
-      await savePhoto();
-      expect(await screen.findAllByText('Foto gespeichert')).not.toHaveLength(
-        0
-      );
-      expect(fake.objects.get('look-a')?.value.image).toBeUndefined();
-      expect(measure).not.toHaveBeenCalled();
-    });
-
-    it('is disabled with a hint when no shop origin is configured', async () => {
-      config.shopOrigin = '';
-      renderLooks({ api: seed().api, path: '/a' });
-      expect(await photoField()).toBeDisabled();
-      expect(
-        screen.getByRole('button', { name: 'Foto speichern' })
-      ).toBeDisabled();
-      expect(screen.getByText(/Ohne Shop-Adresse/)).toBeInTheDocument();
-    });
-  });
-
   describe('read-only access', () => {
     it('shows everything and disables every write control', async () => {
       config.shopOrigin = 'https://shop.example.com';
@@ -896,12 +792,6 @@ describe('look detail', () => {
       expect(percent('EUR')).toBeDisabled();
       expect(
         screen.getByRole('button', { name: 'Setpreis speichern' })
-      ).toBeDisabled();
-      expect(
-        screen.getByRole('textbox', { name: 'Look-Foto (Pfad)' })
-      ).toBeDisabled();
-      expect(
-        screen.getByRole('button', { name: 'Foto speichern' })
       ).toBeDisabled();
       expect(screen.getByText('Teile (2)')).toBeInTheDocument();
     });

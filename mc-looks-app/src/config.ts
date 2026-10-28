@@ -13,7 +13,7 @@ export interface AppConfig {
   colorNameAttribute: string;
   /** Fallback colour attribute (enum or localized enum). */
   colorAttribute: string;
-  /** Shop origin for look photos and "Im Shop ansehen"; empty disables both. */
+  /** Shop address for the "Im Shop ansehen" link; empty disables the link. */
   shopOrigin: string;
 }
 

@@ -45,8 +45,6 @@ export function useValidationText() {
         return intl.formatMessage(messages.errorSumChanged, { currency });
       case 'key-invalid':
         return intl.formatMessage(messages.errorKeyInvalid);
-      case 'image-invalid':
-        return intl.formatMessage(messages.photoInvalid);
     }
   };
 }

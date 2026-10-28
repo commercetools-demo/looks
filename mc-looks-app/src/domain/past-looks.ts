@@ -1,7 +1,7 @@
 import type { LookRow } from './look-rows';
 import { isPastLook } from './look-rows';
 import { lookTitle } from './sorting';
-import type { LocalizedValue, LookValue, Money } from './types';
+import type { LocalizedValue, Money } from './types';
 
 /** Orders newer than this many days are read for the sales figures. */
 export const SALES_WINDOW_DAYS = 90;
@@ -25,7 +25,6 @@ export interface PastLookRow {
   lookKey: string;
   objectKey: string;
   name?: LocalizedValue;
-  image?: LookValue['image'];
   /** Fallback thumbnails, in the look's order. */
   pieceImageUrls: Array<string | undefined>;
   pieceCount: number;
@@ -138,7 +137,6 @@ export function buildPastLooks(
           lookKey: row.lookKey,
           objectKey: row.objectKey,
           name: row.name,
-          ...(row.image ? { image: row.image } : {}),
           pieceImageUrls: row.pieces.map((piece) => piece?.imageUrl),
           pieceCount: row.pieceIds.length,
           activeFrom: discount.createdAt,
