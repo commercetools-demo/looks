@@ -386,8 +386,8 @@ describe('completeLook', () => {
     });
     expect(fake.callsTo('createDiscountGroup')[0].args[0]).toMatchObject({
       name: [
-        { locale: 'de', value: 'Look-Set: Mein Look' },
-        { locale: 'en', value: 'Look set: My look' },
+        { locale: 'de', value: 'Mein Look' },
+        { locale: 'en', value: 'My look' },
       ],
     });
     expect(

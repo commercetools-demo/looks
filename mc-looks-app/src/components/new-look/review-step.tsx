@@ -35,6 +35,7 @@ const SummaryRow: FC<SummaryRowProps> = ({ label, children }) => {
 
 type ReviewStepProps = {
   name: LocalizedValue;
+  description: LocalizedValue;
   /** The full key, `look-<key>`. */
   fullKey: string;
   photoPath: string | undefined;
@@ -67,6 +68,11 @@ export const ReviewStep: FC<ReviewStepProps> = (props) => {
               {Object.values(props.name).join(' / ')}
             </Text>
           </SummaryRow>
+          {Object.keys(props.description).length > 0 && (
+            <SummaryRow label={intl.formatMessage(messages.reviewDescription)}>
+              <Text>{Object.values(props.description).join(' / ')}</Text>
+            </SummaryRow>
+          )}
           <SummaryRow label={intl.formatMessage(messages.reviewKey)}>
             <Text fontFamily="mono">{props.fullKey}</Text>
           </SummaryRow>

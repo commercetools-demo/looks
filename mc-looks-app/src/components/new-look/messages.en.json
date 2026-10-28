@@ -76,5 +76,8 @@
   "Looks.newLook.errorKeyTaken": "This key is already taken.",
   "Looks.newLook.reviewKey": "Key",
   "Looks.newLook.errorPriceNone": "Enter a set price in at least one row. Rows exist only for a currency and country in which every piece has a price.",
-  "Looks.newLook.reviewCell": "{cell}: {setPrice} (sum {sum}, saving {saving})"
+  "Looks.newLook.reviewCell": "{cell}: {setPrice} (sum {sum}, saving {saving})",
+  "Looks.newLook.description": "Description",
+  "Looks.newLook.descriptionHelp": "Optional, in the project languages. Saved as the description of the discount group.",
+  "Looks.newLook.reviewDescription": "Description"
 }

@@ -20,6 +20,7 @@ export interface DiscountGroupDraftInput {
   key: string;
   sortOrder: string;
   name: Array<{ locale: string; value: string }>;
+  description?: Array<{ locale: string; value: string }>;
   isActive: boolean;
 }
 

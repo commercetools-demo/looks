@@ -147,13 +147,39 @@ describe('look actions', () => {
       sortOrder: '0.7',
       isActive: false,
       name: [
-        { locale: 'de', value: 'Look-Set: Cozy in Grey' },
-        { locale: 'en', value: 'Look set: Cozy in Grey' },
+        { locale: 'de', value: 'Cozy in Grey' },
+        { locale: 'en', value: 'Cozy in Grey' },
       ],
     });
     expect(setGroupActiveAction(true)).toEqual({
       setIsActive: { isActive: true },
     });
+  });
+
+  it('gives the group the plain name and the description only when there is one', () => {
+    const options = { sortOrder: '0.7', isActive: false };
+    const withDescription = buildLookDiscountGroupDraft(
+      {
+        ...look,
+        label: { de: 'Kontrast', en: '' },
+        description: { de: 'Beschreibung', en: '', fr: 'Description' },
+      },
+      options
+    );
+    expect(withDescription.name).toEqual([{ locale: 'de', value: 'Kontrast' }]);
+    expect(withDescription.description).toEqual([
+      { locale: 'de', value: 'Beschreibung' },
+      { locale: 'fr', value: 'Description' },
+    ]);
+    for (const description of [undefined, {}, { de: '' }] as Array<
+      Record<string, string> | undefined
+    >) {
+      const draft = buildLookDiscountGroupDraft(
+        { ...look, description },
+        options
+      );
+      expect(draft).not.toHaveProperty('description');
+    }
   });
 
   it('references the group from the main and country discounts', () => {

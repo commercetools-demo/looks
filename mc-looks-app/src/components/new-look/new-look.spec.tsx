@@ -195,7 +195,7 @@ describe('Neuer Look: step 1, basics', () => {
   it('scenario 1: refuses a missing name with a field error and writes nothing; a name opens step 2', async () => {
     const user = userEvent.setup();
     const { fake } = setup();
-    await screen.findByRole('textbox', { name: /^DE/ });
+    await screen.findByRole('group', { name: /^Name/ });
     await next(user);
     expect(
       await screen.findByText('Bitte mindestens einen Namen eingeben.')
@@ -251,7 +251,7 @@ describe('Neuer Look: step 1, basics', () => {
         /Der Pfad muss die Form looks\/<name>\.webp haben/
       )
     ).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /^DE/ })).toBeInTheDocument();
+    expect(nameInput('DE')).toBeInTheDocument();
 
     await user.clear(field);
     measure.mockRejectedValue(new Error('404'));
@@ -294,9 +294,8 @@ describe('Neuer Look: step 1, basics', () => {
     await gotoPieces(user);
     await addPiece(user, 'Jacke Cleo');
     await user.click(screen.getByRole('button', { name: 'Zurück' }));
-    expect(await screen.findByRole('textbox', { name: /^DE/ })).toHaveValue(
-      'Jacken-Look'
-    );
+    await screen.findByRole('group', { name: /^Name/ });
+    expect(nameInput('DE')).toHaveValue('Jacken-Look');
     await expandNameField(user);
     expect(nameInput('EN')).toHaveValue('Jacket look');
     await next(user);
@@ -1092,12 +1091,9 @@ describe('Neuer Look: name in the project languages', () => {
   it('shows only the default language until the others are expanded', async () => {
     const user = userEvent.setup();
     setup({ languages: ['de', 'en', 'fr'] });
-    expect(
-      await screen.findByRole('textbox', { name: /^DE/ })
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('textbox', { name: /^FR/ })
-    ).not.toBeInTheDocument();
+    await screen.findByRole('group', { name: /^Name/ });
+    expect(nameInput('DE')).toBeInTheDocument();
+    expect(() => nameInput('FR')).toThrow();
     await expandNameField(user);
     expect(nameInput('FR')).toBeInTheDocument();
   });
@@ -1105,14 +1101,90 @@ describe('Neuer Look: name in the project languages', () => {
   it('works for a project with a single language', async () => {
     const user = userEvent.setup();
     setup({ languages: ['en'], locale: 'en' });
-    expect(
-      await screen.findByRole('textbox', { name: /^EN/ })
-    ).toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: /^EN/ }), 'Only look');
+    await screen.findByRole('group', { name: /^Name/ });
+    expect(nameInput('EN')).toBeInTheDocument();
+    await user.type(nameInput('EN'), 'Only look');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(
       await screen.findByRole('heading', { name: 'Choose pieces (2 to 5)' })
     ).toBeInTheDocument();
+  });
+});
+
+describe('Neuer Look: description in the project languages', () => {
+  const groupDraft = (fake: ReturnType<typeof createFakeLookApi>) =>
+    fake.callsTo('createDiscountGroup')[0].args[0] as Record<string, unknown>;
+
+  it('offers one multi-line input per project language, the data locale first, the others behind the toggle', async () => {
+    const user = userEvent.setup();
+    setup({ languages: ['de', 'en', 'fr'] });
+    await screen.findByRole('group', { name: /^Beschreibung/ });
+    expect(nameInput('DE', 'description')).toBeInTheDocument();
+    expect(nameInput('DE', 'description').tagName).toBe('TEXTAREA');
+    expect(() => nameInput('EN', 'description')).toThrow();
+    expect(() => nameInput('FR', 'description')).toThrow();
+    await expandNameField(user, 'description');
+    expect(nameInput('EN', 'description')).toBeInTheDocument();
+    expect(nameInput('FR', 'description')).toBeInTheDocument();
+    // the name field is still collapsed: the toggles are independent
+    expect(() => nameInput('FR')).toThrow();
+    expect(
+      screen.getByText(
+        'Optional, in den Projektsprachen. Wird als Beschreibung der Rabattgruppe gespeichert.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('is optional: step 1 goes on without it and no description is shown or saved', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup();
+    await gotoReview(user);
+    expect(screen.queryByText('Beschreibung')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    expect(groupDraft(fake)).not.toHaveProperty('description');
+  });
+
+  it('shows the entered description on the review step and saves it as the group description, with the name as the group name', async () => {
+    const user = userEvent.setup();
+    const { fake } = setup();
+    await fillBasics(user);
+    await fillLookName(
+      user,
+      { de: 'Gemütlich im Herbst', en: 'Cosy in autumn' },
+      'description'
+    );
+    await next(user);
+    await screen.findByRole('heading', { name: 'Teile wählen (2 bis 5)' });
+    for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
+    await next(user);
+    await screen.findByRole('group', { name: 'Setpreis EUR' });
+    await typeAmount(user, 'EUR', '189,90');
+    await typeAmount(user, 'CHF', '209,90');
+    await next(user);
+    await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    expect(screen.getByText('Beschreibung')).toBeInTheDocument();
+    expect(
+      screen.getByText('Gemütlich im Herbst / Cosy in autumn')
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    expect(groupDraft(fake)).toMatchObject({
+      key: 'look-jacket-look',
+      name: [
+        { locale: 'de', value: 'Jacken-Look' },
+        { locale: 'en', value: 'Jacket look' },
+      ],
+      description: [
+        { locale: 'de', value: 'Gemütlich im Herbst' },
+        { locale: 'en', value: 'Cosy in autumn' },
+      ],
+    });
+    const discount = [...fake.discounts.values()][0];
+    expect(discount.name).toEqual({
+      de: 'Look-Set: Jacken-Look',
+      en: 'Look set: Jacket look',
+    });
   });
 });
 
@@ -1315,7 +1387,7 @@ describe('Neuer Look: permissions and language', () => {
     setup({ canManage: false });
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Nur Lesezugriff')).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /^DE/ })).toBeDisabled();
+    expect(nameInput('DE')).toBeDisabled();
     expect(screen.getByRole('textbox', { name: /^Look-Foto/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Weiter' }));

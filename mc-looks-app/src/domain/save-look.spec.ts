@@ -127,12 +127,13 @@ describe('runSave', () => {
           sortOrder: '0.7',
           isActive: false,
           name: [
-            { locale: 'de', value: 'Look-Set: Kontrast-Look' },
-            { locale: 'en', value: 'Look set: Contrast look' },
+            { locale: 'de', value: 'Kontrast-Look' },
+            { locale: 'en', value: 'Contrast look' },
           ],
         },
       ],
     });
+    expect(fake.calls[1].args[0]).not.toHaveProperty('description');
     expect([...fake.groups.values()]).toHaveLength(1);
     expect(fake.groups.get('g1')!.isActive).toBe(false);
     expect(progress.group).toEqual({ id: 'g1', version: 1 });
@@ -225,6 +226,33 @@ describe('runSave', () => {
     expect(discount.name).toEqual({
       de: 'Look-Set: Kontrast-Look',
       en: 'Look set: Contrast look',
+    });
+  });
+
+  it('puts the description of the look into the group and leaves the discounts unchanged', async () => {
+    const fake = createFakeLookApi();
+    await runSave(fake.api, {
+      ...plan,
+      look: { ...plan.look, description: { de: 'Gemütlich', en: 'Cosy' } },
+    });
+    expect(fake.callsTo('createDiscountGroup')[0].args[0]).toMatchObject({
+      name: [
+        { locale: 'de', value: 'Kontrast-Look' },
+        { locale: 'en', value: 'Contrast look' },
+      ],
+      description: [
+        { locale: 'de', value: 'Gemütlich' },
+        { locale: 'en', value: 'Cosy' },
+      ],
+    });
+    const [discount] = [...fake.discounts.values()];
+    expect(discount.name).toEqual({
+      de: 'Look-Set: Kontrast-Look',
+      en: 'Look set: Contrast look',
+    });
+    expect(discount.description).toEqual({
+      de: 'Kontrast-Look',
+      en: 'Contrast look',
     });
   });
 

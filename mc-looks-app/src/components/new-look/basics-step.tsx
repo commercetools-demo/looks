@@ -22,6 +22,8 @@ export const STEP1_PHOTO_WIDTH = 120;
 type BasicsStepProps = {
   label: LocalizedValue;
   onLabelChange: (label: LocalizedValue) => void;
+  description: LocalizedValue;
+  onDescriptionChange: (description: LocalizedValue) => void;
   nameError: string | undefined;
   /** The key shown in the field: the one the user typed, else the suggestion. */
   keyValue: string;
@@ -38,8 +40,8 @@ type BasicsStepProps = {
   isDisabled: boolean;
 };
 
-/** Step 1: the name in the project languages, the look key and the optional
- *  look photo. */
+/** Step 1: the name and the optional description in the project languages,
+ *  the look key and the optional look photo. */
 export const BasicsStep: FC<BasicsStepProps> = (props) => {
   const intl = useIntl();
   const { label, nameError } = props;
@@ -53,6 +55,15 @@ export const BasicsStep: FC<BasicsStepProps> = (props) => {
           onChange={props.onLabelChange}
           error={nameError}
           isDisabled={props.isDisabled}
+        />
+        <LookNameField
+          label={intl.formatMessage(messages.description)}
+          description={intl.formatMessage(messages.descriptionHelp)}
+          value={props.description}
+          onChange={props.onDescriptionChange}
+          isDisabled={props.isDisabled}
+          multiLine
+          isOptional
         />
         <FormField.Root
           isDisabled={props.isDisabled}

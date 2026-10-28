@@ -84,15 +84,18 @@ export function buildPatternTargetInput(componentProductIds: string[]) {
 }
 
 /** The Discount Group of a look: all its country discounts live in it, so
- *  one rank (`sortOrder`) and one switch (`isActive`) cover them. */
+ *  one rank (`sortOrder`) and one switch (`isActive`) cover them. Its name is
+ *  the look name and its description the look description. */
 export function buildLookDiscountGroupDraft(
-  look: Pick<LookInput, 'key' | 'label'>,
+  look: Pick<LookInput, 'key' | 'label' | 'description'>,
   options: { sortOrder: string; isActive: boolean }
 ) {
+  const description = toLocalizedInput(look.description ?? {});
   return {
     key: lookObjectKey(look.key),
     sortOrder: options.sortOrder,
-    name: toLocalizedInput(buildLookDiscountName(look.label)),
+    name: toLocalizedInput(look.label),
+    ...(description.length > 0 ? { description } : {}),
     isActive: options.isActive,
   };
 }

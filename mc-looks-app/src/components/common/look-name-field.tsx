@@ -10,10 +10,14 @@ type LookNameFieldProps = {
   onChange: (value: LocalizedValue) => void;
   error?: string;
   isDisabled?: boolean;
+  /** A multi-line input per language (the description). */
+  multiLine?: boolean;
+  /** Not required (the description). */
+  isOptional?: boolean;
 };
 
 /**
- * The look name: one input per project language (Nimbus `LocalizedField`),
+ * The look name or description: one input per project language (Nimbus `LocalizedField`),
  * the data locale shown first and the other languages behind the toggle.
  * Empty translations are dropped by the caller (`omitEmptyTranslations`).
  */
@@ -24,6 +28,8 @@ export const LookNameField: FC<LookNameFieldProps> = ({
   onChange,
   error,
   isDisabled,
+  multiLine = false,
+  isOptional = false,
 }) => {
   const languages = useLanguages();
   const dataLocale = useDataLocale();
@@ -32,10 +38,10 @@ export const LookNameField: FC<LookNameFieldProps> = ({
     : languages[0];
   return (
     <LocalizedField
-      type="text"
+      type={multiLine ? 'multiLine' : 'text'}
       label={label}
       description={description}
-      isRequired
+      isRequired={!isOptional}
       isDisabled={isDisabled}
       defaultLocaleOrCurrency={defaultLocale}
       valuesByLocaleOrCurrency={LocalizedField.createLocalizedString(

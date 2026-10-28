@@ -80,6 +80,9 @@ export interface NewLook {
   key?: string;
   /** The look name per project language; empty translations are omitted. */
   label: LocalizedValue;
+  /** The look description per project language (optional); empty
+   *  translations are omitted. It becomes the Discount Group's description. */
+  description?: LocalizedValue;
   componentProductIds: string[];
   setPrice: Money;
   /** The live sum the set price was checked against. */

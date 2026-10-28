@@ -36,8 +36,27 @@ describe('ensureLookGroup', () => {
       sortOrder: '0.7',
       isActive: true,
       name: [
-        { locale: 'de', value: 'Look-Set: Mein Look' },
-        { locale: 'en', value: 'Look set: My look' },
+        { locale: 'de', value: 'Mein Look' },
+        { locale: 'en', value: 'My look' },
+      ],
+    });
+  });
+
+  it('forwards the description of the look to the created group', async () => {
+    const fake = createFakeLookApi();
+    await ensureLookGroup(
+      fake.api,
+      { ...look, description: { de: 'Gemütlich', en: 'Cosy' } },
+      false
+    );
+    expect(fake.callsTo('createDiscountGroup')[0].args[0]).toMatchObject({
+      name: [
+        { locale: 'de', value: 'Mein Look' },
+        { locale: 'en', value: 'My look' },
+      ],
+      description: [
+        { locale: 'de', value: 'Gemütlich' },
+        { locale: 'en', value: 'Cosy' },
       ],
     });
   });

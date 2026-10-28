@@ -104,6 +104,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
 
   const [step, setStep] = useState(0);
   const [label, setLabel] = useState<LocalizedValue>({});
+  const [description, setDescription] = useState<LocalizedValue>({});
   // The key the user typed; `undefined` while the suggestion is used.
   const [customKey, setCustomKey] = useState<string | undefined>();
   // Keys of existing looks, to suggest a free key and flag a taken one early.
@@ -183,6 +184,9 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
     return {
       ...(chosenKey !== undefined ? { key: chosenKey } : {}),
       label: omitEmptyTranslations(label),
+      ...(Object.keys(omitEmptyTranslations(description)).length > 0
+        ? { description: omitEmptyTranslations(description) }
+        : {}),
       componentProductIds: pieces.map((piece) => piece.id),
       setPrice: cents,
       sum,
@@ -358,6 +362,8 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
                 <BasicsStep
                   label={label}
                   onLabelChange={setLabel}
+                  description={description}
+                  onDescriptionChange={setDescription}
                   nameError={firstFor('label')}
                   keyValue={keyValue}
                   keyIsCustom={customKey !== undefined}
@@ -415,6 +421,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
               {step === LAST_STEP && (
                 <ReviewStep
                   name={omitEmptyTranslations(label)}
+                  description={omitEmptyTranslations(description)}
                   fullKey={lookObjectKey(chosenKey ?? suggestedKey)}
                   photoPath={photo.image?.path}
                   pieces={pieces}

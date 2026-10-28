@@ -15,6 +15,19 @@ export default defineMessages({
   next: { id: 'Looks.newLook.next', defaultMessage: 'Weiter' },
   saveLook: { id: 'Looks.newLook.saveLook', defaultMessage: 'Look speichern' },
   name: { id: 'Looks.newLook.name', defaultMessage: 'Name' },
+  description: {
+    id: 'Looks.newLook.description',
+    defaultMessage: 'Beschreibung',
+  },
+  descriptionHelp: {
+    id: 'Looks.newLook.descriptionHelp',
+    defaultMessage:
+      'Optional, in den Projektsprachen. Wird als Beschreibung der Rabattgruppe gespeichert.',
+  },
+  reviewDescription: {
+    id: 'Looks.newLook.reviewDescription',
+    defaultMessage: 'Beschreibung',
+  },
   keyLabel: { id: 'Looks.newLook.keyLabel', defaultMessage: 'Key' },
   keyHelp: {
     id: 'Looks.newLook.keyHelp',

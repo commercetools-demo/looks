@@ -12,7 +12,11 @@ import { lookObjectKey } from './keys';
  */
 export async function ensureLookGroup(
   api: LookApi,
-  look: { key: string; label: LocalizedValue },
+  look: {
+    key: string;
+    label: LocalizedValue;
+    description?: LocalizedValue;
+  },
   isActive: boolean
 ): Promise<LookDiscountGroup> {
   const existing = await api.getDiscountGroupByKey(lookObjectKey(look.key));
