@@ -42,15 +42,6 @@ export default defineMessages({
     id: 'Looks.detail.recalculate',
     defaultMessage: 'Setpreis neu berechnen',
   },
-  missingCurrencyTitle: {
-    id: 'Looks.detail.missingCurrencyTitle',
-    defaultMessage: 'Setpreis fehlt in einer Währung',
-  },
-  missingCurrencyDescription: {
-    id: 'Looks.detail.missingCurrencyDescription',
-    defaultMessage:
-      'Bitte für jede Währung des Projekts einen Setpreis eingeben und speichern.',
-  },
   deleteDescription: {
     id: 'Looks.detail.deleteDescription',
     defaultMessage:

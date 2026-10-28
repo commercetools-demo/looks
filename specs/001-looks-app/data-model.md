@@ -75,7 +75,6 @@ The first (main) discount has the key `look-<lookKey>`, the others `look-<lookKe
 | `isActive` | main discount `isActive` (false if no discount) |
 | `completeness` | see below |
 | `priceDrift` | any cell with a set price: absolute cell: the country discount's amount ≠ live sum − set price (or the discount is relative or missing); percentage cell: the discount's permyriad ≠ round(percent × 100) |
-| `missingCurrency` | a cell has a live sum but no set price |
 | `discount`, `countryDiscounts` | the main discount and the other country discounts |
 
 ### Completeness (state)

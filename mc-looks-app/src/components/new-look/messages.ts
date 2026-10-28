@@ -157,7 +157,7 @@ export default defineMessages({
   },
   setPriceHeading: {
     id: 'Looks.newLook.setPriceHeading',
-    defaultMessage: 'Setpreis je Währung',
+    defaultMessage: 'Setpreis je Währung und Land',
   },
   setPriceLabel: {
     id: 'Looks.newLook.setPriceLabel',

@@ -165,7 +165,7 @@ A user with View permission only sees the same list, section and details, but al
 - **Edited form during a failed save**: a retry only resumes the earlier plan if the entered data still matches it; otherwise it re-plans.
 - **Ordering range exhausted**: when the reserved rank range (0.7–0.7999 in steps of 0.0001, 1,000 values, never ending in a zero; the rank is the Discount Group's) is full, saving is refused with a clear message.
 - **Platform limit**: every active country discount of a look counts toward the platform's limit of 100 active, store-independent, code-less Cart Discounts per project (a look with set prices in three countries uses three).
-- **Price cells change**: a look created before a price cell (currency and country) became available for all its pieces has no set price in it; such a look is flagged "missing price" and cannot be repriced until the set price is entered for every cell with a live sum.
+- **Price cells change**: a look created before a price cell (currency and country) became available for all its pieces has no set price in it; the cell simply stays empty (an empty row gets no discount) and no warning is shown; the set price can be entered at any time.
 - **Piece list price changes** after authoring (see Story 5, drift).
 - **Missing price in a cell** on a piece: the cell gets no row and no discount (the look does not apply there); saving is refused only when no cell is left.
 - **Duplicate piece** chosen twice: field error naming it.

@@ -58,8 +58,6 @@ export interface LookRow {
   /** A discount's amount no longer equals today's live sum minus the stored
    *  set price, or a country has no discount. */
   priceDrift: boolean;
-  /** A price cell with a live sum has no set price: cannot be repriced as is. */
-  missingCurrency: boolean;
   object?: LookObject;
   /** The main discount `look-<key>`; it decides `isActive`. */
   discount?: LookDiscount;
@@ -187,9 +185,6 @@ export function buildLookRows(input: {
         ? 'complete'
         : 'inconsistent',
       priceDrift,
-      missingCurrency:
-        !!setPrice &&
-        Object.keys(liveSum).some((key) => setPrice[key] === undefined),
       object,
       discount,
       countryDiscounts,

@@ -71,13 +71,6 @@ describe('buildLookRows', () => {
     ]);
   });
 
-  it('flags a project currency without a set price', () => {
-    const [row] = rows([
-      buildObject('x', ['a', 'b'], { setPrice: { EUR: 18000 } }),
-    ]);
-    expect(row.missingCurrency).toBe(true);
-  });
-
   it('ignores discounts and objects outside the look key space', () => {
     const result = rows(
       [buildObject('x', ['a', 'b'])],
@@ -213,14 +206,14 @@ describe('buildLookRows with country discounts', () => {
     expect(build([main, gb])[0].priceDrift).toBe(true);
   });
 
-  it('flags a priced cell without a set price', () => {
+  it('does not report drift for a priced cell without a set price', () => {
     const [row] = buildLookRows({
       objects: [buildObject('x', ['a', 'b'], { setPrice: { 'EUR/DE': 4000 } })],
       discounts: [main],
       pieces: cellPieces,
       currencies: ['EUR', 'GBP'],
     });
-    expect(row.missingCurrency).toBe(true);
+    expect(row.priceDrift).toBe(false);
   });
 
   it('does not create rows or taken keys apart from the look', () => {

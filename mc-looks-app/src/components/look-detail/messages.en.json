@@ -8,8 +8,6 @@
   "Looks.detail.soldOutAlertDescription": "A set needs every piece in one size. The set cannot be bought at the set price.",
   "Looks.detail.driftDescription": "The single prices changed since the look was set up: the discount no longer lands on the stored set price.",
   "Looks.detail.recalculate": "Recalculate set price",
-  "Looks.detail.missingCurrencyTitle": "Set price missing in a currency",
-  "Looks.detail.missingCurrencyDescription": "Please enter and save a set price for every project currency.",
   "Looks.detail.setPriceTitle": "Set price",
   "Looks.detail.setPriceLabel": "Set price in {currency}",
   "Looks.detail.setPriceSave": "Save set price",

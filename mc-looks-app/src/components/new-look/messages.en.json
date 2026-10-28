@@ -32,7 +32,7 @@
   "Looks.newLook.errorNotBelowSum": "{currency}: The set price must be below the sum of the pieces ({sum}).",
   "Looks.newLook.errorSumChanged": "{currency}: The sum of the pieces has changed. Please check the set price.",
   "Looks.newLook.errorAmountFormat": "{currency}: Please enter an amount like 189.90.",
-  "Looks.newLook.setPriceHeading": "Set price per currency",
+  "Looks.newLook.setPriceHeading": "Set price per currency and country",
   "Looks.newLook.setPriceLabel": "Set price {currency}",
   "Looks.newLook.setPriceSum": "{currency}: sum of the pieces {sum}",
   "Looks.newLook.setPriceSaving": "Saving {amount} ({percent}%)",

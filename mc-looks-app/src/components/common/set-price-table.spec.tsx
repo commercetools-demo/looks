@@ -26,11 +26,13 @@ function Host(props: {
   pieces: Piece[];
   errors?: Record<string, string | undefined>;
   isDisabled?: boolean;
+  initialTexts?: Record<string, string>;
+  initialModes?: Record<string, PriceMode>;
 }) {
   const [state, setState] = useState<{
     texts: Record<string, string>;
     modes: Record<string, PriceMode>;
-  }>({ texts: {}, modes: {} });
+  }>({ texts: props.initialTexts ?? {}, modes: props.initialModes ?? {} });
   lastTexts = state.texts;
   lastModes = state.modes;
   return (
@@ -199,6 +201,47 @@ describe('SetPriceTable', () => {
     for (const key of ['EUR/DE', 'EUR/FR', 'GBP/GB']) {
       expect(kind(key)).toHaveTextContent('Betrag');
     }
+  });
+
+  describe('shared percentage', () => {
+    const empty = { 'EUR/FR': '', 'GBP/GB': '' };
+    const emptyModes = { 'EUR/FR': 'price', 'GBP/GB': 'price' } as const;
+
+    it('shows the percentage the priced rows share and ignores empty rows', async () => {
+      renderTable(
+        <Host
+          pieces={[shirt, skirt]}
+          initialTexts={{ 'EUR/DE': '135,00', ...empty }}
+          initialModes={{ 'EUR/DE': 'percent', ...emptyModes }}
+        />
+      );
+      await screen.findByTestId('price-row-EUR/DE');
+      expect(global()).toHaveValue('10');
+    });
+
+    it('stays empty when the only priced row is in price mode', async () => {
+      renderTable(
+        <Host
+          pieces={[shirt, skirt]}
+          initialTexts={{ 'EUR/DE': '135,00', ...empty }}
+          initialModes={{ 'EUR/DE': 'price', ...emptyModes }}
+        />
+      );
+      await screen.findByTestId('price-row-EUR/DE');
+      expect(global()).toHaveValue('');
+    });
+
+    it('stays empty when no row has a price', async () => {
+      renderTable(
+        <Host
+          pieces={[shirt, skirt]}
+          initialTexts={{ 'EUR/DE': '', ...empty }}
+          initialModes={{ 'EUR/DE': 'percent', ...emptyModes }}
+        />
+      );
+      await screen.findByTestId('price-row-EUR/DE');
+      expect(global()).toHaveValue('');
+    });
   });
 
   it('applies a global percentage to every row in percent mode', async () => {

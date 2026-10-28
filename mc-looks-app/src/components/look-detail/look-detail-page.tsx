@@ -66,16 +66,6 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({ row, apply, reload }) => {
             ]
           : []
       )}
-      {row.missingCurrency && (
-        <Alert.Root colorPalette="warning">
-          <Alert.Title>
-            {intl.formatMessage(messages.missingCurrencyTitle)}
-          </Alert.Title>
-          <Alert.Description>
-            {intl.formatMessage(messages.missingCurrencyDescription)}
-          </Alert.Description>
-        </Alert.Root>
-      )}
       <Stack gap="300" minWidth={0}>
         <Heading as="h2" size="md">
           {intl.formatMessage(messages.piecesTitle, {

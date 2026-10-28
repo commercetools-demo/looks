@@ -46,6 +46,10 @@ CI (`.github/workflows/ci.yml`) runs build, lint, typecheck and test on PRs into
 - Nimbus `Select` has no `isReadOnly`, and `isDisabled` on `Select.Root` inside a `FormField` is overridden by the field's state: put `isDisabled` on the `FormField` root and assert `disabled`.
 - Nimbus injects a theme-bootstrapping `<script>` into the render container, so assert through `screen`, not `container.textContent`.
 
+## Docs screenshots
+
+`mc-looks-app/scripts/screenshots/` (its own npm project, Playwright, see its README) regenerates `docs/screenshots/*.png`. `npm run login` (headed, manual Merchant Center login, needs `npm start` running on port 3001) saves a gitignored `auth-state.json`; `npm run capture` then runs headless against the dev server and needs real looks in the project (`LOOK_KEY`, default `demo-look-01`). It only navigates: the creation flow ends with "Abbrechen" and the delete dialog is never confirmed. Chromium runs with `--disable-features=ViewTransition,ViewTransitionOnNavigation`, otherwise every screenshot times out.
+
 ## Environment notes
 
 - `.env` is tracked (non-secret defaults); `.env.local` is gitignored and wins.

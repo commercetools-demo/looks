@@ -444,12 +444,12 @@ describe('look detail', () => {
       );
     });
 
-    it('warns when a currency has no set price', async () => {
+    it('shows no warning when a currency has no set price', async () => {
       renderLooks({ api: seed({ setPrice: { EUR: 18000 } }).api, path: '/a' });
-      expect(
-        await screen.findByText('Setpreis fehlt in einer Währung')
-      ).toBeInTheDocument();
       expect(await cell('CHF')).toHaveValue('');
+      expect(
+        screen.queryByText('Setpreis fehlt in einer Währung')
+      ).not.toBeInTheDocument();
     });
 
     it('works with a single project currency', async () => {
@@ -819,6 +819,36 @@ describe('look detail', () => {
       expect(fake.discounts.get('disc-a')?.permyriad).toBe(1000);
       expect(fake.discounts.get('disc-a-FR')?.permyriad).toBe(1000);
       expect(fake.discounts.get('disc-a-FR')?.amount).toEqual({});
+    });
+
+    it('shows the shared percentage when only some rows have a set price', async () => {
+      const prices = { 'EUR/DE': 10000, 'EUR/FR': 10000, 'EUR/AT': 10000 };
+      const fake = createFakeLookApi({
+        objects: [
+          buildObject('a', ['p1', 'p2'], {
+            setPrice: { 'EUR/DE': 18000, 'EUR/FR': 18000 },
+            savingPercent: { 'EUR/DE': 10, 'EUR/FR': 10 },
+          }),
+        ],
+        discounts: [
+          buildDiscount('a', ['p1', 'p2'], {
+            country: 'DE',
+            amount: {},
+            permyriad: 1000,
+          }),
+          buildDiscount('a-FR', ['p1', 'p2'], {
+            country: 'FR',
+            amount: {},
+            permyriad: 1000,
+          }),
+        ],
+        pieces: [buildPiece('p1', { prices }), buildPiece('p2', { prices })],
+      });
+      open(fake);
+      await cell('EUR DE');
+      expect(
+        screen.getByRole('textbox', { name: 'Prozent für alle Zeilen' })
+      ).toHaveValue('10');
     });
 
     it('shows the drift alert only when the permyriad mismatches', async () => {

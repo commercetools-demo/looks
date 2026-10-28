@@ -89,19 +89,20 @@ export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
       texts: { ...texts, [key]: text },
       modes: { ...modes, [key]: mode },
     });
-  // Every row in percent mode with (about) the same saving: that saving.
-  // Rounding a price to cents can move a saving by a tenth.
-  const rowPercents = rows.map((row) =>
-    modeOf(row.key) === 'percent'
-      ? percentOf(row.sum, parseCents(texts[row.key] ?? ''))
-      : undefined
-  );
-  const known = rowPercents.filter(
-    (percent): percent is number => percent !== undefined
-  );
+  // Every row that has a set price is in percent mode with (about) the same
+  // saving: that saving. Rows without a price are ignored, and at least one
+  // row needs a price. Rounding a price to cents can move a saving by a tenth.
+  const pricedRows = rows.filter((row) => (texts[row.key] ?? '').trim() !== '');
+  const known = pricedRows
+    .map((row) =>
+      modeOf(row.key) === 'percent'
+        ? percentOf(row.sum, parseCents(texts[row.key] ?? ''))
+        : undefined
+    )
+    .filter((percent): percent is number => percent !== undefined);
   const sharedPercent =
-    rows.length > 0 &&
-    known.length === rows.length &&
+    pricedRows.length > 0 &&
+    known.length === pricedRows.length &&
     Math.max(...known) - Math.min(...known) <= 0.2
       ? Math.round(
           (known.reduce((sum, value) => sum + value, 0) / known.length) * 10
