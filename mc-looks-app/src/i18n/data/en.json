@@ -153,7 +153,6 @@
   "Looks.newLook.noProducts": "No products found.",
   "Looks.newLook.pieceColour": "Colour: {colour}",
   "Looks.newLook.piecesCount": "{count, plural, one {# piece chosen} other {# pieces chosen}}",
-  "Looks.newLook.piecesTitle": "Choose pieces (at least {min})",
   "Looks.newLook.remove": "Remove",
   "Looks.newLook.resultsLabel": "Search results",
   "Looks.newLook.reviewCell": "{cell}: {setPrice} (sum {sum}, saving {saving})",

@@ -96,7 +96,7 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
             })}
           </Flex>
         )}
-        <Stack gap="0" minHeight="32px">
+        <Stack gap="0">
           {low.length > 0 && (
             <Text fontSize="300" color="warning.11">
               {low
@@ -127,7 +127,7 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
             color="positive.11"
             fontWeight="500"
           >
-            <Icon size="sm">
+            <Icon size="2xs">
               <Check />
             </Icon>
             {intl.formatMessage(messages.inLook)}

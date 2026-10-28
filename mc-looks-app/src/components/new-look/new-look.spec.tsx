@@ -111,7 +111,7 @@ async function addPiece(user: User, name: string) {
 async function gotoPieces(user: User) {
   await fillBasics(user);
   await next(user);
-  await screen.findByRole('heading', { name: 'Teile wählen (mindestens 2)' });
+  await screen.findByRole('heading', { name: 'Gewählte Teile' });
 }
 
 async function gotoSetPrice(user: User, names = ['Jacke Cleo', 'Hose Bea']) {
@@ -169,7 +169,7 @@ describe('Neuer Look: step 1, basics', () => {
     setup();
     await fillBasics(user);
     await next(user);
-    await screen.findByRole('heading', { name: /Teile wählen/ });
+    await screen.findByRole('heading', { name: 'Gewählte Teile' });
     for (const title of ['Grunddaten', 'Teile', 'Setpreis', 'Prüfen']) {
       expect(screen.getByText(title)).toBeInTheDocument();
     }
@@ -192,9 +192,7 @@ describe('Neuer Look: step 1, basics', () => {
     await fillBasics(user);
     await next(user);
     expect(
-      await screen.findByRole('heading', {
-        name: 'Teile wählen (mindestens 2)',
-      })
+      await screen.findByRole('heading', { name: 'Gewählte Teile' })
     ).toBeInTheDocument();
   });
 
@@ -1006,7 +1004,7 @@ describe('Neuer Look: name in the project languages', () => {
     expect(nameInput('FR')).toBeInTheDocument();
     await fillBasics(user, { fr: 'Look veste' });
     await next(user);
-    await screen.findByRole('heading', { name: 'Teile wählen (mindestens 2)' });
+    await screen.findByRole('heading', { name: 'Gewählte Teile' });
     for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
     await next(user);
     await screen.findByRole('group', { name: 'Setpreis EUR' });
@@ -1040,7 +1038,7 @@ describe('Neuer Look: name in the project languages', () => {
     await user.type(nameInput('EN'), 'Only look');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(
-      await screen.findByRole('heading', { name: 'Choose pieces (at least 2)' })
+      await screen.findByRole('heading', { name: 'Chosen pieces' })
     ).toBeInTheDocument();
   });
 });
@@ -1089,7 +1087,7 @@ describe('Neuer Look: description in the project languages', () => {
       'description'
     );
     await next(user);
-    await screen.findByRole('heading', { name: 'Teile wählen (mindestens 2)' });
+    await screen.findByRole('heading', { name: 'Gewählte Teile' });
     for (const name of ['Jacke Cleo', 'Hose Bea']) await addPiece(user, name);
     await next(user);
     await screen.findByRole('group', { name: 'Setpreis EUR' });
@@ -1229,7 +1227,7 @@ describe('Neuer Look: the look key', () => {
       )
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: 'Teile wählen (mindestens 2)' })
+      screen.queryByRole('heading', { name: 'Gewählte Teile' })
     ).not.toBeInTheDocument();
     expect(writes(fake)).toHaveLength(0);
   });
@@ -1253,7 +1251,7 @@ describe('Neuer Look: the look key', () => {
     ).toBeInTheDocument();
     await next(user);
     expect(
-      screen.queryByRole('heading', { name: 'Teile wählen (mindestens 2)' })
+      screen.queryByRole('heading', { name: 'Gewählte Teile' })
     ).not.toBeInTheDocument();
   });
 
@@ -1354,13 +1352,11 @@ describe('Neuer Look: the step is part of the URL', () => {
     act(() => view.history.goBack());
     expect(pathOf(view)).toBe('/looks/new');
     expect(
-      screen.queryByRole('heading', { name: 'Teile wählen (mindestens 2)' })
+      screen.queryByRole('heading', { name: 'Gewählte Teile' })
     ).not.toBeInTheDocument();
     act(() => view.history.goForward());
     expect(
-      await screen.findByRole('heading', {
-        name: 'Teile wählen (mindestens 2)',
-      })
+      await screen.findByRole('heading', { name: 'Gewählte Teile' })
     ).toBeInTheDocument();
     expect(pathOf(view)).toBe('/looks/new/pieces');
   });

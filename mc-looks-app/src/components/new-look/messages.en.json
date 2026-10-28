@@ -9,7 +9,6 @@
   "Looks.newLook.next": "Next",
   "Looks.newLook.saveLook": "Save look",
   "Looks.newLook.name": "Name",
-  "Looks.newLook.piecesTitle": "Choose pieces (at least {min})",
   "Looks.newLook.selectedHeading": "Chosen pieces",
   "Looks.newLook.piecesCount": "{count, plural, one {# piece chosen} other {# pieces chosen}}",
   "Looks.newLook.dropHint": "Add a piece from the search",

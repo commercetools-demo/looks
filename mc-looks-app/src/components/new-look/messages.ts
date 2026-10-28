@@ -53,10 +53,6 @@ export default defineMessages({
     defaultMessage: 'Dieser Key ist schon vergeben.',
   },
   reviewKey: { id: 'Looks.newLook.reviewKey', defaultMessage: 'Key' },
-  piecesTitle: {
-    id: 'Looks.newLook.piecesTitle',
-    defaultMessage: 'Teile wählen (mindestens {min})',
-  },
   selectedHeading: {
     id: 'Looks.newLook.selectedHeading',
     defaultMessage: 'Gewählte Teile',
