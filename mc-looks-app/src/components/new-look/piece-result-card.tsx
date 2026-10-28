@@ -1,7 +1,15 @@
 import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Add, Check } from '@commercetools/nimbus-icons';
-import { Box, Button, Flex, Icon, Stack, Text } from '@commercetools/nimbus';
+import {
+  Box,
+  Button,
+  Card,
+  Flex,
+  Icon,
+  Stack,
+  Text,
+} from '@commercetools/nimbus';
 import { stockStateOf } from '../../domain/stock';
 import type { Piece } from '../../domain/types';
 import commonMessages from '../common/messages';
@@ -38,117 +46,127 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
     (entry) => stockStateOf(entry.quantity) === 'sold-out'
   );
   return (
-    <Flex
-      direction="column"
+    // The image runs to the card's edge, so the card has no padding of its own.
+    <Card.Root
       minWidth={0}
-      borderWidth="1px"
-      borderColor="neutral.6"
-      borderRadius="300"
-      overflow="hidden"
-      bg="neutral.1"
       width="100%"
+      height="100%"
+      overflow="hidden"
+      p="0"
+      gap="0"
+      display="flex"
+      flexDirection="column"
     >
       <PieceImage src={piece.imageUrl} />
-      <Stack gap="200" p="250" flex="1" minWidth={0}>
-        <Box minWidth={0}>
-          <Text fontWeight="500" truncate title={piece.name}>
-            {piece.name}
-          </Text>
-          {piece.colour && (
-            <Text
-              fontSize="300"
-              color="neutral.11"
-              truncate
-              aria-label={intl.formatMessage(messages.pieceColour, {
-                colour: piece.colour,
+      <Card.Body
+        p="0"
+        flex="1"
+        minWidth={0}
+        display="flex"
+        flexDirection="column"
+      >
+        <Stack gap="200" p="250" flex="1" minWidth={0}>
+          <Box minWidth={0}>
+            <Text fontWeight="500" truncate title={piece.name}>
+              {piece.name}
+            </Text>
+            {piece.colour && (
+              <Text
+                fontSize="300"
+                color="neutral.11"
+                truncate
+                aria-label={intl.formatMessage(messages.pieceColour, {
+                  colour: piece.colour,
+                })}
+              >
+                {piece.colour}
+              </Text>
+            )}
+          </Box>
+          {piece.oneSize ? (
+            <Text fontSize="300">
+              {intl.formatMessage(commonMessages.oneSize)}
+            </Text>
+          ) : (
+            <Flex wrap="wrap" gap="100">
+              {piece.sizes.map((size) => {
+                const sold =
+                  stockStateOf(size.availableQuantity) === 'sold-out';
+                return (
+                  <Box
+                    key={size.sku ?? size.label}
+                    as="span"
+                    display="inline-flex"
+                    alignItems="center"
+                    height="20px"
+                    px="150"
+                    borderRadius="100"
+                    fontSize="300"
+                    fontWeight="500"
+                    bg={sold ? 'transparent' : 'neutral.3'}
+                    color={sold ? 'neutral.9' : 'neutral.12'}
+                    textDecoration={sold ? 'line-through' : 'none'}
+                  >
+                    {size.label}
+                  </Box>
+                );
               })}
+            </Flex>
+          )}
+          <Stack gap="0">
+            {low.length > 0 && (
+              <Text fontSize="300" color="warning.11">
+                {low
+                  .map((entry) =>
+                    intl.formatMessage(messages.stockLow, {
+                      size: entry.label,
+                      count: entry.quantity,
+                    })
+                  )
+                  .join(' · ')}
+              </Text>
+            )}
+            {soldOut.length > 0 && (
+              <Text fontSize="300" color="critical.11">
+                {intl.formatMessage(messages.stockSoldOut, {
+                  sizes: soldOut.map((entry) => entry.label).join(', '),
+                })}
+              </Text>
+            )}
+          </Stack>
+          <Box flex="1" />
+          {props.state === 'in-look' ? (
+            <Flex
+              alignItems="center"
+              justifyContent="center"
+              gap="100"
+              height="32px"
+              color="positive.11"
+              fontWeight="500"
             >
-              {piece.colour}
-            </Text>
-          )}
-        </Box>
-        {piece.oneSize ? (
-          <Text fontSize="300">
-            {intl.formatMessage(commonMessages.oneSize)}
-          </Text>
-        ) : (
-          <Flex wrap="wrap" gap="100">
-            {piece.sizes.map((size) => {
-              const sold = stockStateOf(size.availableQuantity) === 'sold-out';
-              return (
-                <Box
-                  key={size.sku ?? size.label}
-                  as="span"
-                  display="inline-flex"
-                  alignItems="center"
-                  height="20px"
-                  px="150"
-                  borderRadius="100"
-                  fontSize="300"
-                  fontWeight="500"
-                  bg={sold ? 'transparent' : 'neutral.3'}
-                  color={sold ? 'neutral.9' : 'neutral.12'}
-                  textDecoration={sold ? 'line-through' : 'none'}
-                >
-                  {size.label}
-                </Box>
-              );
-            })}
-          </Flex>
-        )}
-        <Stack gap="0">
-          {low.length > 0 && (
-            <Text fontSize="300" color="warning.11">
-              {low
-                .map((entry) =>
-                  intl.formatMessage(messages.stockLow, {
-                    size: entry.label,
-                    count: entry.quantity,
-                  })
-                )
-                .join(' · ')}
-            </Text>
-          )}
-          {soldOut.length > 0 && (
-            <Text fontSize="300" color="critical.11">
-              {intl.formatMessage(messages.stockSoldOut, {
-                sizes: soldOut.map((entry) => entry.label).join(', '),
-              })}
-            </Text>
+              <Icon size="2xs">
+                <Check />
+              </Icon>
+              {intl.formatMessage(messages.inLook)}
+            </Flex>
+          ) : (
+            <Button
+              size="xs"
+              variant="outline"
+              aria-label={`${intl.formatMessage(messages.add)}: ${piece.name}${
+                piece.colour ? ` (${piece.colour})` : ''
+              }`}
+              isDisabled={props.isDisabled}
+              onPress={props.onAdd}
+            >
+              <Icon size="2xs">
+                <Add />
+              </Icon>
+              {intl.formatMessage(messages.add)}
+            </Button>
           )}
         </Stack>
-        <Box flex="1" />
-        {props.state === 'in-look' ? (
-          <Flex
-            alignItems="center"
-            justifyContent="center"
-            gap="100"
-            height="32px"
-            color="positive.11"
-            fontWeight="500"
-          >
-            <Icon size="2xs">
-              <Check />
-            </Icon>
-            {intl.formatMessage(messages.inLook)}
-          </Flex>
-        ) : (
-          <Button
-            size="xs"
-            variant="outline"
-            aria-label={`${intl.formatMessage(messages.add)}: ${piece.name}${
-              piece.colour ? ` (${piece.colour})` : ''
-            }`}
-            isDisabled={props.isDisabled}
-            onPress={props.onAdd}
-          >
-            <Icon size="2xs">
-              <Add />
-            </Icon>
-            {intl.formatMessage(messages.add)}
-          </Button>
-        )}
-      </Stack>
-    </Flex>
+      </Card.Body>
+    </Card.Root>
   );
 };
