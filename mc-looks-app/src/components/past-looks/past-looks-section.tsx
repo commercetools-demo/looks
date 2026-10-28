@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Alert,
@@ -29,16 +29,7 @@ const GRID = {
   xl: `repeat(${PAST_CARDS_PER_ROW}, minmax(0, 1fr))`,
 };
 
-/**
- * "Frühere Looks": the switched-off looks as cards, best seller first. The
- * sales come from an independent order read; the looks above stay usable
- * whatever it does, and the cards stay usable when it fails.
- */
-export function PastLooksSection({
-  rows,
-  onOpen,
-  onDiscountChange,
-}: {
+type PastLooksSectionProps = {
   rows: LookRow[];
   onOpen: (lookKey: string) => void;
   onDiscountChange: (
@@ -46,7 +37,18 @@ export function PastLooksSection({
     object?: LookObject,
     more?: LookDiscount[]
   ) => void;
-}) {
+};
+
+/**
+ * "Frühere Looks": the switched-off looks as cards, best seller first. The
+ * sales come from an independent order read; the looks above stay usable
+ * whatever it does, and the cards stay usable when it fails.
+ */
+export const PastLooksSection: FC<PastLooksSectionProps> = ({
+  rows,
+  onOpen,
+  onDiscountChange,
+}) => {
   const intl = useIntl();
   const dataLocale = useDataLocale();
   const hasPast = useMemo(() => rows.some(isPastLook), [rows]);
@@ -164,4 +166,4 @@ export function PastLooksSection({
       )}
     </Stack>
   );
-}
+};

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import './looks-table.css';
 import {
@@ -58,7 +58,9 @@ export const LOOK_TABLE_COLUMN_WIDTHS = {
 
 const SORT_DIRECTION = { asc: 'ascending', desc: 'descending' } as const;
 
-function LookCell({ look }: { look: LookRow }) {
+type LookCellProps = { look: LookRow };
+
+const LookCell: FC<LookCellProps> = ({ look }) => {
   const title = useLookTitle()(look);
   const photoUrl = look.image
     ? lookImageUrl(look.image.path, config.shopOrigin)
@@ -111,9 +113,11 @@ function LookCell({ look }: { look: LookRow }) {
       </Stack>
     </Flex>
   );
-}
+};
 
-function PieceStrip({ look, loading }: { look: LookRow; loading: boolean }) {
+type PieceStripProps = { look: LookRow; loading: boolean };
+
+const PieceStrip: FC<PieceStripProps> = ({ look, loading }) => {
   const intl = useIntl();
   const names = look.pieces
     .map((piece, i) => piece?.name ?? look.pieceIds[i])
@@ -142,18 +146,16 @@ function PieceStrip({ look, loading }: { look: LookRow; loading: boolean }) {
       )}
     </Flex>
   );
-}
+};
 
-/** The price cells wait for the pieces' live prices. */
-function PriceCell({
-  look,
-  loading,
-  children,
-}: {
+type PriceCellProps = {
   look: LookRow;
   loading: boolean;
   children: ReactNode;
-}) {
+};
+
+/** The price cells wait for the pieces' live prices. */
+const PriceCell: FC<PriceCellProps> = ({ look, loading, children }) => {
   const intl = useIntl();
   if (loading && look.pieces.some((piece) => !piece)) {
     return (
@@ -165,16 +167,9 @@ function PriceCell({
     );
   }
   return <>{children}</>;
-}
+};
 
-export function LooksTable({
-  rows,
-  sort,
-  pricesLoading,
-  onSortChange,
-  onOpen,
-  onDiscountChange,
-}: {
+type LooksTableProps = {
   rows: LookRow[];
   sort: SortState;
   pricesLoading: boolean;
@@ -185,7 +180,16 @@ export function LooksTable({
     object?: LookObject,
     more?: LookDiscount[]
   ) => void;
-}) {
+};
+
+export const LooksTable: FC<LooksTableProps> = ({
+  rows,
+  sort,
+  pricesLoading,
+  onSortChange,
+  onOpen,
+  onDiscountChange,
+}) => {
   const intl = useIntl();
   const canManage = useCanManage();
   const lookTitle = useLookTitle();
@@ -354,4 +358,4 @@ export function LooksTable({
       />
     </div>
   );
-}
+};

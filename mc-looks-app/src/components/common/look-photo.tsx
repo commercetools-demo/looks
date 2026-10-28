@@ -1,4 +1,12 @@
+import type { FC } from 'react';
 import { Box, Image } from '@commercetools/nimbus';
+
+type LookPhotoProps = {
+  src: string;
+  alt: string;
+  width: number | string;
+  ratio: { width: number; height: number };
+};
 
 /**
  * The look photo: portrait, drawn at `width` with the file's own
@@ -6,17 +14,7 @@ import { Box, Image } from '@commercetools/nimbus';
  * cannot be loaded the neutral ground stays and the rest of the screen is
  * unaffected.
  */
-export function LookPhoto({
-  src,
-  alt,
-  width,
-  ratio,
-}: {
-  src: string;
-  alt: string;
-  width: number | string;
-  ratio: { width: number; height: number };
-}) {
+export const LookPhoto: FC<LookPhotoProps> = ({ src, alt, width, ratio }) => {
   return (
     <Box
       data-look-photo=""
@@ -38,4 +36,4 @@ export function LookPhoto({
       />
     </Box>
   );
-}
+};

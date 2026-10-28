@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Button,
@@ -20,17 +20,19 @@ import { describeError } from '../common/describe-error';
 import { measureImage, type ImageLoader } from './measure-image';
 import messages from './messages';
 
-/** Sets or clears the look photo. The path is checked and the file loaded
- *  from the shop first, so a photo that cannot show is never stored. */
-export function PhotoForm({
-  row,
-  apply,
-  loadImage = measureImage,
-}: {
+type PhotoFormProps = {
   row: LookRow;
   apply: (discount?: undefined, object?: LookObject) => void;
   loadImage?: ImageLoader;
-}) {
+};
+
+/** Sets or clears the look photo. The path is checked and the file loaded
+ *  from the shop first, so a photo that cannot show is never stored. */
+export const PhotoForm: FC<PhotoFormProps> = ({
+  row,
+  apply,
+  loadImage = measureImage,
+}) => {
   const intl = useIntl();
   const api = useLookApi();
   const canManage = useCanManage();
@@ -110,4 +112,4 @@ export function PhotoForm({
       </Card.Body>
     </Card.Root>
   );
-}
+};

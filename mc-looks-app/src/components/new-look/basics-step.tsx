@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Box,
@@ -18,9 +19,7 @@ import messages from './messages';
 /** Width of the photo shown next to the form. */
 export const STEP1_PHOTO_WIDTH = 120;
 
-/** Step 1: the name in the project languages, the look key and the optional
- *  look photo. */
-export function BasicsStep(props: {
+type BasicsStepProps = {
   label: LocalizedValue;
   onLabelChange: (label: LocalizedValue) => void;
   nameError: string | undefined;
@@ -37,7 +36,11 @@ export function BasicsStep(props: {
   /** Without a shop address the photo cannot be checked. */
   photoAvailable: boolean;
   isDisabled: boolean;
-}) {
+};
+
+/** Step 1: the name in the project languages, the look key and the optional
+ *  look photo. */
+export const BasicsStep: FC<BasicsStepProps> = (props) => {
   const intl = useIntl();
   const { label, nameError } = props;
   return (
@@ -130,4 +133,4 @@ export function BasicsStep(props: {
         )}
     </Flex>
   );
-}
+};

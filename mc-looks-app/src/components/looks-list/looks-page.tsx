@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { useHistory, useLocation } from 'react-router-dom';
 import { Add, Visibility } from '@commercetools/nimbus-icons';
@@ -25,7 +26,9 @@ import { PastLooksSection } from '../past-looks/past-looks-section';
 import { LooksTable } from './looks-table';
 import messages from './messages';
 
-function NewLookButton({ onPress }: { onPress: () => void }) {
+type NewLookButtonProps = { onPress: () => void };
+
+const NewLookButton: FC<NewLookButtonProps> = ({ onPress }) => {
   const intl = useIntl();
   const canManage = useCanManage();
   return (
@@ -41,10 +44,12 @@ function NewLookButton({ onPress }: { onPress: () => void }) {
       {intl.formatMessage(messages.newLook)}
     </Button>
   );
-}
+};
+
+type EmptyLooksProps = { onNewLook: () => void };
 
 /** No look at all yet: what a look is, and the way to create one. */
-function EmptyLooks({ onNewLook }: { onNewLook: () => void }) {
+const EmptyLooks: FC<EmptyLooksProps> = ({ onNewLook }) => {
   const intl = useIntl();
   return (
     <Flex
@@ -69,16 +74,15 @@ function EmptyLooks({ onNewLook }: { onNewLook: () => void }) {
       <NewLookButton onPress={onNewLook} />
     </Flex>
   );
-}
+};
 
-/** Start screen: every look with its set price and live discount status. */
-export default function LooksPage({
-  basePath,
-  showNewLook = false,
-}: {
+type LooksPageProps = {
   basePath: string;
   showNewLook?: boolean;
-}) {
+};
+
+/** Start screen: every look with its set price and live discount status. */
+const LooksPage: FC<LooksPageProps> = ({ basePath, showNewLook = false }) => {
   const intl = useIntl();
   const history = useHistory();
   const location = useLocation();
@@ -207,4 +211,6 @@ export default function LooksPage({
       )}
     </DefaultPage.Root>
   );
-}
+};
+
+export default LooksPage;

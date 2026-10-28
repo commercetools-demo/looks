@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Box,
@@ -17,13 +17,12 @@ import { PieceImage } from '../common/piece-image';
 import { useMoney } from '../common/look-hooks';
 import messages from './messages';
 
-function SummaryRow({
-  label,
-  children,
-}: {
+type SummaryRowProps = {
   label: string;
   children: ReactNode;
-}) {
+};
+
+const SummaryRow: FC<SummaryRowProps> = ({ label, children }) => {
   return (
     <Grid templateColumns="160px minmax(0, 1fr)" gap="400" alignItems="start">
       <Text color="neutral.11">{label}</Text>
@@ -32,11 +31,9 @@ function SummaryRow({
       </Box>
     </Grid>
   );
-}
+};
 
-/** Step 4: the summary and the switch "Nach dem Anlegen aktiv" (off by
- *  default, so a look can be checked before it goes live). */
-export function ReviewStep(props: {
+type ReviewStepProps = {
   name: LocalizedValue;
   /** The full key, `look-<key>`. */
   fullKey: string;
@@ -47,7 +44,11 @@ export function ReviewStep(props: {
   activate: boolean;
   onActivateChange: (activate: boolean) => void;
   isDisabled: boolean;
-}) {
+};
+
+/** Step 4: the summary and the switch "Nach dem Anlegen aktiv" (off by
+ *  default, so a look can be checked before it goes live). */
+export const ReviewStep: FC<ReviewStepProps> = (props) => {
   const intl = useIntl();
   const money = useMoney();
   const currencies = useCurrencies();
@@ -118,4 +119,4 @@ export function ReviewStep(props: {
       </Card.Body>
     </Card.Root>
   );
-}
+};

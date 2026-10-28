@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Alert, Button, LoadingSpinner, Stack } from '@commercetools/nimbus';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
@@ -8,7 +9,7 @@ import LookDetailPage from './look-detail/look-detail-page';
 import LooksPage from './looks-list/looks-page';
 
 /** Routes of the app, below the project's currencies being known. */
-export function LooksRoutes() {
+export const LooksRoutes: FC = () => {
   const { path, url } = useRouteMatch();
   return (
     <Switch>
@@ -23,10 +24,10 @@ export function LooksRoutes() {
       </Route>
     </Switch>
   );
-}
+};
 
 /** Loads the project's currencies once, then renders the routes. */
-export function LooksApp() {
+export const LooksApp: FC = () => {
   const intl = useIntl();
   const { currencies, languages, loading, error, refetch } =
     useProjectSettings();
@@ -68,4 +69,4 @@ export function LooksApp() {
       <LooksRoutes />
     </LookProvider>
   );
-}
+};

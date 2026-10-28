@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 import {
@@ -34,14 +35,132 @@ import { PhotoForm } from './photo-form';
 import { PieceCard } from './piece-card';
 import { SetPriceForm } from './set-price-form';
 
-/** Detail of one look at `${basePath}/:lookKey`. */
-export default function LookDetailPage({
-  basePath,
+type LookDetailBodyProps = {
+  row: LookRow;
+  apply: ReturnType<typeof useLookDetail>['apply'];
+  reload: () => void;
+  loadImage?: ImageLoader;
+  onDeleted: () => void;
+};
+
+const LookDetailBody: FC<LookDetailBodyProps> = ({
+  row,
+  apply,
+  reload,
   loadImage,
-}: {
+  onDeleted,
+}) => {
+  const intl = useIntl();
+  const title = useLookTitle();
+  const name = title(row);
+  const photoUrl = row.image
+    ? lookImageUrl(row.image.path, config.shopOrigin)
+    : undefined;
+  const complete = row.completeness === 'complete';
+
+  return (
+    <Stack gap="600">
+      {!complete && <CompleteLookPanel row={row} onCompleted={reload} />}
+      {row.pieces.flatMap((piece) =>
+        piece?.soldOutEverywhere
+          ? [
+              <Alert.Root key={piece.id} colorPalette="warning">
+                <Alert.Title>
+                  {intl.formatMessage(messages.soldOutAlertTitle, {
+                    piece: piece.name,
+                  })}
+                </Alert.Title>
+                <Alert.Description>
+                  {intl.formatMessage(messages.soldOutAlertDescription)}
+                </Alert.Description>
+              </Alert.Root>,
+            ]
+          : []
+      )}
+      {row.missingCurrency && (
+        <Alert.Root colorPalette="warning">
+          <Alert.Title>
+            {intl.formatMessage(messages.missingCurrencyTitle)}
+          </Alert.Title>
+          <Alert.Description>
+            {intl.formatMessage(messages.missingCurrencyDescription)}
+          </Alert.Description>
+        </Alert.Root>
+      )}
+      <Grid
+        templateColumns={{ base: '1fr', xl: '280px minmax(0, 1fr) 400px' }}
+        gap="800"
+        alignItems="start"
+      >
+        <Box>
+          {photoUrl ? (
+            <LookPhoto
+              src={photoUrl}
+              alt={name}
+              width={280}
+              ratio={{ width: 2, height: 3 }}
+            />
+          ) : (
+            <Flex
+              width="280px"
+              direction="column"
+              justifyContent="center"
+              gap="100"
+              px="800"
+              bg="neutral.3"
+              overflow="hidden"
+              style={{ aspectRatio: '2 / 3' }}
+            >
+              {row.pieces.slice(0, 2).map((piece, index) => (
+                <PieceImage key={row.pieceIds[index]} src={piece?.imageUrl} />
+              ))}
+            </Flex>
+          )}
+        </Box>
+        <Stack gap="300" minWidth={0}>
+          <Heading as="h2" size="md">
+            {intl.formatMessage(messages.piecesTitle, {
+              count: row.pieceIds.length,
+            })}
+          </Heading>
+          {row.pieceIds.map((id, index) => (
+            <PieceCard key={id} pieceId={id} piece={row.pieces[index]} />
+          ))}
+        </Stack>
+        <Box
+          minWidth={0}
+          aria-label={intl.formatMessage(messages.previewTitle)}
+        >
+          <ShopPreview
+            pieces={row.pieces}
+            setPrice={row.referenceSetPrice}
+            sum={row.referenceSum}
+            photoUrl={photoUrl}
+            photoRatio={row.image}
+          />
+        </Box>
+      </Grid>
+      {complete && (
+        <SetPriceForm
+          key={row.object?.version}
+          row={row}
+          apply={apply}
+          reload={reload}
+        />
+      )}
+      {complete && <PhotoForm row={row} apply={apply} loadImage={loadImage} />}
+      <DeleteLookPanel row={row} onDeleted={onDeleted} reload={reload} />
+    </Stack>
+  );
+};
+
+type LookDetailPageProps = {
   basePath: string;
   loadImage?: ImageLoader;
-}) {
+};
+
+/** Detail of one look at `${basePath}/:lookKey`. */
+const LookDetailPage: FC<LookDetailPageProps> = ({ basePath, loadImage }) => {
   const intl = useIntl();
   const canManage = useCanManage();
   const title = useLookTitle();
@@ -150,121 +269,6 @@ export default function LookDetailPage({
       </DefaultPage.Content>
     </DefaultPage.Root>
   );
-}
+};
 
-function LookDetailBody({
-  row,
-  apply,
-  reload,
-  loadImage,
-  onDeleted,
-}: {
-  row: LookRow;
-  apply: ReturnType<typeof useLookDetail>['apply'];
-  reload: () => void;
-  loadImage?: ImageLoader;
-  onDeleted: () => void;
-}) {
-  const intl = useIntl();
-  const title = useLookTitle();
-  const name = title(row);
-  const photoUrl = row.image
-    ? lookImageUrl(row.image.path, config.shopOrigin)
-    : undefined;
-  const complete = row.completeness === 'complete';
-
-  return (
-    <Stack gap="600">
-      {!complete && <CompleteLookPanel row={row} onCompleted={reload} />}
-      {row.pieces.flatMap((piece) =>
-        piece?.soldOutEverywhere
-          ? [
-              <Alert.Root key={piece.id} colorPalette="warning">
-                <Alert.Title>
-                  {intl.formatMessage(messages.soldOutAlertTitle, {
-                    piece: piece.name,
-                  })}
-                </Alert.Title>
-                <Alert.Description>
-                  {intl.formatMessage(messages.soldOutAlertDescription)}
-                </Alert.Description>
-              </Alert.Root>,
-            ]
-          : []
-      )}
-      {row.missingCurrency && (
-        <Alert.Root colorPalette="warning">
-          <Alert.Title>
-            {intl.formatMessage(messages.missingCurrencyTitle)}
-          </Alert.Title>
-          <Alert.Description>
-            {intl.formatMessage(messages.missingCurrencyDescription)}
-          </Alert.Description>
-        </Alert.Root>
-      )}
-      <Grid
-        templateColumns={{ base: '1fr', xl: '280px minmax(0, 1fr) 400px' }}
-        gap="800"
-        alignItems="start"
-      >
-        <Box>
-          {photoUrl ? (
-            <LookPhoto
-              src={photoUrl}
-              alt={name}
-              width={280}
-              ratio={{ width: 2, height: 3 }}
-            />
-          ) : (
-            <Flex
-              width="280px"
-              direction="column"
-              justifyContent="center"
-              gap="100"
-              px="800"
-              bg="neutral.3"
-              overflow="hidden"
-              style={{ aspectRatio: '2 / 3' }}
-            >
-              {row.pieces.slice(0, 2).map((piece, index) => (
-                <PieceImage key={row.pieceIds[index]} src={piece?.imageUrl} />
-              ))}
-            </Flex>
-          )}
-        </Box>
-        <Stack gap="300" minWidth={0}>
-          <Heading as="h2" size="md">
-            {intl.formatMessage(messages.piecesTitle, {
-              count: row.pieceIds.length,
-            })}
-          </Heading>
-          {row.pieceIds.map((id, index) => (
-            <PieceCard key={id} pieceId={id} piece={row.pieces[index]} />
-          ))}
-        </Stack>
-        <Box
-          minWidth={0}
-          aria-label={intl.formatMessage(messages.previewTitle)}
-        >
-          <ShopPreview
-            pieces={row.pieces}
-            setPrice={row.referenceSetPrice}
-            sum={row.referenceSum}
-            photoUrl={photoUrl}
-            photoRatio={row.image}
-          />
-        </Box>
-      </Grid>
-      {complete && (
-        <SetPriceForm
-          key={row.object?.version}
-          row={row}
-          apply={apply}
-          reload={reload}
-        />
-      )}
-      {complete && <PhotoForm row={row} apply={apply} loadImage={loadImage} />}
-      <DeleteLookPanel row={row} onDeleted={onDeleted} reload={reload} />
-    </Stack>
-  );
-}
+export default LookDetailPage;

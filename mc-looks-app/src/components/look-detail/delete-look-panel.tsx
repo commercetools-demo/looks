@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Alert,
@@ -18,21 +18,23 @@ import { useLookTitle } from '../common/look-hooks';
 import commonMessages from '../common/messages';
 import messages from './messages';
 
+type DeleteLookPanelProps = {
+  row: LookRow;
+  onDeleted: () => void;
+  reload: () => void;
+};
+
 /**
  * Deleting a look: its definition, its country discounts and its Discount
  * Group, switched on or off. The user confirms first; for a look that is on
  * the confirmation says its discounts vanish from the shop at once.
  * Disabled, never hidden, without Manage.
  */
-export function DeleteLookPanel({
+export const DeleteLookPanel: FC<DeleteLookPanelProps> = ({
   row,
   onDeleted,
   reload,
-}: {
-  row: LookRow;
-  onDeleted: () => void;
-  reload: () => void;
-}) {
+}) => {
   const intl = useIntl();
   const api = useLookApi();
   const canManage = useCanManage();
@@ -120,4 +122,4 @@ export function DeleteLookPanel({
       </Card.Body>
     </Card.Root>
   );
-}
+};

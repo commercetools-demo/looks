@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Box,
@@ -38,6 +38,14 @@ function useCountryName() {
 /** An amount as the money field wants it: a dot as decimal mark. */
 export const amountText = (cents: number): string => (cents / 100).toFixed(2);
 
+type SetPriceTableProps = {
+  pieces: ReadonlyArray<Pick<Piece, 'id' | 'name' | 'prices'>>;
+  texts: Record<string, string>;
+  onTextsChange: (texts: Record<string, string>) => void;
+  errors: Record<string, string | undefined>;
+  isDisabled: boolean;
+};
+
 /**
  * The set-price table: one row per currency and country in which every piece
  * has a price, ordered by currency, with the pieces' master-variant prices,
@@ -46,13 +54,7 @@ export const amountText = (cents: number): string => (cents / 100).toFixed(2);
  * `texts` holds the set-price text per row key; a row without text yet starts
  * at the sum, an emptied one gets no discount.
  */
-export function SetPriceTable(props: {
-  pieces: ReadonlyArray<Pick<Piece, 'id' | 'name' | 'prices'>>;
-  texts: Record<string, string>;
-  onTextsChange: (texts: Record<string, string>) => void;
-  errors: Record<string, string | undefined>;
-  isDisabled: boolean;
-}) {
+export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
   const intl = useIntl();
   const money = useMoney();
   const currencies = useCurrencies();
@@ -190,4 +192,4 @@ export function SetPriceTable(props: {
       </Box>
     </Stack>
   );
-}
+};

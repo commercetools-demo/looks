@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Alert, Button, Stack, toast } from '@commercetools/nimbus';
 import type { LookRow } from '../../domain/look-rows';
@@ -11,16 +11,18 @@ import { LookNameField } from '../common/look-name-field';
 import commonMessages from '../common/messages';
 import messages from './messages';
 
+type CompleteLookPanelProps = {
+  row: LookRow;
+  onCompleted: () => void;
+};
+
 /** The warning for a half-written look and its repair. Completing never
  *  switches the look on. A look whose definition and discount disagree is
  *  only explained. */
-export function CompleteLookPanel({
+export const CompleteLookPanel: FC<CompleteLookPanelProps> = ({
   row,
   onCompleted,
-}: {
-  row: LookRow;
-  onCompleted: () => void;
-}) {
+}) => {
   const intl = useIntl();
   const api = useLookApi();
   const canManage = useCanManage();
@@ -86,4 +88,4 @@ export function CompleteLookPanel({
       )}
     </Alert.Root>
   );
-}
+};

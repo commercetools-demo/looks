@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Box, Button, Flex, Image, Stack, Text } from '@commercetools/nimbus';
 import { formatMoney } from '../../domain/format';
@@ -6,6 +7,100 @@ import { useCurrencies } from '../../hooks/context';
 import commonMessages from '../common/messages';
 import messages from './messages';
 import { buildPreview, type PreviewRow } from './preview-model';
+
+type SizeLookAlikeProps = { row: PreviewRow };
+
+const SizeLookAlike: FC<SizeLookAlikeProps> = ({ row }) => {
+  const intl = useIntl();
+  const label = row.oneSize
+    ? intl.formatMessage(commonMessages.oneSize)
+    : row.sizeLabel;
+  const note =
+    row.sizeState === 'sold-out'
+      ? intl.formatMessage(messages.soldOut)
+      : row.sizeState === 'low'
+      ? intl.formatMessage(messages.lowStock, { count: row.quantity })
+      : undefined;
+  return (
+    <Flex
+      data-testid="preview-size"
+      alignItems="center"
+      gap="150"
+      borderWidth="1px"
+      borderColor="neutral.7"
+      borderRadius="100"
+      px="200"
+      py="100"
+      fontSize="350"
+      flexShrink={0}
+    >
+      {row.sizeState !== 'sold-out' && <span>{label}</span>}
+      {note && (
+        <Text
+          as="span"
+          fontSize="300"
+          color={row.sizeState === 'sold-out' ? 'critical.11' : 'warning.11'}
+        >
+          {note}
+        </Text>
+      )}
+      {!row.oneSize && row.sizeState !== 'sold-out' && (
+        <span aria-hidden="true">▾</span>
+      )}
+    </Flex>
+  );
+};
+
+type PieceLineProps = {
+  row: PreviewRow;
+  money: (cents: number) => string;
+};
+
+const PieceLine: FC<PieceLineProps> = ({ row, money }) => {
+  return (
+    <Flex alignItems="center" gap="300" data-testid="preview-row">
+      <Box
+        width="48px"
+        flexShrink={0}
+        position="relative"
+        overflow="hidden"
+        bg="neutral.3"
+        style={{ aspectRatio: '4 / 5' }}
+      >
+        {row.imageUrl && (
+          <Image
+            src={row.imageUrl}
+            alt=""
+            position="absolute"
+            inset="0"
+            width="100%"
+            height="100%"
+            objectFit="cover"
+          />
+        )}
+      </Box>
+      <Stack gap="0" flex="1" minWidth={0}>
+        <Text
+          fontSize="350"
+          style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {row.name}
+        </Text>
+        {row.price !== undefined && (
+          <Text fontSize="300" color="neutral.11">
+            {money(row.price)}
+          </Text>
+        )}
+      </Stack>
+      <SizeLookAlike row={row} />
+    </Flex>
+  );
+};
 
 /** The neutral shop preview of a look. `setPrice` and `sum` are cent amounts
  *  per project currency; the card shows the first project currency. */
@@ -20,7 +115,7 @@ export interface ShopPreviewProps {
   photoAlt?: string;
 }
 
-export function ShopPreview(props: ShopPreviewProps) {
+export const ShopPreview: FC<ShopPreviewProps> = (props) => {
   const intl = useIntl();
   const [currency = ''] = useCurrencies();
 
@@ -123,97 +218,4 @@ export function ShopPreview(props: ShopPreviewProps) {
       </Stack>
     </Box>
   );
-}
-
-function SizeLookAlike({ row }: { row: PreviewRow }) {
-  const intl = useIntl();
-  const label = row.oneSize
-    ? intl.formatMessage(commonMessages.oneSize)
-    : row.sizeLabel;
-  const note =
-    row.sizeState === 'sold-out'
-      ? intl.formatMessage(messages.soldOut)
-      : row.sizeState === 'low'
-      ? intl.formatMessage(messages.lowStock, { count: row.quantity })
-      : undefined;
-  return (
-    <Flex
-      data-testid="preview-size"
-      alignItems="center"
-      gap="150"
-      borderWidth="1px"
-      borderColor="neutral.7"
-      borderRadius="100"
-      px="200"
-      py="100"
-      fontSize="350"
-      flexShrink={0}
-    >
-      {row.sizeState !== 'sold-out' && <span>{label}</span>}
-      {note && (
-        <Text
-          as="span"
-          fontSize="300"
-          color={row.sizeState === 'sold-out' ? 'critical.11' : 'warning.11'}
-        >
-          {note}
-        </Text>
-      )}
-      {!row.oneSize && row.sizeState !== 'sold-out' && (
-        <span aria-hidden="true">▾</span>
-      )}
-    </Flex>
-  );
-}
-
-function PieceLine({
-  row,
-  money,
-}: {
-  row: PreviewRow;
-  money: (cents: number) => string;
-}) {
-  return (
-    <Flex alignItems="center" gap="300" data-testid="preview-row">
-      <Box
-        width="48px"
-        flexShrink={0}
-        position="relative"
-        overflow="hidden"
-        bg="neutral.3"
-        style={{ aspectRatio: '4 / 5' }}
-      >
-        {row.imageUrl && (
-          <Image
-            src={row.imageUrl}
-            alt=""
-            position="absolute"
-            inset="0"
-            width="100%"
-            height="100%"
-            objectFit="cover"
-          />
-        )}
-      </Box>
-      <Stack gap="0" flex="1" minWidth={0}>
-        <Text
-          fontSize="350"
-          style={{
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {row.name}
-        </Text>
-        {row.price !== undefined && (
-          <Text fontSize="300" color="neutral.11">
-            {money(row.price)}
-          </Text>
-        )}
-      </Stack>
-      <SizeLookAlike row={row} />
-    </Flex>
-  );
-}
+};

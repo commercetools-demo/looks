@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import { ArrowDownward, ArrowUpward, Close } from '@commercetools/nimbus-icons';
 import {
@@ -41,13 +41,15 @@ function move<T>(list: T[], from: number, to: number): T[] {
   return next;
 }
 
-/** Step 2: the chosen pieces (reorderable) and the product search. */
-export function PiecesStep(props: {
+type PiecesStepProps = {
   pieces: Piece[];
   onPiecesChange: (pieces: Piece[]) => void;
   errors: string[];
   isDisabled: boolean;
-}) {
+};
+
+/** Step 2: the chosen pieces (reorderable) and the product search. */
+export const PiecesStep: FC<PiecesStepProps> = (props) => {
   const intl = useIntl();
   const api = useLookApi();
   const { pieces, onPiecesChange } = props;
@@ -267,4 +269,4 @@ export function PiecesStep(props: {
       </Stack>
     </Stack>
   );
-}
+};

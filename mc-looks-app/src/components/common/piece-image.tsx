@@ -1,6 +1,12 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Box, Flex, Image, Text } from '@commercetools/nimbus';
 import messages from './messages';
+
+type PieceImageProps = {
+  src: string | undefined;
+  width?: number | string;
+};
 
 /**
  * A product image the way shop tiles show it: 4:5, `object-fit: cover`,
@@ -8,13 +14,7 @@ import messages from './messages';
  * height follows from the ratio. Without an image the ground carries
  * "Bild folgt". Decorative: the name next to it names the piece.
  */
-export function PieceImage({
-  src,
-  width = '100%',
-}: {
-  src: string | undefined;
-  width?: number | string;
-}) {
+export const PieceImage: FC<PieceImageProps> = ({ src, width = '100%' }) => {
   const intl = useIntl();
   return (
     <Box
@@ -50,4 +50,4 @@ export function PieceImage({
       )}
     </Box>
   );
-}
+};

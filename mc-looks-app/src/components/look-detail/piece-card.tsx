@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Box, Flex, Stack, Text } from '@commercetools/nimbus';
 import { stockStateOf, summarizeSizes } from '../../domain/stock';
@@ -7,14 +8,13 @@ import { MoneyLines } from '../common/money-lines';
 import { PieceImage } from '../common/piece-image';
 import messages from './messages';
 
-/** One piece of a look: image, name, colour, list prices and stock per size. */
-export function PieceCard({
-  piece,
-  pieceId,
-}: {
+type PieceCardProps = {
   piece: Piece | undefined;
   pieceId: string;
-}) {
+};
+
+/** One piece of a look: image, name, colour, list prices and stock per size. */
+export const PieceCard: FC<PieceCardProps> = ({ piece, pieceId }) => {
   const intl = useIntl();
   const sizes = (piece?.sizes ?? []).map((size) => ({
     ...size,
@@ -78,4 +78,4 @@ export function PieceCard({
       </Stack>
     </Flex>
   );
-}
+};

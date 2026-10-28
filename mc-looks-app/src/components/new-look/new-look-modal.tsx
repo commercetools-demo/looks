@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import { useHistory } from 'react-router-dom';
 import {
@@ -83,18 +83,17 @@ const FAILED_STEP_MESSAGES = {
   activation: messages.failedActivation,
 };
 
+type NewLookModalProps = {
+  basePath: string;
+  onSaved: () => void;
+};
+
 /**
  * "Neuer Look": names and photo, pieces, set price, review and save. The
  * state lives here so it survives moving back and forth. A failed save is
  * resumed from where it stopped while the input still matches its plan.
  */
-export function NewLookModal({
-  basePath,
-  onSaved,
-}: {
-  basePath: string;
-  onSaved: () => void;
-}) {
+export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
   const intl = useIntl();
   const api = useLookApi();
   const history = useHistory();
@@ -514,4 +513,4 @@ export function NewLookModal({
       </ModalPage.Footer>
     </ModalPage.Root>
   );
-}
+};

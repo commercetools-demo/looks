@@ -1,4 +1,10 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useMemo,
+  type ReactNode,
+  type FC,
+} from 'react';
 import { useApolloClient } from '@apollo/client';
 import { useApplicationContext } from '@commercetools-frontend/application-shell-connectors';
 import { useIsAuthorized } from '@commercetools-frontend/permissions';
@@ -17,18 +23,20 @@ interface LookContextValue {
 
 const LookContext = createContext<LookContextValue | null>(null);
 
-export function LookProvider({
-  currencies,
-  languages,
-  children,
-  api,
-}: {
+type LookProviderProps = {
   currencies: string[];
   languages: string[];
   children: ReactNode;
   /** Tests inject a fake. */
   api?: LookApi;
-}) {
+};
+
+export const LookProvider: FC<LookProviderProps> = ({
+  currencies,
+  languages,
+  children,
+  api,
+}) => {
   const client = useApolloClient();
   const dataLocale = useApplicationContext(
     (context) => context.dataLocale ?? 'de'
@@ -43,7 +51,7 @@ export function LookProvider({
     [api, client, currencies, languages, dataLocale]
   );
   return <LookContext.Provider value={value}>{children}</LookContext.Provider>;
-}
+};
 
 function useLookContext(): LookContextValue {
   const value = useContext(LookContext);

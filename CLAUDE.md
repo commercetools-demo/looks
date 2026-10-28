@@ -31,6 +31,8 @@ CI (`.github/workflows/ci.yml`) runs build, lint, typecheck and test on PRs into
 - **Configuration** (size and colour attributes, shop origin) is read only in `src/config.ts`; `config.spec.ts` guards that no other file reads `process.env`, hard-codes the default attribute names or contains a currency code.
 - **Rules from the constitution** (`.specify/memory/constitution.md`): View/Manage with controls disabled, never hidden; every UI string through react-intl in German and English (`messages.ts` next to the component, English in `messages.en.json`, run `npm run build-i18n`); updates send the current version and make no call when nothing changed.
 
+- **Components** are arrow functions typed with `FC`, props in a `type <Name>Props` above them: `const NewLookButton: FC<NewLookButtonProps> = ({ onPress }) => { ... };` (define a component before the one that uses it; default exports as `export default Name;` after the definition).
+
 ## Testing
 
 - Jest preset `@commercetools-frontend/jest-preset-mc-app/typescript` plus Nimbus fixes: `jest.setup.nimbus.js` (browser API polyfills) and `jest.resolver.js` (Nimbus CJS packaging bug).

@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Add, Check } from '@commercetools/nimbus-icons';
 import { Box, Button, Flex, Icon, Stack, Text } from '@commercetools/nimbus';
@@ -9,14 +10,16 @@ import messages from './messages';
 
 export type CardState = 'available' | 'in-look' | 'full';
 
-/** One search result: image, name, colour, prices per currency and country, size chips
- *  with "nur noch N" and "ausverkauft", and the add action. */
-export function PieceResultCard(props: {
+type PieceResultCardProps = {
   piece: Piece;
   state: CardState;
   isDisabled: boolean;
   onAdd: () => void;
-}) {
+};
+
+/** One search result: image, name, colour, prices per currency and country, size chips
+ *  with "nur noch N" and "ausverkauft", and the add action. */
+export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
   const intl = useIntl();
   const { piece } = props;
   const entries = piece.oneSize
@@ -148,4 +151,4 @@ export function PieceResultCard(props: {
       </Stack>
     </Flex>
   );
-}
+};

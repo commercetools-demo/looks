@@ -1,10 +1,11 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Box, Heading, Stack, Text } from '@commercetools/nimbus';
 import messages from './messages';
 import { ShopPreview, type ShopPreviewProps } from './shop-preview';
 
 /** The preview in a card with its title and the caption in the UI language. */
-export function PreviewPanel(props: ShopPreviewProps) {
+export const PreviewPanel: FC<ShopPreviewProps> = (props) => {
   const intl = useIntl();
   return (
     <Box
@@ -27,4 +28,4 @@ export function PreviewPanel(props: ShopPreviewProps) {
       </Stack>
     </Box>
   );
-}
+};

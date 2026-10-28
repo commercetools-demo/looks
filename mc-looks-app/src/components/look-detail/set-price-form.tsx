@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Alert,
@@ -23,12 +23,7 @@ import { useMoney } from '../common/look-hooks';
 import commonMessages from '../common/messages';
 import messages from './messages';
 
-/** Set prices per currency and country, in the shared price table. */
-export function SetPriceForm({
-  row,
-  apply,
-  reload,
-}: {
+type SetPriceFormProps = {
   row: LookRow;
   apply: (
     discount?: LookDiscount,
@@ -36,7 +31,10 @@ export function SetPriceForm({
     more?: LookDiscount[]
   ) => void;
   reload: () => void;
-}) {
+};
+
+/** Set prices per currency and country, in the shared price table. */
+export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
   const intl = useIntl();
   const api = useLookApi();
   const canManage = useCanManage();
@@ -240,4 +238,4 @@ export function SetPriceForm({
       </Card.Body>
     </Card.Root>
   );
-}
+};

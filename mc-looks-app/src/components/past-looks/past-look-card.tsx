@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Badge,
@@ -27,13 +27,12 @@ export const PAST_STRIP_HEIGHT = 92;
 /** Piece images at most in a strip (a look without photo). */
 const PAST_STRIP_PIECES = 3;
 
-function Figure({
-  label,
-  children,
-}: {
+type FigureProps = {
   label: string;
   children: string | string[];
-}) {
+};
+
+const Figure: FC<FigureProps> = ({ label, children }) => {
   const lines = Array.isArray(children) ? children : [children];
   return (
     <Stack gap="50" minWidth={0}>
@@ -54,17 +53,9 @@ function Figure({
       ))}
     </Stack>
   );
-}
+};
 
-/** One past look: photo or piece strip, name, period, figures or "Kein Set
- *  verkauft", "Wieder aktivieren". The card opens the look's detail. */
-export function PastLookCard({
-  past,
-  best,
-  figures,
-  onOpen,
-  onDiscountChange,
-}: {
+type PastLookCardProps = {
   past: PastLookRow;
   best: boolean;
   /** False while the sales read failed: the figures are left out. */
@@ -75,7 +66,17 @@ export function PastLookCard({
     object?: LookObject,
     more?: LookDiscount[]
   ) => void;
-}) {
+};
+
+/** One past look: photo or piece strip, name, period, figures or "Kein Set
+ *  verkauft", "Wieder aktivieren". The card opens the look's detail. */
+export const PastLookCard: FC<PastLookCardProps> = ({
+  past,
+  best,
+  figures,
+  onOpen,
+  onDiscountChange,
+}) => {
   const intl = useIntl();
   const api = useLookApi();
   const canManage = useCanManage();
@@ -244,4 +245,4 @@ export function PastLookCard({
       </Box>
     </Stack>
   );
-}
+};

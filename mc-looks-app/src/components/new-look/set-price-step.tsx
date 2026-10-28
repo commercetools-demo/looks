@@ -1,11 +1,11 @@
+import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Stack, Text } from '@commercetools/nimbus';
 import type { Piece } from '../../domain/types';
 import { SetPriceTable } from '../common/set-price-table';
 import messages from './messages';
 
-/** Step 3: the set-price table, one row per currency and country. */
-export function SetPriceStep(props: {
+type SetPriceStepProps = {
   pieces: Piece[];
   texts: Record<string, string>;
   onTextsChange: (texts: Record<string, string>) => void;
@@ -13,7 +13,10 @@ export function SetPriceStep(props: {
   /** Errors that belong to no row. */
   generalErrors: string[];
   isDisabled: boolean;
-}) {
+};
+
+/** Step 3: the set-price table, one row per currency and country. */
+export const SetPriceStep: FC<SetPriceStepProps> = (props) => {
   const intl = useIntl();
   return (
     <Stack gap="400">
@@ -34,4 +37,4 @@ export function SetPriceStep(props: {
       />
     </Stack>
   );
-}
+};
