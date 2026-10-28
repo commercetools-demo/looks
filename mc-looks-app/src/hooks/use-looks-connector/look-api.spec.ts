@@ -511,4 +511,81 @@ describe('createLookApi', () => {
       operation: 'readLooks',
     });
   });
+
+  describe('delete', () => {
+    const capture = (name: string, field: string) => {
+      const received: unknown[] = [];
+      server.use(
+        graphql.mutation(name, (req, res, ctx) => {
+          received.push(req.variables);
+          return res(ctx.data({ [field]: { id: 'x' } }));
+        })
+      );
+      return received;
+    };
+    const conflict = (name: string) =>
+      server.use(
+        graphql.mutation(name, (_req, res, ctx) =>
+          res(
+            ctx.errors([
+              {
+                message: 'different version',
+                extensions: { code: 'ConcurrentModification' },
+              },
+            ])
+          )
+        )
+      );
+
+    it('deletes a Cart Discount with id and version', async () => {
+      const received = capture('DeleteLookDiscount', 'deleteCartDiscount');
+      await createApi().deleteCartDiscount('d1', 4);
+      expect(received).toEqual([{ id: 'd1', version: 4 }]);
+    });
+
+    it('deletes a Discount Group with id and version', async () => {
+      const received = capture(
+        'DeleteLookDiscountGroup',
+        'deleteDiscountGroup'
+      );
+      await createApi().deleteDiscountGroup('g1', 5);
+      expect(received).toEqual([{ id: 'g1', version: 5 }]);
+    });
+
+    it('deletes the look object by container, key and version', async () => {
+      const received = capture('DeleteLookObject', 'deleteCustomObject');
+      await createApi().deleteLookObject('look-k1', 3);
+      expect(received).toEqual([
+        { container: 'look', key: 'look-k1', version: 3 },
+      ]);
+    });
+
+    it.each([
+      [
+        'DeleteLookDiscount',
+        (api: ReturnType<typeof createApi>) => api.deleteCartDiscount('d1', 1),
+      ],
+      [
+        'DeleteLookDiscountGroup',
+        (api: ReturnType<typeof createApi>) => api.deleteDiscountGroup('g1', 1),
+      ],
+      [
+        'DeleteLookObject',
+        (api: ReturnType<typeof createApi>) =>
+          api.deleteLookObject('look-k1', 1),
+      ],
+    ])(
+      'maps ConcurrentModification of %s to a conflict of deleteLook',
+      async (name, run) => {
+        conflict(name);
+        const error = await run(createApi()).catch((e: unknown) => e);
+        expect(error).toBeInstanceOf(LookApiError);
+        expect(error).toMatchObject({
+          kind: 'conflict',
+          operation: 'deleteLook',
+          statusCode: 409,
+        });
+      }
+    );
+  });
 });

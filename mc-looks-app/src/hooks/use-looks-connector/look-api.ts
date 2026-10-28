@@ -24,6 +24,9 @@ import FetchLookObjectsQuery from './fetch-look-objects.graphql';
 import FetchCartDiscountsQuery from './fetch-cart-discounts.graphql';
 import FetchDiscountQuery from './fetch-discount.graphql';
 import FetchObjectQuery from './fetch-object.graphql';
+import DeleteDiscountMutation from './delete-discount.graphql';
+import DeleteDiscountGroupMutation from './delete-discount-group.graphql';
+import DeleteObjectMutation from './delete-object.graphql';
 import FetchDiscountGroupQuery from './fetch-discount-group.graphql';
 import FetchDiscountGroupsQuery from './fetch-discount-groups.graphql';
 import CreateDiscountGroupMutation from './create-discount-group.graphql';
@@ -260,6 +263,22 @@ export function createLookApi(
           new Error('The saved object is not a look.')
         );
       return object;
+    },
+
+    async deleteCartDiscount(id, version) {
+      await write('deleteLook', DeleteDiscountMutation, { id, version });
+    },
+
+    async deleteDiscountGroup(id, version) {
+      await write('deleteLook', DeleteDiscountGroupMutation, { id, version });
+    },
+
+    async deleteLookObject(key, version) {
+      await write('deleteLook', DeleteObjectMutation, {
+        container: LOOK_CONTAINER,
+        key,
+        version,
+      });
     },
 
     async fetchPieces(productIds) {

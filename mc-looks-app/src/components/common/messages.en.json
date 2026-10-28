@@ -45,5 +45,7 @@
   "Looks.common.priceTablePercentLabel": "Saving in percent {currency} {country}",
   "Looks.common.priceTableHint": "Prices of the master variant; a row exists only where every piece has a price. Enter the set price or the saving in percent, the other field follows. An empty row gets no discount.",
   "Looks.common.opCreateDiscountGroup": "Creating the discount group",
-  "Looks.common.opSwitchDiscountGroup": "Switching the discount group"
+  "Looks.common.opSwitchDiscountGroup": "Switching the discount group",
+  "Looks.common.opDeleteLook": "Deleting the look",
+  "Looks.common.cancel": "Cancel"
 }

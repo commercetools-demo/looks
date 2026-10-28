@@ -132,6 +132,11 @@ export default defineMessages({
     id: 'Looks.common.opCompleteDiscount',
     defaultMessage: 'Look vervollständigen',
   },
+  cancel: { id: 'Looks.common.cancel', defaultMessage: 'Abbrechen' },
+  opDeleteLook: {
+    id: 'Looks.common.opDeleteLook',
+    defaultMessage: 'Look löschen',
+  },
   opWriteLookObject: {
     id: 'Looks.common.opWriteLookObject',
     defaultMessage: 'Look-Definition speichern',

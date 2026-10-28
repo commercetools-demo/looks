@@ -1,0 +1,5 @@
+mutation DeleteLookDiscountGroup($id: String!, $version: Long!) {
+  deleteDiscountGroup(id: $id, version: $version) {
+    id
+  }
+}

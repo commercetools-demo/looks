@@ -1,0 +1,5 @@
+mutation DeleteLookDiscount($id: String!, $version: Long!) {
+  deleteCartDiscount(id: $id, version: $version) {
+    id
+  }
+}

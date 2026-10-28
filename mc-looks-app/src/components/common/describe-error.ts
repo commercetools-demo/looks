@@ -17,6 +17,7 @@ const operationMessages: Record<Operation, keyof typeof messages> = {
   changeDiscountValue: 'opChangeDiscountValue',
   completeDiscount: 'opCompleteDiscount',
   writeLookObject: 'opWriteLookObject',
+  deleteLook: 'opDeleteLook',
 };
 
 /** A readable message for an API failure that names the failed operation. */

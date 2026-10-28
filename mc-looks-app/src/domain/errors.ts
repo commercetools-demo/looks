@@ -20,7 +20,8 @@ export type Operation =
   | 'switchDiscount'
   | 'changeDiscountValue'
   | 'completeDiscount'
-  | 'writeLookObject';
+  | 'writeLookObject'
+  | 'deleteLook';
 
 /** An API failure that knows which operation failed, so the message can name it. */
 export class LookApiError extends Error {

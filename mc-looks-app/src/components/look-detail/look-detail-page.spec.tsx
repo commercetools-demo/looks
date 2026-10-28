@@ -9,6 +9,7 @@ import {
 } from '../../test-utils/fixtures';
 import { waitFor, within } from '@testing-library/react';
 import { renderLooks, screen } from '../../test-utils';
+import { LookApiError } from '../../domain/errors';
 import { measureImage } from './measure-image';
 
 jest.mock('./measure-image', () => ({ measureImage: jest.fn() }));
@@ -992,6 +993,147 @@ describe('look detail', () => {
       expect(
         await screen.findByRole('button', { name: 'Vervollständigen' })
       ).toBeDisabled();
+    });
+  });
+
+  describe('delete look', () => {
+    const inactiveSeed = () => {
+      const fake = createFakeLookApi({
+        objects: [buildObject('a', ['p1', 'p2'])],
+        discounts: [discount('a', ['p1', 'p2'], { isActive: false })],
+        groups: [
+          {
+            id: 'grp-a',
+            version: 1,
+            key: 'look-a',
+            sortOrder: '0.7',
+            isActive: false,
+          },
+        ],
+        pieces,
+      });
+      return fake;
+    };
+    const deleteButton = () =>
+      screen.getByRole('button', { name: 'Look löschen' });
+
+    it('always shows the card; the button is enabled for an active look', async () => {
+      renderLooks({ api: seed().api, path: '/a' });
+      expect(
+        await screen.findByRole('heading', { name: 'Look löschen' })
+      ).toBeInTheDocument();
+      expect(deleteButton()).toBeEnabled();
+    });
+
+    it('warns in the confirmation of an active look, not of an inactive one', async () => {
+      const warning =
+        'Der Look ist aktiv: Seine Rabatte verschwinden sofort aus dem Shop.';
+      const active = renderLooks({ api: seed().api, path: '/a' });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      expect(screen.queryByText(warning)).not.toBeInTheDocument();
+      await userEvent.click(deleteButton());
+      expect(screen.getByText(warning)).toBeInTheDocument();
+      active.unmount();
+
+      renderLooks({ api: inactiveSeed().api, path: '/a' });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      await userEvent.click(deleteButton());
+      expect(
+        screen.getByText('Look „a de“ endgültig löschen?')
+      ).toBeInTheDocument();
+      expect(screen.queryByText(warning)).not.toBeInTheDocument();
+    });
+
+    it('deletes an active look after confirmation', async () => {
+      const fake = seed();
+      renderLooks({ api: fake.api, path: '/a' });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      await userEvent.click(deleteButton());
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Endgültig löschen' })
+      );
+      expect(
+        await screen.findByRole('heading', { name: 'Looks', level: 1 })
+      ).toBeInTheDocument();
+      expect(fake.discounts.size).toBe(0);
+      expect(fake.objects.size).toBe(0);
+    });
+
+    it('disables the button without Manage permission but keeps it visible', async () => {
+      renderLooks({ api: inactiveSeed().api, path: '/a', canManage: false });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      expect(deleteButton()).toBeDisabled();
+    });
+
+    it('enables the button for an inactive look and asks first; cancel writes nothing', async () => {
+      const fake = inactiveSeed();
+      renderLooks({ api: fake.api, path: '/a' });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      expect(deleteButton()).toBeEnabled();
+      await userEvent.click(deleteButton());
+      expect(
+        screen.getByText('Look „a de“ endgültig löschen?')
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+      expect(
+        screen.queryByText('Look „a de“ endgültig löschen?')
+      ).not.toBeInTheDocument();
+      expect(deleteButton()).toBeEnabled();
+      expect(fake.calls.filter((c) => c.method.startsWith('delete'))).toEqual(
+        []
+      );
+    });
+
+    it('deletes the look after confirmation and returns to the list', async () => {
+      const fake = inactiveSeed();
+      renderLooks({ api: fake.api, path: '/a' });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      await userEvent.click(deleteButton());
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Endgültig löschen' })
+      );
+      expect(
+        await screen.findByRole('heading', { name: 'Looks', level: 1 })
+      ).toBeInTheDocument();
+      expect(fake.discounts.size).toBe(0);
+      expect(fake.groups.size).toBe(0);
+      expect(fake.objects.size).toBe(0);
+      expect(
+        (await screen.findAllByText('Look „a de“ gelöscht')).length
+      ).toBeGreaterThan(0);
+    });
+
+    it('shows the error, keeps the page and reloads what is left', async () => {
+      const fake = inactiveSeed();
+      fake.failNext(
+        'deleteDiscountGroup',
+        new LookApiError('deleteLook', 'conflict', undefined, {
+          statusCode: 409,
+        })
+      );
+      renderLooks({ api: fake.api, path: '/a' });
+      await screen.findByRole('heading', { name: 'Look löschen' });
+      const fetchesBefore = fake.callsTo('getLookObject').length;
+      await userEvent.click(deleteButton());
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Endgültig löschen' })
+      );
+      expect(
+        await screen.findByText(
+          'Look löschen: Die Daten wurden inzwischen geändert. Bitte neu laden.'
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'Looks', level: 1 })
+      ).not.toBeInTheDocument();
+      expect(fake.groups.size).toBe(1);
+      expect(fake.objects.size).toBe(1);
+      await waitFor(() =>
+        expect(fake.callsTo('getLookObject').length).toBeGreaterThan(
+          fetchesBefore
+        )
+      );
+      await waitFor(() => expect(deleteButton()).toBeEnabled());
     });
   });
 });

@@ -327,6 +327,28 @@ export async function changeSetPrice(
   }
 }
 
+/**
+ * Deletes a look, switched on or off: its country discounts (country first,
+ * the main discount last), then its Discount Group (a group in use cannot be
+ * deleted), then the Custom Object. The object goes last so a look that
+ * failed half way still opens in the detail view and can be deleted again.
+ * Every resource is read first for its current `version`; one that is
+ * already gone is skipped.
+ */
+export async function deleteLook(api: LookApi, row: LookRow): Promise<void> {
+  for (const known of [
+    ...row.countryDiscounts,
+    ...(row.discount ? [row.discount] : []),
+  ]) {
+    const current = await api.getCartDiscount(known.id).catch(() => undefined);
+    if (current) await api.deleteCartDiscount(current.id, current.version);
+  }
+  const group = await api.getDiscountGroupByKey(row.objectKey);
+  if (group) await api.deleteDiscountGroup(group.id, group.version);
+  const object = await api.getLookObject(row.objectKey);
+  if (object) await api.deleteLookObject(object.key, object.version);
+}
+
 /** Sets or clears the look photo; keeps every other field (`endedAt` too).
  *  Makes no call when the photo is already as given. */
 export async function changePhoto(

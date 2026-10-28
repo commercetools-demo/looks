@@ -45,5 +45,12 @@
   "Looks.detail.completeInconsistent": "The look definition and the set-price discount name different pieces. The look cannot be switched here; please check it in the Merchant Center.",
   "Looks.detail.completeAction": "Complete",
   "Looks.detail.completeName": "Look name",
-  "Looks.detail.completed": "Look completed"
+  "Looks.detail.completed": "Look completed",
+  "Looks.detail.deleteTitle": "Delete look",
+  "Looks.detail.deleteDescription": "Removes the look definition, the discounts of all countries and the discount group. This cannot be undone.",
+  "Looks.detail.deleteButton": "Delete look",
+  "Looks.detail.deleteConfirm": "Delete look “{name}” for good?",
+  "Looks.detail.deleteConfirmButton": "Delete for good",
+  "Looks.detail.deleted": "Look “{name}” deleted",
+  "Looks.detail.deleteActiveWarning": "The look is on: its discounts disappear from the shop at once."
 }

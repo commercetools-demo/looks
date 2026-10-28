@@ -30,7 +30,7 @@ function NewLookButton({ onPress }: { onPress: () => void }) {
   const canManage = useCanManage();
   return (
     <Button
-      variant="solid"
+      variant="outline"
       colorPalette="primary"
       isDisabled={!canManage}
       onPress={onPress}

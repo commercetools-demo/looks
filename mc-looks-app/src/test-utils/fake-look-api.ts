@@ -224,6 +224,62 @@ export function createFakeLookApi(
       objects.set(draft.key, written);
       return { ...written };
     },
+    async deleteCartDiscount(id, version) {
+      record('deleteCartDiscount', id, version);
+      maybeFail('deleteCartDiscount');
+      const current = discounts.get(id);
+      if (!current)
+        throw new LookApiError('deleteLook', 'unknown', undefined, {
+          message: 'not found',
+        });
+      if (current.version !== version) {
+        throw new LookApiError('deleteLook', 'conflict', undefined, {
+          statusCode: 409,
+        });
+      }
+      discounts.delete(id);
+    },
+    async deleteDiscountGroup(id, version) {
+      record('deleteDiscountGroup', id, version);
+      maybeFail('deleteDiscountGroup');
+      const current = groups.get(id);
+      if (!current)
+        throw new LookApiError('deleteLook', 'unknown', undefined, {
+          message: 'not found',
+        });
+      if (current.version !== version) {
+        throw new LookApiError('deleteLook', 'conflict', undefined, {
+          statusCode: 409,
+        });
+      }
+      // A group still referenced by a Cart Discount cannot be deleted.
+      if (
+        [...discounts.values()].some(
+          (d) =>
+            d.sortOrder === current.sortOrder && d.key.startsWith(current.key)
+        )
+      ) {
+        throw new LookApiError('deleteLook', 'unknown', undefined, {
+          message: 'group still referenced',
+        });
+      }
+      groups.delete(id);
+    },
+    async deleteLookObject(key, version) {
+      record('deleteLookObject', key, version);
+      maybeFail('deleteLookObject');
+      const current = objects.get(key);
+      if (!current)
+        throw new LookApiError('deleteLook', 'unknown', undefined, {
+          message: 'not found',
+        });
+      if (current.version !== version) {
+        throw new LookApiError('deleteLook', 'conflict', undefined, {
+          statusCode: 409,
+        });
+      }
+      objects.delete(key);
+    },
     async fetchPieces(ids) {
       record('fetchPieces', ids);
       maybeFail('fetchPieces');

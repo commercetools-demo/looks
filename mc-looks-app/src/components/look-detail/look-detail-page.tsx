@@ -1,5 +1,5 @@
 import { useIntl } from 'react-intl';
-import { useLocation, useParams } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import {
   Alert,
   Badge,
@@ -27,6 +27,7 @@ import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import { ShopPreview } from '../shop-preview/shop-preview';
 import { CompleteLookPanel } from './complete-look-panel';
+import { DeleteLookPanel } from './delete-look-panel';
 import type { ImageLoader } from './measure-image';
 import messages from './messages';
 import { PhotoForm } from './photo-form';
@@ -48,6 +49,7 @@ export default function LookDetailPage({
   // The list passes its query (page, size, sort, search) so going back restores it.
   const listSearch =
     useLocation<{ listSearch?: string } | undefined>().state?.listSearch ?? '';
+  const history = useHistory();
   const { state, reload, apply } = useLookDetail(lookKey);
   const row = state.status === 'ready' ? state.row : undefined;
   const firstPiece = row?.pieces[0];
@@ -142,6 +144,7 @@ export default function LookDetailPage({
             apply={apply}
             reload={reload}
             loadImage={loadImage}
+            onDeleted={() => history.push(`${basePath}${listSearch}`)}
           />
         )}
       </DefaultPage.Content>
@@ -154,11 +157,13 @@ function LookDetailBody({
   apply,
   reload,
   loadImage,
+  onDeleted,
 }: {
   row: LookRow;
   apply: ReturnType<typeof useLookDetail>['apply'];
   reload: () => void;
   loadImage?: ImageLoader;
+  onDeleted: () => void;
 }) {
   const intl = useIntl();
   const title = useLookTitle();
@@ -259,6 +264,7 @@ function LookDetailBody({
         />
       )}
       {complete && <PhotoForm row={row} apply={apply} loadImage={loadImage} />}
+      <DeleteLookPanel row={row} onDeleted={onDeleted} reload={reload} />
     </Stack>
   );
 }

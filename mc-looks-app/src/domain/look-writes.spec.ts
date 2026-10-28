@@ -12,6 +12,7 @@ import {
   changePhoto,
   changeSetPrice,
   completeLook,
+  deleteLook,
   recordLookEnd,
   SetPriceStepError,
   switchLook,
@@ -656,5 +657,147 @@ describe('looks with country discounts', () => {
       'look-x-FR',
     ]);
     expect(fake.groups.size).toBe(1);
+  });
+});
+
+describe('deleteLook', () => {
+  const full = (
+    opts: { active?: boolean; group?: boolean; object?: boolean } = {}
+  ) => {
+    const object = buildObject('x', ['a', 'b'], {
+      setPrice: { 'EUR/DE': 4000, 'EUR/FR': 3000 },
+    });
+    const main = buildDiscount('x', ['a', 'b'], {
+      country: 'DE',
+      isActive: opts.active ?? false,
+      amount: { EUR: 299 },
+      version: 4,
+    });
+    const fr = buildDiscount('x', ['a', 'b'], {
+      id: 'disc-x-fr',
+      key: 'look-x-FR',
+      country: 'FR',
+      isActive: opts.active ?? false,
+      amount: { EUR: 639 },
+      sortOrder: '0.7001',
+      version: 7,
+    });
+    const objects = opts.object === false ? [] : [object];
+    const fake = createFakeLookApi({
+      objects: objects.map((o) => ({ ...o, version: 3 })),
+      discounts: [main, fr],
+      groups:
+        opts.group === false
+          ? []
+          : [buildGroup('x', { isActive: false, version: 5 })],
+    });
+    const [row] = buildLookRows({
+      objects,
+      discounts: [main, fr],
+      pieces: new Map([
+        ['a', buildPiece('a', { prices: { 'EUR/DE': 3299, 'EUR/FR': 2639 } })],
+        ['b', buildPiece('b', { prices: { 'EUR/DE': 1000, 'EUR/FR': 1000 } })],
+      ]),
+      currencies: ['EUR'],
+    });
+    return { fake, row };
+  };
+
+  it('deletes country discounts, the main discount, the group and the object last, each with its current version', async () => {
+    const { fake, row } = full();
+    await deleteLook(fake.api, row);
+    const deletes = fake.calls
+      .filter((c) => c.method.startsWith('delete'))
+      .map((c) => [c.method, ...c.args]);
+    expect(deletes).toEqual([
+      ['deleteCartDiscount', 'disc-x-fr', 7],
+      ['deleteCartDiscount', 'disc-x', 4],
+      ['deleteDiscountGroup', 'grp-x', 5],
+      ['deleteLookObject', 'look-x', 3],
+    ]);
+    expect(fake.discounts.size).toBe(0);
+    expect(fake.groups.size).toBe(0);
+    expect(fake.objects.size).toBe(0);
+  });
+
+  it('deletes a look that is switched on in the same order', async () => {
+    const { fake, row } = full({ active: true });
+    await deleteLook(fake.api, row);
+    expect(
+      fake.calls
+        .filter((c) => c.method.startsWith('delete'))
+        .map((c) => c.method)
+    ).toEqual([
+      'deleteCartDiscount',
+      'deleteCartDiscount',
+      'deleteDiscountGroup',
+      'deleteLookObject',
+    ]);
+    expect(fake.discounts.size).toBe(0);
+    expect(fake.groups.size).toBe(0);
+    expect(fake.objects.size).toBe(0);
+  });
+
+  it('skips the group delete for a look without a group', async () => {
+    const { fake, row } = full({ group: false });
+    await deleteLook(fake.api, row);
+    expect(fake.callsTo('deleteDiscountGroup')).toHaveLength(0);
+    expect(fake.objects.size).toBe(0);
+    expect(fake.discounts.size).toBe(0);
+  });
+
+  it('deletes what is left of a look without object', async () => {
+    const { fake, row } = full({ object: false });
+    await deleteLook(fake.api, row);
+    expect(fake.callsTo('deleteLookObject')).toHaveLength(0);
+    expect(fake.discounts.size).toBe(0);
+    expect(fake.groups.size).toBe(0);
+  });
+
+  it('deletes the object and group of a look without discount', async () => {
+    const { fake, row } = setup({
+      active: false,
+      discount: false,
+      group: true,
+    });
+    expect(row.completeness).toBe('missing-discount');
+    await deleteLook(fake.api, row);
+    expect(fake.callsTo('deleteCartDiscount')).toHaveLength(0);
+    expect(fake.groups.size).toBe(0);
+    expect(fake.objects.size).toBe(0);
+  });
+
+  it('skips a discount that is already gone', async () => {
+    const { fake, row } = full();
+    fake.discounts.delete('disc-x-fr');
+    await deleteLook(fake.api, row);
+    expect(fake.callsTo('deleteCartDiscount').map((c) => c.args[0])).toEqual([
+      'disc-x',
+    ]);
+    expect(fake.objects.size).toBe(0);
+  });
+
+  it('stops on a conflict of a discount and deletes nothing after it', async () => {
+    const { fake, row } = full();
+    const conflict = new LookApiError('deleteLook', 'conflict', undefined, {
+      statusCode: 409,
+    });
+    fake.failNext('deleteCartDiscount', conflict);
+    await expect(deleteLook(fake.api, row)).rejects.toBe(conflict);
+    expect(fake.callsTo('deleteCartDiscount')).toHaveLength(1);
+    expect(fake.callsTo('deleteDiscountGroup')).toHaveLength(0);
+    expect(fake.callsTo('deleteLookObject')).toHaveLength(0);
+    expect(fake.discounts.size).toBe(2);
+    expect(fake.objects.size).toBe(1);
+  });
+
+  it('keeps the object when the group delete fails', async () => {
+    const { fake, row } = full();
+    fake.failNext('deleteDiscountGroup');
+    await expect(deleteLook(fake.api, row)).rejects.toThrow();
+    expect(fake.discounts.size).toBe(0);
+    expect(fake.groups.size).toBe(1);
+    expect(fake.objects.size).toBe(1);
+    expect(fake.callsTo('deleteLookObject')).toHaveLength(0);
   });
 });

@@ -79,6 +79,36 @@ export default defineMessages({
     id: 'Looks.detail.stockSoldOut',
     defaultMessage: '{sizes}: ausverkauft',
   },
+  deleteTitle: {
+    id: 'Looks.detail.deleteTitle',
+    defaultMessage: 'Look löschen',
+  },
+  deleteDescription: {
+    id: 'Looks.detail.deleteDescription',
+    defaultMessage:
+      'Entfernt die Look-Definition, alle Rabatte der Länder und die Rabattgruppe. Das lässt sich nicht rückgängig machen.',
+  },
+  deleteActiveWarning: {
+    id: 'Looks.detail.deleteActiveWarning',
+    defaultMessage:
+      'Der Look ist aktiv: Seine Rabatte verschwinden sofort aus dem Shop.',
+  },
+  deleteButton: {
+    id: 'Looks.detail.deleteButton',
+    defaultMessage: 'Look löschen',
+  },
+  deleteConfirm: {
+    id: 'Looks.detail.deleteConfirm',
+    defaultMessage: 'Look „{name}“ endgültig löschen?',
+  },
+  deleteConfirmButton: {
+    id: 'Looks.detail.deleteConfirmButton',
+    defaultMessage: 'Endgültig löschen',
+  },
+  deleted: {
+    id: 'Looks.detail.deleted',
+    defaultMessage: 'Look „{name}“ gelöscht',
+  },
   setPriceTitle: {
     id: 'Looks.detail.setPriceTitle',
     defaultMessage: 'Setpreis',

@@ -77,6 +77,10 @@ export interface LookApi {
   ): Promise<LookDiscount>;
   /** Create (no `version`) or update (with the object's current `version`). */
   writeLookObject(draft: LookObjectDraft): Promise<LookObject>;
+  /** Deletes with the resource's current `version`. */
+  deleteCartDiscount(id: string, version: number): Promise<void>;
+  deleteDiscountGroup(id: string, version: number): Promise<void>;
+  deleteLookObject(key: string, version: number): Promise<void>;
   fetchPieces(productIds: string[]): Promise<Map<string, Piece>>;
   searchPieces(text: string): Promise<{ total: number; pieces: Piece[] }>;
   fetchRecentOrders(sinceIso: string): Promise<RecentOrders>;
