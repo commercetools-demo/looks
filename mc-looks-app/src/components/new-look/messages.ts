@@ -126,6 +126,21 @@ export default defineMessages({
     id: 'Looks.newLook.errorNotPositive',
     defaultMessage: '{currency}: Der Setpreis muss größer als 0 sein.',
   },
+  errorPercentInvalid: {
+    id: 'Looks.newLook.errorPercentInvalid',
+    defaultMessage:
+      '{currency}: Die Ersparnis in Prozent muss größer als 0 und kleiner als 100 sein.',
+  },
+  errorModeMixed: {
+    id: 'Looks.newLook.errorModeMixed',
+    defaultMessage:
+      '{currency}: Pro Land nutzt ein Look entweder Beträge oder einen einzigen Prozentwert.',
+  },
+  reviewCellPercent: {
+    id: 'Looks.newLook.reviewCellPercent',
+    defaultMessage:
+      '{cell}: −{percent} % → {setPrice} (Summe {sum}, Ersparnis {saving})',
+  },
   errorNotBelowSum: {
     id: 'Looks.newLook.errorNotBelowSum',
     defaultMessage:

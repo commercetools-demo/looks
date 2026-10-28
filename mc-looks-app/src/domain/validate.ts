@@ -1,6 +1,7 @@
 import { isValidLookKey } from './keys';
 import { LOOK_MIN_PIECES } from './limits';
 import { sumListPrices } from './prices';
+import { groupPriceKeys } from './look-actions';
 import type { Money, NewLook } from './types';
 
 export type ValidationCode =
@@ -11,7 +12,9 @@ export type ValidationCode =
   | 'set-price-none'
   | 'set-price-not-positive'
   | 'set-price-not-below-sum'
-  | 'sum-not-live';
+  | 'sum-not-live'
+  | 'saving-percent-invalid'
+  | 'discount-mode-mixed';
 
 export type ValidationField = 'label' | 'key' | 'pieces' | 'setPrice';
 
@@ -32,7 +35,12 @@ export interface ValidationError {
 export function validateLook(
   look: Pick<
     NewLook,
-    'key' | 'label' | 'componentProductIds' | 'setPrice' | 'sum'
+    | 'key'
+    | 'label'
+    | 'componentProductIds'
+    | 'setPrice'
+    | 'savingPercent'
+    | 'sum'
   >,
   livePrices: Map<string, Money>,
   keys: string[]
@@ -69,7 +77,39 @@ export function validateLook(
   if (cells.length === 0 && ids.length > 0) {
     errors.push({ code: 'set-price-none', field: 'setPrice' });
   }
+  const percents = look.savingPercent ?? {};
+  // A country gets one Cart Discount: all its cells use amounts, or all the
+  // same percentage.
+  for (const group of groupPriceKeys(cells)) {
+    const [first, ...rest] = group.keys;
+    for (const key of rest) {
+      if (percents[key] !== percents[first]) {
+        errors.push({
+          code: 'discount-mode-mixed',
+          field: 'setPrice',
+          currency: key,
+        });
+      }
+    }
+  }
   for (const currency of cells) {
+    const percent = percents[currency];
+    if (
+      percent !== undefined &&
+      !(
+        Number.isFinite(percent) &&
+        percent > 0 &&
+        percent < 100 &&
+        Math.round(percent * 10) / 10 === percent
+      )
+    ) {
+      errors.push({
+        code: 'saving-percent-invalid',
+        field: 'setPrice',
+        currency,
+      });
+      continue;
+    }
     const setPrice = look.setPrice[currency];
     if (!Number.isInteger(setPrice) || setPrice <= 0) {
       errors.push({

@@ -145,6 +145,10 @@ export function createFakeLookApi(
       }
       const money =
         'absoluteCart' in draft.value ? draft.value.absoluteCart.money : [];
+      const permyriad =
+        'relativeCart' in draft.value
+          ? draft.value.relativeCart.permyriad
+          : undefined;
       const created: LookDiscount = {
         id: `d${nextId++}`,
         version: 1,
@@ -160,6 +164,7 @@ export function createFakeLookApi(
         amount: Object.fromEntries(
           money.map((m) => [m.currencyCode, m.centAmount])
         ),
+        ...(permyriad !== undefined ? { permyriad } : {}),
         country: countryOfPredicate(draft.cartPredicate),
         pieceIds: draft.target.pattern.targetPattern.map(
           (c) => /"([^"]+)"/.exec(c.CountOnLineItemUnits.predicate)![1]
@@ -187,12 +192,19 @@ export function createFakeLookApi(
         if ('changeIsActive' in action)
           next.isActive = action.changeIsActive.isActive;
         if ('changeValue' in action) {
-          next.amount = Object.fromEntries(
-            action.changeValue.value.absoluteCart.money.map((m) => [
-              m.currencyCode,
-              m.centAmount,
-            ])
-          );
+          const value = action.changeValue.value;
+          if ('relativeCart' in value) {
+            next.amount = {};
+            next.permyriad = value.relativeCart.permyriad;
+          } else {
+            next.amount = Object.fromEntries(
+              value.absoluteCart.money.map((m) => [
+                m.currencyCode,
+                m.centAmount,
+              ])
+            );
+            delete next.permyriad;
+          }
         }
         if ('changeName' in action)
           next.name = fromLocalized(action.changeName.name);

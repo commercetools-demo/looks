@@ -20,6 +20,12 @@
       "additionalProperties": { "type": "integer", "exclusiveMinimum": 0 },
       "description": "Cent amount per price cell: `EUR/DE` (currency and country) or `EUR` for a price without a country. Each is below the live sum of the pieces in that cell; a cell without an entry has no discount."
     },
+    "savingPercent": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Z]{3}(/[A-Z]{2})?$" },
+      "additionalProperties": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100 },
+      "description": "Cells whose discount is a percentage (a relative Cart Discount), at most one decimal. Every other cell in `setPrice` has an absolute discount. For a percentage cell `setPrice` holds the price derived when saving (informational); readers derive it live from the sum."
+    },
     "endedAt": {
       "type": "string",
       "format": "date-time",

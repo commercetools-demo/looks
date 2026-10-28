@@ -119,7 +119,7 @@ mc-looks-app/                            # the app; folder name == connect.yaml 
 │   │   └── use-project-settings/
 │   ├── components/
 │   │   ├── entry-point/  looks-list/  past-looks/  new-look/
-│   │   ├── look-detail/  shop-preview/  common/
+│   │   ├── look-detail/  common/
 │   ├── i18n/data/{core,en,de}.json  messages per component
 │   ├── routes.tsx  index.tsx  test-utils/
 ├── docs/                          # screenshots for README (optional)

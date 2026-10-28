@@ -82,9 +82,9 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 - **Decision**: react-intl `defineMessages` next to each component, unique ids prefixed `Looks.`; German is the reference; `npm run extract-intl` (`.d.ts` excluded) writes `core.json`; `en.json`/`de.json` parity (keys and `{placeholders}`) checked by a spec. Component specs use `msw` GraphQL handlers with `onUnhandledRequest: 'error'` and assert mutation variables; pure logic has plain specs; a spec validates every `.graphql` document against `schemas/ctp.json`.
 - **Rationale**: constitution principle IV and Development Workflow.
 
-## R13. Shop preview
+## R13. Shop preview (removed)
 
-- **Decision**: a neutral custom composition from Nimbus primitives mirroring the structure of the shop's set block: "Set zu <price>" with struck-through sum, one row per piece (image, name, size dropdown with sold-out and low-stock states, low stock = 1 to 3), inert full-width button. All texts, including the card texts, follow the user's language through the app's message files (no fixed shop language). Prices in the project's first currency.
+- **Decision**: removed; the shop preview was dropped from the app. Formerly: a neutral custom composition from Nimbus primitives mirroring the structure of the shop's set block: "Set zu <price>" with struck-through sum, one row per piece (image, name, size dropdown with sold-out and low-stock states, low stock = 1 to 3), inert full-width button. All texts, including the card texts, follow the user's language through the app's message files (no fixed shop language). Prices in the project's first currency.
 - **Rationale**: spec FR-070/071; brand styling is out of scope.
 - **Alternatives**: embed the real storefront in an iframe — needs a preview route in the shop and cross-origin auth; out of scope.
 
@@ -135,3 +135,7 @@ Follow-up (same decision): the list price is also searched on the other variants
 - **Decision**: a variant is labelled by the values of the configured `VARIANT_ATTRIBUTES` (default `size`), e.g. `searchColor,finishColor,size`, joined with " / "; attribute values may be text, number, enum, localized or sets. Several variants are always listed (by SKU when no attribute has a value); only a single variant without any value is "one size". The pieces step shows no prices and no sum, they appear from the set price step on.
 - **Rationale**: a product such as a pillow cover has variants that differ by finish and search colour as well as size; the former single `SIZE_ATTRIBUTE` read only text values, so such products were shown as one size. Prices in the pieces step distracted from choosing pieces; the set price step needs the sum and shows it.
 - **Alternatives**: one setting per attribute kind — less flexible than an ordered list.
+
+## R21. Relative discounts for percentages
+
+Decision: a country whose cells were set by percentage gets a `relativeCart` Cart Discount (`permyriad`, `IndividualApplication`); amounts keep `absoluteCart`. With the pattern target (empty trigger pattern, one `CountOnLineItemUnits` per piece) a relative value takes the percentage off each matched unit; `ProportionateDistribution` and `EvenDistribution` are not allowed there. `changeValue` can switch kinds. A country has one discount, so its cells cannot mix modes or percentages (`discount-mode-mixed`). The object stores `savingPercent` per cell so the percentage survives price changes; the price of such a cell is derived from the live sum. Open: untested against a live project.

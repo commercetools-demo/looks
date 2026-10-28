@@ -17,6 +17,7 @@ The app owns no database. A **look** is two platform resources joined by key, pl
 | Field | Type | Rules |
 |---|---|---|
 | `componentProductIds` | `string[]` | at least 2 distinct product ids (no upper limit), in look order |
+| `savingPercent` | `{ [cell]: number }` (optional) | cells with a percentage (relative) discount, 0 < p < 100, one decimal; other cells are absolute. `setPrice` of such a cell is informational, derived live |
 | `setPrice` | `{ [currency]: integer }` | cent amounts; one entry per project currency; each > 0 and < live sum in that currency |
 | `endedAt` | ISO 8601 string (optional) | set when switched off, removed when switched on; kept by price changes |
 
@@ -50,7 +51,8 @@ Same key `look-<lookKey>`. Written once at create; afterwards only `changeIsActi
 | `savingPercent` | `round((sum₁ − set₁) / sum₁ × 100)` on the first currency |
 | `isActive` | discount `isActive` (false if no discount) |
 | `completeness` | see below |
-| `priceDrift` | any currency: `liveSum − discountAmount ≠ setPrice`, all three present |
+| `priceDrift` | any currency: `liveSum − discountAmount ≠ setPrice`, all three present; for a percentage cell: the discount's permyriad ≠ round(percent × 100) |
+| `cellPercents` | the `savingPercent` of the object, per cell |
 
 ### Completeness (state)
 

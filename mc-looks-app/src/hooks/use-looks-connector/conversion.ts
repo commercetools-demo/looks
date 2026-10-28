@@ -16,7 +16,11 @@ export interface RawLookDiscount {
   nameAllLocales?: Array<{ locale: string; value: string }> | null;
   descriptionAllLocales?: Array<{ locale: string; value: string }> | null;
   cartPredicate?: string | null;
-  value?: { type?: string; money?: RawMoney[] | null } | null;
+  value?: {
+    type?: string;
+    money?: RawMoney[] | null;
+    permyriad?: number | null;
+  } | null;
   target?: {
     type?: string;
     targetPattern?: Array<{ predicate?: string | null }> | null;
@@ -73,6 +77,9 @@ export function toLookDiscount(raw: RawLookDiscount): LookDiscount {
     name: toLocalizedRecord(raw.nameAllLocales),
     description: toLocalizedRecord(raw.descriptionAllLocales),
     amount,
+    ...(typeof raw.value?.permyriad === 'number'
+      ? { permyriad: raw.value.permyriad }
+      : {}),
     country: countryOfPredicate(raw.cartPredicate),
     pieceIds: patternProductIds(raw.target),
   };

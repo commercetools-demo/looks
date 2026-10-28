@@ -47,5 +47,9 @@
   "Looks.common.opCreateDiscountGroup": "Creating the discount group",
   "Looks.common.opSwitchDiscountGroup": "Switching the discount group",
   "Looks.common.opDeleteLook": "Deleting the look",
-  "Looks.common.cancel": "Cancel"
+  "Looks.common.cancel": "Cancel",
+  "Looks.common.priceTableGlobalPercent": "Percentage for all rows",
+  "Looks.common.priceTableDiscount": "Discount",
+  "Looks.common.priceTableModePercent": "Percent",
+  "Looks.common.priceTableModeAmount": "Amount"
 }

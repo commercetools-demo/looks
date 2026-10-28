@@ -8,11 +8,15 @@ import type { LookValue } from './types';
 export function buildLookValue(look: {
   componentProductIds: string[];
   setPrice: Record<string, number>;
+  savingPercent?: Record<string, number>;
   endedAt?: string;
 }): LookValue {
   return {
     componentProductIds: [...look.componentProductIds],
     setPrice: { ...look.setPrice },
+    ...(look.savingPercent && Object.keys(look.savingPercent).length > 0
+      ? { savingPercent: { ...look.savingPercent } }
+      : {}),
     ...(look.endedAt ? { endedAt: look.endedAt } : {}),
   };
 }

@@ -39,6 +39,16 @@ The shop applies the set price from this discount. It is created inactive, then 
 }
 ```
 
+### Relative variant
+
+A country whose cells are percentage cells (`savingPercent` in the look value, one percentage per country) gets a relative value instead of `absoluteCart`:
+
+```json
+"value": { "relativeCart": { "permyriad": 1250, "applicationMode": "IndividualApplication" } }
+```
+
+`permyriad = round(percent × 100)`, so each matched unit gets that percentage off. `ProportionateDistribution` and `EvenDistribution` are not allowed for a relative value with an empty trigger pattern, hence `IndividualApplication`. Reading back, the app takes `permyriad` from `RelativeCartDiscountValue` / `RelativeDiscountValue` (`LookDiscount.permyriad`, empty `amount`). `changeValue` may switch a discount between the two kinds. **Not yet confirmed against a live project.**
+
 Rules:
 
 - `money` has one entry per project currency; `centAmount` = live sum of the pieces − set price in that currency.

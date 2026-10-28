@@ -1,13 +1,15 @@
 import { isConflict, LookApiError } from './errors';
 import { lookDiscountKey, lookObjectKey } from './keys';
-import { priceKey } from './prices';
+import { priceKey, splitPriceKey } from './prices';
+import { priceFromPercent } from './price-table';
 import {
   buildCountryDiscountDraft,
   buildLookCartDiscountDrafts,
   changeIsActiveAction,
   changeValueAction,
-  groupAmounts,
+  discountHasValue,
   groupPriceKeys,
+  groupValue,
   nameActions,
   setGroupActiveAction,
 } from './look-actions';
@@ -176,12 +178,28 @@ const sameMoney = (a: Money, b: Money): boolean =>
   JSON.stringify(Object.entries(a).sort()) ===
   JSON.stringify(Object.entries(b).sort());
 
+/** The stored set prices that matter: those of absolute cells (a percentage
+ *  cell's price is derived from the live sum and only informational). */
+const absolutePrices = (setPrice: Money, percents: Record<string, number>) =>
+  Object.fromEntries(
+    Object.entries(setPrice).filter(([key]) => percents[key] === undefined)
+  );
+
+const samePercents = (
+  a: Record<string, number>,
+  b: Record<string, number>
+): boolean =>
+  JSON.stringify(Object.entries(a).sort()) ===
+  JSON.stringify(Object.entries(b).sort());
+
 /**
- * Changes a look's set prices: first the discounts (`changeValue` per country
- * with the amount recomputed from today's live sum, a missing country
- * discount is created), then the object's `setPrice` with the object's
- * current `version`. `discountChanged` retries only step 2. Makes no call
- * when nothing changes (set prices and amounts already match).
+ * Changes a look's set prices: first the discounts (`changeValue` per country,
+ * only where the value differs: the amount recomputed from today's live sum
+ * for an absolute country, the permyriad for a country of `savingPercent`
+ * cells; a discount may switch between the two; a missing country discount
+ * is created), then the object's `setPrice` and `savingPercent` with the
+ * object's current `version`. `discountChanged` retries only step 2. Makes
+ * no call when nothing changes.
  */
 export async function changeSetPrice(
   api: LookApi,
@@ -196,7 +214,10 @@ export async function changeSetPrice(
   >,
   setPrice: Money,
   liveSum: Money,
-  options: { discountChanged?: boolean } = {}
+  options: {
+    discountChanged?: boolean;
+    savingPercent?: Record<string, number>;
+  } = {}
 ): Promise<{
   discount?: LookDiscount;
   /** Every discount written (main and country), to replace the stale ones. */
@@ -211,19 +232,25 @@ export async function changeSetPrice(
   }
   const main = row.discount;
   const known = [main, ...row.countryDiscounts];
+  const percents = options.savingPercent ?? {};
   const groups = groupPriceKeys(Object.keys(setPrice));
   const knownFor = (country: string) =>
     known.find((discount) => discount.country === country);
+  const wantedFor = (group: (typeof groups)[number]) =>
+    groupValue(group, liveSum, setPrice, percents);
   const discountsMatch = groups.every((group) => {
     const current = knownFor(group.country);
-    return (
-      !!current &&
-      sameMoney(current.amount, groupAmounts(group, liveSum, setPrice))
-    );
+    return !!current && discountHasValue(current, wantedFor(group));
   });
+  const stored = row.object.value;
   if (
     !options.discountChanged &&
-    sameMoney(row.object.value.setPrice, setPrice) &&
+    sameMoney(
+      absolutePrices(stored.setPrice, stored.savingPercent ?? {}),
+      absolutePrices(setPrice, percents)
+    ) &&
+    Object.keys(stored.setPrice).length === Object.keys(setPrice).length &&
+    samePercents(stored.savingPercent ?? {}, percents) &&
     discountsMatch
   ) {
     return { discounts: [], object: row.object, unchanged: true };
@@ -234,9 +261,9 @@ export async function changeSetPrice(
   if (!options.discountChanged && !discountsMatch) {
     try {
       for (const group of groups) {
-        const wanted = groupAmounts(group, liveSum, setPrice);
+        const wanted = wantedFor(group);
         let current: LookDiscount | undefined = knownFor(group.country);
-        if (current && sameMoney(current.amount, wanted)) continue;
+        if (current && discountHasValue(current, wanted)) continue;
         if (current) {
           // The row can be older than the last write: read the version now.
           current = await api.getCartDiscount(current.id);
@@ -247,7 +274,7 @@ export async function changeSetPrice(
         }
         let written: LookDiscount;
         if (current) {
-          written = sameMoney(current.amount, wanted)
+          written = discountHasValue(current, wanted)
             ? current
             : await api.updateCartDiscount(
                 current.id,
@@ -269,6 +296,7 @@ export async function changeSetPrice(
                 label: row.name ?? {},
                 componentProductIds: row.object.value.componentProductIds,
                 setPrice,
+                savingPercent: percents,
                 sum: liveSum,
               },
               group,
@@ -292,10 +320,7 @@ export async function changeSetPrice(
             : await api.getCartDiscountByKey(
                 lookDiscountKey(row.lookKey, group.country, false)
               );
-          if (
-            !read ||
-            !sameMoney(read.amount, groupAmounts(group, liveSum, setPrice))
-          ) {
+          if (!read || !discountHasValue(read, wantedFor(group))) {
             applied = false;
           }
         }
@@ -312,7 +337,11 @@ export async function changeSetPrice(
     const object = await api.writeLookObject({
       container: LOOK_CONTAINER,
       key: row.objectKey,
-      value: buildLookValue({ ...current.value, setPrice }),
+      value: buildLookValue({
+        ...current.value,
+        setPrice,
+        savingPercent: options.savingPercent,
+      }),
       version: current.version,
     });
     return { discount, discounts, object, unchanged: false };
@@ -356,7 +385,25 @@ export async function completeLook(
 ): Promise<void> {
   if (row.completeness === 'missing-object' && row.discount) {
     const setPrice: Money = {};
+    const percents: Record<string, number> = {};
     for (const discount of [row.discount, ...row.countryDiscounts]) {
+      if (discount.permyriad !== undefined) {
+        // A relative discount names no currency: take the cells of its country.
+        const percent = discount.permyriad / 100;
+        const cells = Object.keys(input.liveSum).filter(
+          (key) => splitPriceKey(key).country === (discount.country ?? '')
+        );
+        if (cells.length === 0) {
+          throw new LookApiError('completeDiscount', 'unknown', undefined, {
+            message: `No live sum for country ${discount.country ?? ''}`,
+          });
+        }
+        for (const key of cells) {
+          setPrice[key] = priceFromPercent(input.liveSum[key], percent);
+          percents[key] = percent;
+        }
+        continue;
+      }
       for (const [currency, amount] of Object.entries(discount.amount)) {
         const key = priceKey(currency, discount.country);
         const sum = input.liveSum[key];
@@ -374,6 +421,7 @@ export async function completeLook(
       value: buildLookValue({
         componentProductIds: row.discount.pieceIds,
         setPrice,
+        savingPercent: percents,
       }),
     });
     return;
@@ -386,6 +434,7 @@ export async function completeLook(
       label: input.label,
       componentProductIds: row.object.value.componentProductIds,
       setPrice: row.object.value.setPrice,
+      savingPercent: row.object.value.savingPercent,
       sum: input.liveSum,
     };
     const drafts = buildLookCartDiscountDrafts(look, {

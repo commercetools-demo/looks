@@ -1,7 +1,7 @@
 import { buildLookDescription, buildLookDiscountName } from './names';
 import { lookDiscountKey, lookObjectKey } from './keys';
 import { splitPriceKey } from './prices';
-import type { LookInput, Money } from './types';
+import type { LookDiscount, LookInput, Money } from './types';
 
 /** `LocalizedStringItemInputType[]` of the GraphQL API. */
 export const toLocalizedInput = (value: Record<string, string>) =>
@@ -48,6 +48,50 @@ export function groupAmounts(
   return amounts;
 }
 
+/** What a country discount is worth: a percentage (relative) or amounts. */
+export type GroupValue =
+  | { kind: 'relative'; permyriad: number }
+  | { kind: 'absolute'; amounts: Money };
+
+/** The permyriad of a percentage (12.5 % is 1250). */
+export const toPermyriad = (percent: number): number =>
+  Math.round(percent * 100);
+
+/** The value a country group gets: relative when all its cells are percentage
+ *  cells (the first one's percentage counts; validation keeps a group to one
+ *  percentage), else absolute from the live sum minus the set price. */
+export function groupValue(
+  group: DiscountGroup,
+  sum: Money,
+  setPrice: Money,
+  savingPercent?: Record<string, number>
+): GroupValue {
+  const percent = savingPercent?.[group.keys[0]];
+  if (
+    group.keys.length > 0 &&
+    percent !== undefined &&
+    group.keys.every((key) => savingPercent?.[key] !== undefined)
+  ) {
+    return { kind: 'relative', permyriad: toPermyriad(percent) };
+  }
+  return { kind: 'absolute', amounts: groupAmounts(group, sum, setPrice) };
+}
+
+const sameMoney = (a: Money, b: Money): boolean =>
+  JSON.stringify(Object.entries(a).sort()) ===
+  JSON.stringify(Object.entries(b).sort());
+
+/** Whether a discount as read already has the wanted value. */
+export function discountHasValue(
+  discount: Pick<LookDiscount, 'amount' | 'permyriad'>,
+  wanted: GroupValue
+): boolean {
+  return wanted.kind === 'relative'
+    ? discount.permyriad === wanted.permyriad
+    : discount.permyriad === undefined &&
+        sameMoney(discount.amount, wanted.amounts);
+}
+
 /** The cart condition of a country discount. */
 export const countryPredicate = (country: string): string =>
   country ? `country = "${country}"` : 'country is not defined';
@@ -65,6 +109,29 @@ export function buildDiscountValueInput(amounts: Money) {
     },
   };
 }
+
+/**
+ * The relative value input: each matched unit gets `permyriad / 100` % off.
+ * `IndividualApplication` is the only mode allowed with a pattern target that
+ * has an empty trigger pattern (research R15).
+ */
+export function buildRelativeValueInput(permyriad: number) {
+  return {
+    relativeCart: {
+      permyriad,
+      applicationMode: 'IndividualApplication' as const,
+    },
+  };
+}
+
+export type DiscountValueInput =
+  | ReturnType<typeof buildDiscountValueInput>
+  | ReturnType<typeof buildRelativeValueInput>;
+
+export const buildGroupValueInput = (value: GroupValue): DiscountValueInput =>
+  value.kind === 'relative'
+    ? buildRelativeValueInput(value.permyriad)
+    : buildDiscountValueInput(value.amounts);
 
 /** Pattern target: one unit of each piece, once per complete set. */
 export function buildPatternTargetInput(componentProductIds: string[]) {
@@ -117,8 +184,8 @@ export function buildCountryDiscountDraft(
     name: toLocalizedInput(buildLookDiscountName(look.label)),
     description: toLocalizedInput(buildLookDescription(look.label)),
     cartPredicate: countryPredicate(group.country),
-    value: buildDiscountValueInput(
-      groupAmounts(group, look.sum, look.setPrice)
+    value: buildGroupValueInput(
+      groupValue(group, look.sum, look.setPrice, look.savingPercent)
     ),
     target: buildPatternTargetInput(look.componentProductIds),
     discountGroup: { typeId: 'discount-group', key: lookObjectKey(look.key) },
@@ -146,7 +213,7 @@ export function buildLookCartDiscountDrafts(
 
 export type CartDiscountUpdateActionInput =
   | { changeIsActive: { isActive: boolean } }
-  | { changeValue: { value: ReturnType<typeof buildDiscountValueInput> } }
+  | { changeValue: { value: DiscountValueInput } }
   | { changeName: { name: Array<{ locale: string; value: string }> } }
   | {
       setDescription: { description: Array<{ locale: string; value: string }> };
@@ -157,9 +224,9 @@ export const changeIsActiveAction = (
 ): CartDiscountUpdateActionInput => ({ changeIsActive: { isActive } });
 
 export const changeValueAction = (
-  amounts: Money
+  value: GroupValue
 ): CartDiscountUpdateActionInput => ({
-  changeValue: { value: buildDiscountValueInput(amounts) },
+  changeValue: { value: buildGroupValueInput(value) },
 });
 
 /** Name and description of a discount for a look name. */

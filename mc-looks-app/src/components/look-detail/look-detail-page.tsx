@@ -4,7 +4,6 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 import {
   Alert,
   Badge,
-  Box,
   Button,
   DefaultPage,
   Flex,
@@ -17,19 +16,28 @@ import {
 } from '@commercetools/nimbus';
 import { config } from '../../config';
 import type { LookRow } from '../../domain/look-rows';
+import type { Piece } from '../../domain/types';
 import { useCanManage } from '../../hooks/context';
 import { useLookDetail } from '../../hooks/use-look-detail';
 import { describeError } from '../common/describe-error';
 import { useLookTitle } from '../common/look-hooks';
 import { LookStatusSwitch } from '../common/look-status';
 import commonMessages from '../common/messages';
-import { PieceImage } from '../common/piece-image';
-import { ShopPreview } from '../shop-preview/shop-preview';
 import { CompleteLookPanel } from './complete-look-panel';
 import { DeleteLookPanel } from './delete-look-panel';
 import messages from './messages';
-import { PieceCard } from './piece-card';
+import { PieceResultCard } from '../new-look/piece-result-card';
 import { SetPriceForm } from './set-price-form';
+
+/** What a tile shows for a piece whose product is not loaded: its id. */
+const unloadedPiece = (id: string): Piece => ({
+  id,
+  name: id,
+  prices: {},
+  sizes: [],
+  oneSize: false,
+  soldOutEverywhere: false,
+});
 
 type LookDetailBodyProps = {
   row: LookRow;
@@ -76,48 +84,30 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
           </Alert.Description>
         </Alert.Root>
       )}
-      <Grid
-        templateColumns={{ base: '1fr', xl: '280px minmax(0, 1fr) 400px' }}
-        gap="800"
-        alignItems="start"
-      >
-        <Box>
-          <Flex
-            width="280px"
-            direction="column"
-            justifyContent="center"
-            gap="100"
-            px="800"
-            bg="neutral.3"
-            overflow="hidden"
-            style={{ aspectRatio: '2 / 3' }}
-          >
-            {row.pieces.slice(0, 2).map((piece, index) => (
-              <PieceImage key={row.pieceIds[index]} src={piece?.imageUrl} />
-            ))}
-          </Flex>
-        </Box>
-        <Stack gap="300" minWidth={0}>
-          <Heading as="h2" size="md">
-            {intl.formatMessage(messages.piecesTitle, {
-              count: row.pieceIds.length,
-            })}
-          </Heading>
-          {row.pieceIds.map((id, index) => (
-            <PieceCard key={id} pieceId={id} piece={row.pieces[index]} />
-          ))}
-        </Stack>
-        <Box
-          minWidth={0}
-          aria-label={intl.formatMessage(messages.previewTitle)}
+      <Stack gap="300" minWidth={0}>
+        <Heading as="h2" size="md">
+          {intl.formatMessage(messages.piecesTitle, {
+            count: row.pieceIds.length,
+          })}
+        </Heading>
+        <Grid
+          role="list"
+          aria-label={intl.formatMessage(messages.piecesTitle, {
+            count: row.pieceIds.length,
+          })}
+          templateColumns="repeat(auto-fill, minmax(150px, 1fr))"
+          gap="400"
         >
-          <ShopPreview
-            pieces={row.pieces}
-            setPrice={row.referenceSetPrice}
-            sum={row.referenceSum}
-          />
-        </Box>
-      </Grid>
+          {row.pieceIds.map((id, index) => (
+            <Flex key={id} role="listitem" minWidth={0}>
+              <PieceResultCard
+                piece={row.pieces[index] ?? unloadedPiece(id)}
+                state="static"
+              />
+            </Flex>
+          ))}
+        </Grid>
+      </Stack>
       {complete && (
         <SetPriceForm
           key={row.object?.version}

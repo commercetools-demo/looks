@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type FC } from 'react';
+import { useEffect, useMemo, useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import {
   Box,
@@ -38,10 +38,21 @@ function useCountryName() {
 /** An amount as the money field wants it: a dot as decimal mark. */
 export const amountText = (cents: number): string => (cents / 100).toFixed(2);
 
+/** How a row's discount is defined: by the set price (an absolute discount)
+ *  or by the saving in percent (a relative one). */
+export type PriceMode = 'price' | 'percent';
+
+export interface PriceTableState {
+  texts: Record<string, string>;
+  /** A row without an entry is in price mode. */
+  modes: Record<string, PriceMode>;
+}
+
 type SetPriceTableProps = {
   pieces: ReadonlyArray<Pick<Piece, 'id' | 'name' | 'prices'>>;
   texts: Record<string, string>;
-  onTextsChange: (texts: Record<string, string>) => void;
+  modes: Record<string, PriceMode>;
+  onChange: (next: PriceTableState) => void;
   errors: Record<string, string | undefined>;
   isDisabled: boolean;
 };
@@ -52,7 +63,10 @@ type SetPriceTableProps = {
  * their sum, the set price (money field) and the saving in percent (number
  * field). Typing a set price updates the percentage and the other way round.
  * `texts` holds the set-price text per row key; a row without text yet starts
- * at the sum, an emptied one gets no discount.
+ * at the sum, an emptied one gets no discount. `modes` says per row which
+ * field was edited last (percent: a relative discount, else an absolute one;
+ * shown in the "Rabatt" column). The field above the table sets every row to
+ * one percentage.
  */
 export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
   const intl = useIntl();
@@ -63,26 +77,96 @@ export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
     () => priceTableRows(props.pieces, currencies),
     [props.pieces, currencies]
   );
-  const { texts, onTextsChange } = props;
-  const setText = (key: string, text: string) =>
-    onTextsChange({ ...texts, [key]: text });
+  const { texts, modes, onChange } = props;
+  // What the user last committed in the global field; the field itself shows
+  // the percentage every row shares (see `sharedPercent`), so a global
+  // percentage chosen earlier is still there after the table is shown again
+  // (another step, the detail page).
+  const [typedPercent, setTypedPercent] = useState(Number.NaN);
+  const modeOf = (key: string): PriceMode => modes[key] ?? 'price';
+  const setRow = (key: string, text: string, mode: PriceMode) =>
+    onChange({
+      texts: { ...texts, [key]: text },
+      modes: { ...modes, [key]: mode },
+    });
+  // Every row in percent mode with (about) the same saving: that saving.
+  // Rounding a price to cents can move a saving by a tenth.
+  const rowPercents = rows.map((row) =>
+    modeOf(row.key) === 'percent'
+      ? percentOf(row.sum, parseCents(texts[row.key] ?? ''))
+      : undefined
+  );
+  const known = rowPercents.filter(
+    (percent): percent is number => percent !== undefined
+  );
+  const sharedPercent =
+    rows.length > 0 &&
+    known.length === rows.length &&
+    Math.max(...known) - Math.min(...known) <= 0.2
+      ? Math.round(
+          (known.reduce((sum, value) => sum + value, 0) / known.length) * 10
+        ) / 10
+      : Number.NaN;
+  const globalPercent =
+    Number.isFinite(typedPercent) &&
+    Number.isFinite(sharedPercent) &&
+    Math.abs(typedPercent - sharedPercent) <= 0.2
+      ? typedPercent
+      : sharedPercent;
+  const applyGlobal = (percent: number) =>
+    onChange({
+      texts: {
+        ...texts,
+        ...Object.fromEntries(
+          rows.map((row) => [
+            row.key,
+            amountText(priceFromPercent(row.sum, percent)),
+          ])
+        ),
+      },
+      modes: {
+        ...modes,
+        ...Object.fromEntries(rows.map((row) => [row.key, 'percent' as const])),
+      },
+    });
   // Rows that have no text yet start at the sum.
   useEffect(() => {
     const missing = rows.filter((row) => texts[row.key] === undefined);
     if (missing.length === 0) return;
-    onTextsChange({
-      ...texts,
-      ...Object.fromEntries(
-        missing.map((row) => [row.key, amountText(row.sum)])
-      ),
+    onChange({
+      texts: {
+        ...texts,
+        ...Object.fromEntries(
+          missing.map((row) => [row.key, amountText(row.sum)])
+        ),
+      },
+      modes,
     });
-  }, [rows, texts, onTextsChange]);
+  }, [rows, texts, modes, onChange]);
 
   return (
     <Stack gap="300">
       <Text color="neutral.11">
         {intl.formatMessage(messages.priceTableHint)}
       </Text>
+      <Stack gap="100" maxWidth="260px">
+        <Text id="price-table-global-percent" fontWeight="500">
+          {intl.formatMessage(messages.priceTableGlobalPercent)}
+        </Text>
+        <NumberInput
+          aria-labelledby="price-table-global-percent"
+          isDisabled={props.isDisabled}
+          minValue={0}
+          maxValue={99.9}
+          step={0.1}
+          formatOptions={{ maximumFractionDigits: 1 }}
+          value={globalPercent}
+          onChange={(value) => {
+            setTypedPercent(value);
+            if (Number.isFinite(value) && value > 0) applyGlobal(value);
+          }}
+        />
+      </Stack>
       <Box overflowX="auto">
         <Table.Root>
           <Table.Header>
@@ -106,6 +190,9 @@ export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
               </Table.ColumnHeader>
               <Table.ColumnHeader>
                 {intl.formatMessage(messages.priceTableSaving)}
+              </Table.ColumnHeader>
+              <Table.ColumnHeader>
+                {intl.formatMessage(messages.priceTableDiscount)}
               </Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
@@ -153,7 +240,7 @@ export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
                       }}
                       onAmountChange={(amount) =>
                         // A cleared field reports "NaN": an empty row.
-                        setText(row.key, amount === 'NaN' ? '' : amount)
+                        setRow(row.key, amount === 'NaN' ? '' : amount, 'price')
                       }
                     />
                     {error && (
@@ -176,13 +263,21 @@ export const SetPriceTable: FC<SetPriceTableProps> = (props) => {
                       value={percent ?? Number.NaN}
                       onChange={(value) => {
                         if (Number.isFinite(value)) {
-                          setText(
+                          setRow(
                             row.key,
-                            amountText(priceFromPercent(row.sum, value))
+                            amountText(priceFromPercent(row.sum, value)),
+                            'percent'
                           );
                         }
                       }}
                     />
+                  </Table.Cell>
+                  <Table.Cell>
+                    {intl.formatMessage(
+                      modeOf(row.key) === 'percent'
+                        ? messages.priceTableModePercent
+                        : messages.priceTableModeAmount
+                    )}
                   </Table.Cell>
                 </Table.Row>
               );

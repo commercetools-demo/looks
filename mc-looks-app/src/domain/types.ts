@@ -8,6 +8,9 @@ export type LocalizedValue = Record<string, string>;
 export interface LookValue {
   componentProductIds: string[];
   setPrice: Money;
+  /** Cells (like `EUR/DE`) whose discount is a percentage: 0 < p < 100, at
+   *  most one decimal. Every other priced cell is an absolute discount. */
+  savingPercent?: Record<string, number>;
   endedAt?: string;
 }
 
@@ -30,6 +33,9 @@ export interface LookDiscount {
   description: LocalizedValue;
   /** Absolute discount amount per currency. */
   amount: Money;
+  /** The percentage in permyriad (1250 = 12.5 %) of a relative discount;
+   *  `undefined` for an absolute one. */
+  permyriad?: number;
   /** The country the discount applies in (`cartPredicate`), `''` for carts
    *  without a country; `undefined` when the predicate is not the app's. */
   country?: string;
@@ -77,6 +83,10 @@ export interface NewLook {
   description?: LocalizedValue;
   componentProductIds: string[];
   setPrice: Money;
+  /** Cells whose discount is a percentage (a relative Cart Discount); the
+   *  other cells in `setPrice` get an absolute one. `setPrice` still holds
+   *  every priced cell, for a percentage cell the derived price. */
+  savingPercent?: Record<string, number>;
   /** The live sum the set price was checked against. */
   sum: Money;
 }

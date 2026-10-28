@@ -52,10 +52,10 @@ cd mc-looks-app && npm start              # mc-scripts dev server on the configu
 4. **Switch (US3)**: switch the new look on from "Wieder aktivieren". It joins the main list; `endedAt` is cleared. Add one unit of each piece to a cart in the shop: the cart lands on the set price. Switch off: the look moves to Frühere Looks with an end date; the cart no longer gets the set price.
 5. **Conflict (US3)**: open the same look in two tabs, switch in one, then the other: a conflict notice, current state shown, no blind retry.
 6. **Past looks (US4)**: with orders that carry a look's discount, the card shows sets, orders, revenue per currency; best seller first with "Bester Look"; a look with no sale reads "Kein Set verkauft". Cut the `view_orders` scope or block the request: an error with "Erneut versuchen", cards still usable.
-7. **Detail (US5)**: opens from row or card; pieces show stock per size ("nur noch N", "ausverkauft"), sizeless pieces "Einheitsgröße"; change the set price and save; the cart price follows. Fail the object write after the discount write: "Setpreis im Shop noch nicht aktualisiert" with retry, list shows "Setpreis weicht ab". Change a product price: "Setpreis neu berechnen" realigns.
+7. **Detail (US5)**: opens from row or card; pieces show the same tiles as in the new-look flow, without the add action ("nur noch N", "ausverkauft" hints), sizeless pieces "Einheitsgröße"; change the set price and save; the cart price follows. Fail the object write after the discount write: "Setpreis im Shop noch nicht aktualisiert" with retry, list shows "Setpreis weicht ab". Change a product price: "Setpreis neu berechnen" realigns.
 8. **Repair (US6)**: delete a look's Custom Object (or its discount) in the sandbox: row shows "Unvollständig" and "Vervollständigen"; completing never switches the look on.
 9. **Read-only (US7)**: sign in with the View-only user: "Nur Lesezugriff" shown; "Neuer Look", switches, "Wieder aktivieren", set-price inputs are visible and disabled.
-10. **Language**: profile language en with data locale de: labels and the shop preview texts english, look and product names german.
+10. **Language**: profile language en with data locale de: labels english, look and product names german.
 
 ## Deploy checks
 

@@ -41,6 +41,8 @@ type ReviewStepProps = {
   pieces: Piece[];
   sum: Money;
   setPrice: Money;
+  /** Cells whose discount is a percentage. */
+  savingPercent: Record<string, number>;
   activate: boolean;
   onActivateChange: (activate: boolean) => void;
   isDisabled: boolean;
@@ -79,17 +81,26 @@ export const ReviewStep: FC<ReviewStepProps> = (props) => {
             <Stack gap="100">
               {cells.map((key) => {
                 const { currency, country } = splitPriceKey(key);
+                const percent = props.savingPercent[key];
                 return (
                   <Text key={key}>
-                    {intl.formatMessage(messages.reviewCell, {
-                      cell: country ? `${currency} ${country}` : currency,
-                      setPrice: money(props.setPrice[key], currency),
-                      sum: money(props.sum[key], currency),
-                      saving: money(
-                        props.sum[key] - props.setPrice[key],
-                        currency
-                      ),
-                    })}
+                    {intl.formatMessage(
+                      percent === undefined
+                        ? messages.reviewCell
+                        : messages.reviewCellPercent,
+                      {
+                        percent: intl.formatNumber(percent ?? 0, {
+                          maximumFractionDigits: 1,
+                        }),
+                        cell: country ? `${currency} ${country}` : currency,
+                        setPrice: money(props.setPrice[key], currency),
+                        sum: money(props.sum[key], currency),
+                        saving: money(
+                          props.sum[key] - props.setPrice[key],
+                          currency
+                        ),
+                      }
+                    )}
                   </Text>
                 );
               })}

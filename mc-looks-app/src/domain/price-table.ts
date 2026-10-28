@@ -57,6 +57,24 @@ export function percentOf(
   return Math.round(((sum - cents) / sum) * 1000) / 10;
 }
 
+/** The percentage a price stands for: `preferred` while it still gives
+ *  exactly that price (a stored percentage survives cent rounding), else
+ *  `percentOf`. */
+export function percentForPrice(
+  sum: number | undefined,
+  cents: number | undefined,
+  preferred?: number
+): number | undefined {
+  if (
+    preferred !== undefined &&
+    sum !== undefined &&
+    cents === priceFromPercent(sum, preferred)
+  ) {
+    return preferred;
+  }
+  return percentOf(sum, cents);
+}
+
 /** A percentage typed by a person ("15", "12,5"), at most 99.9; `undefined`
  *  for anything else. */
 export function parsePercent(text: string): number | undefined {

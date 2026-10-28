@@ -181,12 +181,12 @@ description: "Task list for the Looks Merchant Center app"
 ### Tests for User Story 5
 
 - [X] T065 [P] [US5] Extend `mc-looks-app/src/domain/look-writes.spec.ts`: `changeSetPrice` (current version read, `changeValue` then object upsert with version, retry only the object, lost-response detection), no call when nothing changed, photo set/clear keeps `endedAt`
-- [X] T066 [P] [US5] `mc-looks-app/src/components/look-detail/look-detail-page.spec.tsx`: scenarios 1–7 of User Story 5 (five cards, stock per size, sold-out warning, save price, partial failure notice, drift and "Setpreis neu berechnen", invalid photo path, not found)
+- [X] T066 [P] [US5] `mc-looks-app/src/components/look-detail/look-detail-page.spec.tsx`: scenarios 1–7 of User Story 5 (five tiles, stock hints, sold-out warning, save price, partial failure notice, drift and "Setpreis neu berechnen", invalid photo path, not found)
 
 ### Implementation for User Story 5
 
 - [X] T067 [US5] [SKILL: commercetools-commerce-patterns] Add `changeSetPrice` and `changePhoto` to `mc-looks-app/src/domain/look-writes.ts` (minimal updates: no call without a diff)
-- [X] T068 [P] [US5] Create `mc-looks-app/src/components/look-detail/piece-card.tsx` (image 120 px, name, price lines, stock per size texts, "Einheitsgröße") and `look-photo-card.tsx` (280 px, alt = name)
+- [X] T068 [P] [US5] ~~`look-detail/piece-card.tsx` and `look-photo-card.tsx`~~ (removed: the detail uses `new-look/piece-result-card.tsx` in state `static`, the same product tiles as in the new-look flow, without the add action)
 - [X] T069 [P] [US5] Create `mc-looks-app/src/components/look-detail/set-price-form.tsx` (per currency, validation as new look, "Setpreis speichern", "Setpreis neu berechnen", partial-failure alert with retry) and `photo-form.tsx` (path field, validation, save/clear)
 - [X] T070 [US5] Create `mc-looks-app/src/components/look-detail/look-detail-page.tsx`: back link, title, key, "Aktiv" switch or "Nur Lesezugriff", "Im Shop ansehen" (first piece's product page on `config.shopOrigin`), three columns with the shop preview, sold-out and drift alerts, not-found state; route `/:lookKey` in `routes.tsx`
 - [X] T071 [US5] Add messages de/en and verify T065–T066 pass

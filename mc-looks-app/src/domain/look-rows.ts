@@ -5,6 +5,8 @@ import {
   lookObjectKey,
 } from './keys';
 import { lookNameFromDiscount } from './names';
+import { priceFromPercent } from './price-table';
+import { toPermyriad } from './look-actions';
 import { livePriceMap } from './pieces';
 import {
   lookPriceKeys,
@@ -42,6 +44,9 @@ export interface LookRow {
   /** Set price and live sum per price cell (currency and country, or the currency alone). */
   setPrice?: Money;
   liveSum: Money;
+  /** The percentage of each percentage cell (a relative discount); the
+   *  other cells are absolute. `setPrice` of such a cell is derived live. */
+  cellPercents?: Record<string, number>;
   /** The same per currency (the first country cell of each), for lists. */
   referenceSetPrice?: Money;
   referenceSum: Money;
@@ -117,7 +122,21 @@ export function buildLookRows(input: {
     const pieceIds = value?.componentProductIds ?? discount?.pieceIds ?? [];
     const priceKeys = lookPriceKeys(pieceIds, livePrices, currencies);
     const liveSum = sumListPrices(pieceIds, livePrices, priceKeys);
-    const setPrice = value?.setPrice;
+    const cellPercents = value?.savingPercent;
+    // A percentage cell's price follows today's sum.
+    const setPrice = value?.setPrice
+      ? Object.fromEntries(
+          Object.entries(value.setPrice).map(([key, cents]) => {
+            const percent = cellPercents?.[key];
+            return [
+              key,
+              percent !== undefined && liveSum[key] !== undefined
+                ? priceFromPercent(liveSum[key], percent)
+                : cents,
+            ];
+          })
+        )
+      : undefined;
     const withDiscounts = { discount, countryDiscounts };
 
     const priceDrift =
@@ -125,10 +144,17 @@ export function buildLookRows(input: {
       !!setPrice &&
       Object.keys(liveSum).some((key) => {
         if (setPrice[key] === undefined) return false;
-        const amount = discountForKey(withDiscounts, key)?.amount[
-          splitPriceKey(key).currency
-        ];
-        return amount === undefined || liveSum[key] - amount !== setPrice[key];
+        const current = discountForKey(withDiscounts, key);
+        const percent = cellPercents?.[key];
+        if (percent !== undefined) {
+          return current?.permyriad !== toPermyriad(percent);
+        }
+        const amount = current?.amount[splitPriceKey(key).currency];
+        return (
+          current?.permyriad !== undefined ||
+          amount === undefined ||
+          liveSum[key] - amount !== setPrice[key]
+        );
       });
 
     const referenceSum = referenceMoney(liveSum, currencies);
@@ -147,6 +173,7 @@ export function buildLookRows(input: {
       setPrice,
       liveSum,
       referenceSetPrice,
+      cellPercents,
       referenceSum,
       savingPercent: first
         ? savingPercent(referenceSum[first], referenceSetPrice?.[first])

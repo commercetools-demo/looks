@@ -17,11 +17,23 @@ import { splitPriceKey } from '../../domain/prices';
 import { validateLook, type ValidationError } from '../../domain/validate';
 import { useCanManage, useLookApi } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
-import { SetPriceTable, amountText } from '../common/set-price-table';
+import {
+  SetPriceTable,
+  amountText,
+  type PriceMode,
+  type PriceTableState,
+} from '../common/set-price-table';
+import { percentForPrice } from '../../domain/price-table';
 import { parseCents } from '../new-look/set-price';
 import { useMoney } from '../common/look-hooks';
 import commonMessages from '../common/messages';
 import messages from './messages';
+
+/** What a save writes: the prices and the percentage cells. */
+interface Entry {
+  setPrice: Money;
+  savingPercent: Record<string, number>;
+}
 
 type SetPriceFormProps = {
   row: LookRow;
@@ -52,9 +64,16 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
       ])
     )
   );
+  // Rows with a stored percentage start in percent mode; their price is
+  // derived from today's sum (`row.setPrice`).
+  const [modes, setModes] = useState<Record<string, PriceMode>>(() =>
+    Object.fromEntries(
+      Object.keys(row.cellPercents ?? {}).map((key) => [key, 'percent'])
+    )
+  );
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [failure, setFailure] = useState<string>();
-  const [stale, setStale] = useState<Money>();
+  const [stale, setStale] = useState<Entry>();
   const [unchanged, setUnchanged] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -68,8 +87,22 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
     })
   );
 
+  // Percentage rows: the stored percentage while it still gives the entered
+  // price, else the percentage the price stands for.
+  const savingPercent: Record<string, number> = {};
+  for (const key of Object.keys(entered)) {
+    if (modes[key] !== 'percent') continue;
+    const percent = percentForPrice(
+      row.liveSum[key],
+      entered[key],
+      row.cellPercents?.[key]
+    );
+    if (percent !== undefined) savingPercent[key] = percent;
+  }
+  const current: Entry = { setPrice: entered, savingPercent };
+
   async function save(
-    setPrice: Money,
+    { setPrice, savingPercent: percents }: Entry,
     options: { discountChanged?: boolean } = {}
   ) {
     setFailure(undefined);
@@ -86,6 +119,7 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
           label,
           componentProductIds: row.pieceIds,
           setPrice,
+          savingPercent: percents,
           sum: row.liveSum,
         },
         livePrices,
@@ -96,13 +130,10 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
     }
     setBusy(true);
     try {
-      const result = await changeSetPrice(
-        api,
-        row,
-        setPrice,
-        row.liveSum,
-        options
-      );
+      const result = await changeSetPrice(api, row, setPrice, row.liveSum, {
+        ...options,
+        savingPercent: percents,
+      });
       setStale(undefined);
       if (result.unchanged) {
         setUnchanged(true);
@@ -116,7 +147,7 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
         error instanceof SetPriceStepError &&
         (error.step === 'object' || error.discountChanged)
       ) {
-        setStale(setPrice);
+        setStale({ setPrice, savingPercent: percents });
       } else {
         setFailure(
           describeError(
@@ -140,6 +171,10 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
         sum: money(row.liveSum[key], splitPriceKey(key).currency),
       });
     }
+    if (error.code === 'saving-percent-invalid')
+      return intl.formatMessage(messages.errPercent);
+    if (error.code === 'discount-mode-mixed')
+      return intl.formatMessage(messages.errModeMixed);
     if (error.code === 'sum-not-live')
       return intl.formatMessage(messages.errSumNotLive);
     return intl.formatMessage(messages.errNotPositive);
@@ -170,7 +205,13 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
                   size="xs"
                   variant="outline"
                   isDisabled={disabled || !row.setPrice}
-                  onPress={() => row.setPrice && void save(row.setPrice)}
+                  onPress={() =>
+                    row.setPrice &&
+                    void save({
+                      setPrice: row.setPrice,
+                      savingPercent: row.cellPercents ?? {},
+                    })
+                  }
                 >
                   {intl.formatMessage(messages.recalculate)}
                 </Button>
@@ -200,8 +241,10 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
           <SetPriceTable
             pieces={pieces}
             texts={texts}
-            onTextsChange={(next) => {
-              setTexts(next);
+            modes={modes}
+            onChange={(next: PriceTableState) => {
+              setTexts(next.texts);
+              setModes(next.modes);
               setUnchanged(false);
             }}
             errors={rowErrors}
@@ -224,7 +267,7 @@ export const SetPriceForm: FC<SetPriceFormProps> = ({ row, apply, reload }) => {
               variant="solid"
               colorPalette="primary"
               isDisabled={disabled}
-              onPress={() => void save(entered)}
+              onPress={() => void save(current)}
             >
               {intl.formatMessage(messages.setPriceSave)}
             </Button>

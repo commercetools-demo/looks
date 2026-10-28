@@ -484,6 +484,29 @@ describe('Neuer Look: step 3, set price', () => {
     expect(percent).toHaveValue('10');
   });
 
+  it('still shows the global percentage after going back to the pieces and on again, and after the review', async () => {
+    const user = userEvent.setup();
+    setup();
+    await gotoSetPrice(user);
+    const globalField = () =>
+      screen.getByRole('textbox', { name: 'Prozent für alle Zeilen' });
+    await user.type(globalField(), '15');
+    await user.tab();
+    expect(globalField()).toHaveValue('15');
+
+    await user.click(screen.getByRole('button', { name: 'Zurück' }));
+    await screen.findByRole('heading', { name: 'Gewählte Teile' });
+    await next(user);
+    await screen.findAllByRole('group', { name: /^Setpreis/ });
+    expect(globalField()).toHaveValue('15');
+
+    await next(user);
+    await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    await user.click(screen.getByRole('button', { name: 'Zurück' }));
+    await screen.findAllByRole('group', { name: /^Setpreis/ });
+    expect(globalField()).toHaveValue('15');
+  });
+
   it('leaves an emptied row without a discount and refuses when no row has a price', async () => {
     const user = userEvent.setup();
     setup();
@@ -1385,5 +1408,103 @@ describe('Neuer Look: the step is part of the URL', () => {
     const view = setup({ path: '/new?q=jacke' });
     await gotoPieces(user);
     expect(view.history.location.search).toBe('?q=jacke');
+  });
+});
+
+describe('Neuer Look: relative and absolute discounts', () => {
+  const setupCountries = () =>
+    setup({ pieces: [shirt, skirt], currencies: ['EUR', 'GBP'] });
+
+  async function gotoCountryPrices(user: User) {
+    await gotoPieces(user);
+    for (const name of ['Hemd Ida', 'Rock Lena']) await addPiece(user, name);
+    await next(user);
+    await screen.findByRole('group', { name: 'Setpreis EUR DE' });
+  }
+
+  const globalPercent = () =>
+    screen.getByRole('textbox', { name: 'Prozent für alle Zeilen' });
+  const draftsOf = (fake: ReturnType<typeof createFakeLookApi>) =>
+    fake
+      .callsTo('createCartDiscount')
+      .map((call) => call.args[0] as { key: string; value: unknown });
+  const saveLook = async (user: User) => {
+    await next(user);
+    await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+  };
+
+  it('creates a relative discount per country with the global percentage', async () => {
+    const user = userEvent.setup();
+    const { fake } = setupCountries();
+    await gotoCountryPrices(user);
+    await user.type(globalPercent(), '12,5');
+    await user.tab();
+    expect(amountInput('EUR DE')).toHaveValue('131,25');
+    await saveLook(user);
+
+    const relative = {
+      relativeCart: {
+        permyriad: 1250,
+        applicationMode: 'IndividualApplication',
+      },
+    };
+    expect(draftsOf(fake).map((draft) => draft.value)).toEqual([
+      relative,
+      relative,
+      relative,
+    ]);
+    expect(fake.objects.get('look-jacket-look')?.value).toMatchObject({
+      setPrice: { 'EUR/DE': 13125, 'EUR/FR': 14000, 'GBP/GB': 11813 },
+      savingPercent: { 'EUR/DE': 12.5, 'EUR/FR': 12.5, 'GBP/GB': 12.5 },
+    });
+  });
+
+  it('creates an absolute discount for a typed price', async () => {
+    const user = userEvent.setup();
+    const { fake } = setupCountries();
+    await gotoCountryPrices(user);
+    await typeAmount(user, 'EUR DE', '140');
+    await typeAmount(user, 'EUR FR', '150');
+    await typeAmount(user, 'GBP GB', '130');
+    await saveLook(user);
+    for (const draft of draftsOf(fake)) {
+      expect(draft.value).toHaveProperty('absoluteCart');
+    }
+    expect(
+      fake.objects.get('look-jacket-look')?.value.savingPercent
+    ).toBeUndefined();
+  });
+
+  it('creates one of each for rows in different countries and reads the percentage row on the review', async () => {
+    const user = userEvent.setup();
+    const { fake } = setupCountries();
+    await gotoCountryPrices(user);
+    await user.type(globalPercent(), '10');
+    await user.tab();
+    await typeAmount(user, 'EUR FR', '150');
+    await typeAmount(user, 'GBP GB', '130');
+    await next(user);
+    await screen.findByRole('switch', { name: 'Nach dem Anlegen aktiv' });
+    expect(
+      screen.getByText(
+        /^EUR DE: −10 % → 135,00\s€ \(Summe 150,00\s€, Ersparnis 15,00\s€\)$/
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /^EUR FR: 150,00\s€ \(Summe 160,00\s€, Ersparnis 10,00\s€\)$/
+      )
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Look speichern' }));
+    expect(await screen.findByText('Look gespeichert')).toBeInTheDocument();
+    const [de, fr, gb] = draftsOf(fake).map((draft) => draft.value);
+    expect(de).toHaveProperty('relativeCart.permyriad', 1000);
+    expect(fr).toHaveProperty('absoluteCart');
+    expect(gb).toHaveProperty('absoluteCart');
+    expect(fake.objects.get('look-jacket-look')?.value.savingPercent).toEqual({
+      'EUR/DE': 10,
+    });
   });
 });

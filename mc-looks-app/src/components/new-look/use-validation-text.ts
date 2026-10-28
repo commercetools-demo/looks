@@ -43,6 +43,10 @@ export function useValidationText() {
         });
       case 'sum-not-live':
         return intl.formatMessage(messages.errorSumChanged, { currency });
+      case 'saving-percent-invalid':
+        return intl.formatMessage(messages.errorPercentInvalid, { currency });
+      case 'discount-mode-mixed':
+        return intl.formatMessage(messages.errorModeMixed, { currency });
       case 'key-invalid':
         return intl.formatMessage(messages.errorKeyInvalid);
     }

@@ -16,7 +16,7 @@ A **look** is a curated outfit: at least 2 products (no upper limit) sold as a s
 
 Today the platform's standard Merchant Center covers only half of this: the set-price discount can be maintained in the Discounts application, but the look itself (which pieces) has no business screen. Merchandisers need a ticket and a developer to create or retire a look.
 
-**Looks** closes that gap: a Merchant Center custom application, in the main menu, in which merchandisers list, create, switch on and off, and reprice looks, see how retired looks sold, and preview how a look will appear in the shop, without a ticket and without a deployment.
+**Looks** closes that gap: a Merchant Center custom application, in the main menu, in which merchandisers list, create, switch on and off, and reprice looks, see how retired looks sold, without a ticket and without a deployment.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -42,9 +42,9 @@ A merchandiser opens "Looks" in the Merchant Center main menu and sees every act
 
 ---
 
-### User Story 2 - Create a new look with a live shop preview (Priority: P1)
+### User Story 2 - Create a new look step by step (Priority: P1)
 
-A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** (the name in every project language), **Pieces** (search products, choose 2 to 5, reorder), **Set price** (one price per project currency, shown against the sum), and **Review** (summary, "Nach dem Anlegen aktiv" switch, "Look speichern"). Beside the form, a shop preview shows how the look will appear on a product page, updating as they type.
+A merchandiser clicks "Neuer Look" and is guided through four steps: **Basics** (the name in every project language), **Pieces** (search products, choose 2 to 5, reorder), **Set price** (one price per project currency, shown against the sum), and **Review** (summary, "Nach dem Anlegen aktiv" switch, "Look speichern").
 
 **Why this priority**: Creating looks is the core job of the app and the reason it exists.
 
@@ -107,7 +107,7 @@ Below the list, the section "Frühere Looks" ("Ausgeschaltete Looks und wie sie 
 
 ### User Story 5 - Inspect a look and change its set price (Priority: P2)
 
-Opening a look shows its detail: back link "Zurück zu Looks", title and key, the "Aktiv" switch (or "Nur Lesezugriff" for view-only users), "Im Shop ansehen", one card per piece (image, name, price per currency, stock per size), and the shop preview. With Manage permission the user can enter new set prices (one per project currency) .
+Opening a look shows its detail: back link "Zurück zu Looks", title and key, the "Aktiv" switch (or "Nur Lesezugriff" for view-only users), "Im Shop ansehen", the pieces as the same product tiles as in the new-look flow, without the add action (image, name, size chips, "nur noch N" and "ausverkauft" hints), and the set price with the saving. With Manage permission the user can enter new set prices (one per project currency) .
 
 **Why this priority**: Repricing and fixing a look after launch is a frequent follow-up task; creation (P1) comes first.
 
@@ -115,8 +115,8 @@ Opening a look shows its detail: back link "Zurück zu Looks", title and key, th
 
 **Acceptance Scenarios**:
 
-1. **Given** a five-piece look, **Then** all five piece cards are shown.
-2. **Given** a piece has one size left, **Then** that size shows its quantity and the others show sold out; no warning, because the set is still buyable. **Given** a piece is sold out in every size, **Then** a warning is shown.
+1. **Given** a five-piece look, **Then** all five pieces are shown as product tiles (the same as in the new-look flow, without the add action and without "Im Look").
+2. **Given** a piece has one size left, **Then** its tile shows "<size>: nur noch N" and "ausverkauft: <sizes>" for the others, as on the creation tile (plain stock counts are no longer shown); no warning, because the set is still buyable. **Given** a piece's product is not loaded, **Then** a tile named by its product id is shown. **Given** a piece is sold out in every size, **Then** a warning is shown.
 3. **Given** a valid new set price, **When** the user saves, **Then** the platform's discount amount is recomputed from today's single prices first, then the look definition is updated, and the detail confirms "Setpreis gespeichert".
 4. **Given** the discount was updated but the look definition write failed, **Then** the detail says "Setpreis im Shop noch nicht aktualisiert" with a retry, and the list marks the look "Setpreis weicht ab" until the retry succeeds.
 5. **Given** a piece's price changed after authoring so the set no longer lands on the stored set price, **Then** list and detail show "Setpreis weicht ab", and "Setpreis neu berechnen" re-computes the discount amount from today's prices.
@@ -214,10 +214,11 @@ A user with View permission only sees the same list, section and details, but al
 
 #### Creating a look
 
-- **FR-030**: "Neuer Look" MUST open a four-step flow (Grunddaten, Teile, Setpreis, Prüfen) with a step indicator that marks the current step, and the shop preview beside the form in every step. The current step MUST be part of the URL (`/new`, `/new/pieces`, `/new/price`, `/new/review`) so the browser's back and forward buttons move between steps and the list query is kept; a step address opened without entered data (reload, pasted link) shows step 1.
+- **FR-030**: "Neuer Look" MUST open a four-step flow (Grunddaten, Teile, Setpreis, Prüfen) with a step indicator that marks the current step. The current step MUST be part of the URL (`/new`, `/new/pieces`, `/new/price`, `/new/review`) so the browser's back and forward buttons move between steps and the list query is kept; a step address opened without entered data (reload, pasted link) shows step 1.
 - **FR-031**: Step 1 MUST collect the name with one input per project language (the Nimbus localized text field: the data locale first, the other languages behind its toggle; at least one language is required, empty translations are omitted when saving). It MUST also collect an optional description with one multi-line input per project language (same localized field). The Discount Group of the look takes the name as its name and the description as its description.
 - **FR-032**: Step 2 MUST search products by name, description, slug, search keywords, key, product id and variant SKU (case-insensitive, contains; meta title and meta description are not searchable in the product search) and show per product: image, name, and sizes with availability from the default inventory. Sizes are the variants having a default inventory entry, labelled by their variant attributes (FR-084); several variants without any such attribute are listed by SKU, and only a product with a single such variant is one size. Pieces MUST be reorderable (drag). A look MUST have 2 to 5 pieces, no duplicates. The step shows no prices and no sum; prices appear from the set price step on.
-- **FR-033**: Step 3 MUST collect one set price per project currency and show the sum of the pieces and the saving.
+- **FR-033**: Step 3 MUST collect one set price per price cell (currency and country) and show the sum of the pieces, the saving in percent and, per row, which discount type will be created (column "Rabatt": "Prozent" or "Betrag"). Price and percent fields stay linked.
+- **FR-033a**: Step 3 MUST offer a global percentage ("Prozent für alle Zeilen", 0 to 99.9, one decimal) above the table: committing a value sets every row to that percentage. A row is a percentage row when the user last edited its percent or applied the global percentage, otherwise an amount row; editing a row's price switches only that row to amount, editing its percent only that row to percentage. A percentage row creates a RELATIVE Cart Discount (`relativeCart`, permyriad = percent × 100, `IndividualApplication`), an amount row an ABSOLUTE one. A country has one discount, so all its cells MUST be amounts or all the same percentage (otherwise saving is refused). The Custom Object stores `savingPercent` for percentage cells; their stored `setPrice` is informational and the shown price follows today's sum. Repricing in the detail view works the same and may switch a discount between the two types.
 - **FR-034**: Step 4 MUST show a summary and the switch "Nach dem Anlegen aktiv" (default off).
 - **FR-035**: Saving MUST be refused unless: at least one name is present; there are at least 2 distinct pieces (no upper limit); every piece has a list price (FR-008) in every project currency; the set price in each currency is a positive integer amount strictly below the live sum of the pieces in that currency; and the sum the user saw still equals the live sum at save time.
 - **FR-036**: The look key MUST be shown and editable while the look is created: step 1 has a field "Key" that suggests the slug of the English name, else the German one, else the first translation (lowercase ASCII letters, digits and single hyphens; umlauts transliterated; at most 40 characters; `-2`, `-3`, … appended while taken) and follows the name until the user edits it. A key the user typed MUST follow the shared key rule (letters, digits, `-` and `_` only, trimmed, the whole key with its prefix at most 256 characters), MUST be unique (a taken key is flagged and refused, never renamed), and is saved as given. The field states how the key is stored and that it cannot be changed after creation; afterwards the key is shown read-only. Look definition and discount share the key `look-<lookKey>`.
@@ -241,13 +242,14 @@ A user with View permission only sees the same list, section and details, but al
 #### Look detail
 
 - **FR-060**: The detail MUST show a back link "Zurück zu Looks"; the look name as title; the look key below; on the right the "Aktiv" switch (Manage) or the tag "Nur Lesezugriff"; and "Im Shop ansehen" (link to the first piece's product page on the shop).
-- **FR-061**: Below, three columns: a 280 px box with the first two piece images, the pieces (one card per row: image 120 px 4:5, name, price per currency, stock per size; "Einheitsgröße" for sizeless pieces; 1–3 left shown as "<size>: nur noch N", sold out sizes as "<sizes>: ausverkauft"), and the shop preview (400 px). Then the set price with the saving.
+- **FR-061**: Below the alerts, the heading "Teile (n)" and the pieces as the same product tiles as in the new-look flow (`PieceResultCard`, state `static`: no add button, no "Im Look" marker), in a `role="list"` grid (auto-fill, minimum 150 px) with one `role="listitem"` per piece: image, name, size chips (sold-out sizes struck through), "Einheitsgröße" for sizeless pieces, "<size>: nur noch N" (1–3 left) and "ausverkauft: <sizes>". A piece whose product is not loaded shows a tile named by its product id. Then the set price with the saving.
+- **FR-061a**: ~~Price per currency and plain stock counts ("S: 5") on the piece cards, and a 280 px box with the first two piece images~~ (removed: the detail uses the creation tiles, which show neither).
 - **FR-062**: The detail MUST show a warning when a piece is sold out in every size, and the "Setpreis weicht ab" notice with "Setpreis neu berechnen" when drift exists.
 
-#### Shop preview
+#### Shop preview (removed)
 
-- **FR-070**: A shop preview ("Shop-Vorschau", caption "So erscheint der Look im Shop") MUST appear on the detail (not in the new-look flow). It mirrors the structure of the shop's product-page set block: "Set zu <set price>" with "Einzelpreise zusammen: <sum>" struck through, one row per piece with image, name and size dropdown including sold-out and low-stock states, and a full-width "Set in den Warenkorb" button, inert in the app. Without a set price it reads "Setpreis folgt". Without a first piece it shows a neutral placeholder.
-- **FR-071**: The preview is neutral (Nimbus default theme, no brand colours, fonts or logos). It shows prices in the project's default currency. Like every other text of the app, its texts and the price format follow the Merchant Center user's language (FR-004, German and English); there is no fixed shop language. The preview MUST never write anything.
+- **FR-070**: ~~Shop preview on the detail~~ (removed: the shop preview was dropped).
+- **FR-071**: ~~Neutral preview, default currency, user language~~ (removed with FR-070).
 
 #### Platform integration, scopes, hosting
 
@@ -297,7 +299,7 @@ A user with View permission only sees the same list, section and details, but al
 - **Platform**: The shop reads looks as described in the data contract (product-page set block, cart summary line) and applies the set price from the discount. Changing the storefront is out of scope; this app only writes the data it reads. Because the naming changes from `sim-look`/`sim-demo-look-` to `look`/`look-`, any shop reader of the old names must be pointed at the new ones; that work is outside this spec.
 - **Naming**: container `look`, key prefix `look-` (the decision was "just `look-`"; the container name follows the same rule).
 - **Language**: German is the reference UI language, English the second; profile language drives UI labels, data locale drives content. Look names are entered in the **project's languages** (read from the project settings, like the currencies); one name is enough, readers fall back data locale, de, en, first.
-- **No brands**: looks are not tied to a brand. Product search covers the whole catalog; there is no brand filter, badge, brand-pure rule or brand-themed preview. Brands can be reintroduced later as a separate feature.
+- **No brands**: looks are not tied to a brand. Product search covers the whole catalog; there is no brand filter, badge, brand-pure rule. Brands can be reintroduced later as a separate feature.
 - **Currencies**: from the project settings (FR-007). Percent saving is computed on the first currency.
 - **Stock**: sizes and stock come from the default inventory (inventory entries without a supply channel); no stock channel is configured. A variant has a size only if it has such an entry; when no variant of a product has one, all variants are listed as sold out so the sold-out warning still shows.
 - **Configuration**: the variant attributes and shop origin are developer-set (FR-084), initially in one configuration module and later in `.env` (FR-085). Default variant attribute: `size`. There is no admin UI for them; the person setting up the app is a developer.

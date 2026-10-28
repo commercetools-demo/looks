@@ -64,5 +64,8 @@
   "Looks.newLook.reviewCell": "{cell}: {setPrice} (sum {sum}, saving {saving})",
   "Looks.newLook.description": "Description",
   "Looks.newLook.descriptionHelp": "Optional, in the project languages. Saved as the description of the discount group.",
-  "Looks.newLook.reviewDescription": "Description"
+  "Looks.newLook.reviewDescription": "Description",
+  "Looks.newLook.errorPercentInvalid": "{currency}: The saving in percent must be above 0 and below 100.",
+  "Looks.newLook.errorModeMixed": "{currency}: Per country a look uses either amounts or one percentage.",
+  "Looks.newLook.reviewCellPercent": "{cell}: −{percent}% → {setPrice} (sum {sum}, saving {saving})"
 }

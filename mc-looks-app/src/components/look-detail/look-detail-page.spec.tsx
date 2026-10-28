@@ -7,8 +7,10 @@ import {
   buildObject,
   buildPiece,
 } from '../../test-utils/fixtures';
-import { waitFor, within } from '@testing-library/react';
+import { cleanup, waitFor, within } from '@testing-library/react';
+import { PieceResultCard } from '../new-look/piece-result-card';
 import { renderLooks, screen } from '../../test-utils';
+import { renderUi } from '../../test-utils/render-ui';
 import { LookApiError } from '../../domain/errors';
 
 const ids = ['p1', 'p2', 'p3', 'p4', 'p5'];
@@ -166,7 +168,9 @@ describe('look detail', () => {
   });
 
   describe('pieces and stock', () => {
-    it('US5.1: shows all five cards of a five-piece look', async () => {
+    const tiles = () => within(screen.getByRole('list', { name: /^Teile/ }));
+
+    it('US5.1: shows all five pieces of a five-piece look as tiles', async () => {
       renderLooks({
         api: seed({
           pieceIds: ids,
@@ -176,11 +180,15 @@ describe('look detail', () => {
         path: '/a',
       });
       expect(await screen.findByText('Teile (5)')).toBeInTheDocument();
+      expect(
+        screen.getByRole('list', { name: 'Teile (5)' })
+      ).toBeInTheDocument();
+      expect(screen.getAllByRole('listitem')).toHaveLength(5);
       for (const id of ids)
-        expect(screen.getAllByText(`Piece ${id}`).length).toBeGreaterThan(0);
+        expect(tiles().getByText(`Piece ${id}`)).toBeInTheDocument();
     });
 
-    it('shows a card for every piece of a seven-piece look', async () => {
+    it('shows a tile for every piece of a seven-piece look', async () => {
       const seven = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
       renderLooks({
         api: seed({
@@ -192,18 +200,57 @@ describe('look detail', () => {
         path: '/a',
       });
       expect(await screen.findByText('Teile (7)')).toBeInTheDocument();
+      expect(screen.getAllByRole('listitem')).toHaveLength(7);
       for (const id of seven)
-        expect(screen.getAllByText(`Piece ${id}`).length).toBeGreaterThan(0);
+        expect(tiles().getByText(`Piece ${id}`)).toBeInTheDocument();
     });
 
-    it('shows price per currency on the card', async () => {
+    it('shows no add button and no "Im Look" marker on the tiles', async () => {
       renderLooks({ api: seed().api, path: '/a' });
       await screen.findByText('Teile (2)');
-      expect(screen.getAllByText(/100,00\s€/).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/110,00\sCHF/).length).toBeGreaterThan(0);
+      expect(tiles().queryByRole('button')).not.toBeInTheDocument();
+      expect(tiles().queryByText('Im Look')).not.toBeInTheDocument();
+      expect(tiles().queryByText('Hinzufügen')).not.toBeInTheDocument();
     });
 
-    it('US5.2: one size left shows quantities and sold out, without warning', async () => {
+    it('shows neither prices nor plain stock counts on the tiles', async () => {
+      renderLooks({ api: seed().api, path: '/a' });
+      await screen.findByText('Teile (2)');
+      expect(tiles().queryByText(/100,00\s€/)).not.toBeInTheDocument();
+      expect(tiles().queryByText(/110,00\sCHF/)).not.toBeInTheDocument();
+      expect(tiles().queryByText('36: 5')).not.toBeInTheDocument();
+    });
+
+    it('shows the same size chips as the tile of the creation flow', async () => {
+      const piece = buildPiece('p1', {
+        sizes: [
+          { sku: 'a', label: '36', availableQuantity: 0 },
+          { sku: 'b', label: '38', availableQuantity: 2 },
+          { sku: 'c', label: '40', availableQuantity: 9 },
+        ],
+      });
+      renderLooks({
+        api: seed({ pieces: [piece, buildPiece('p2')] }).api,
+        path: '/a',
+      });
+      await screen.findByText('Teile (2)');
+      const detail = tiles().getAllByRole('listitem')[0];
+      const chips = ['36', '38', '40'].map((label) =>
+        within(detail).getByText(label)
+      );
+      expect(chips[0]).toHaveStyle({ textDecoration: 'line-through' });
+      cleanup();
+
+      renderUi(<PieceResultCard piece={piece} state="available" />);
+      for (const [index, label] of ['36', '38', '40'].entries()) {
+        const created = screen.getByText(label);
+        expect(created.tagName).toBe(chips[index].tagName);
+        expect(created.className).toBe(chips[index].className);
+      }
+      expect(screen.getByText('38: nur noch 2')).toBeInTheDocument();
+    });
+
+    it('US5.2: low and sold-out sizes get a hint like on the creation tile', async () => {
       const p1 = buildPiece('p1', {
         sizes: [
           { label: '36', availableQuantity: 0 },
@@ -217,8 +264,8 @@ describe('look detail', () => {
         path: '/a',
       });
       expect(await screen.findByText('38: nur noch 1')).toBeInTheDocument();
-      expect(screen.getByText('42: 9')).toBeInTheDocument();
-      expect(screen.getByText('36, 40: ausverkauft')).toBeInTheDocument();
+      expect(screen.getByText('ausverkauft: 36, 40')).toBeInTheDocument();
+      expect(screen.queryByText('42: 9')).not.toBeInTheDocument();
       expect(
         screen.queryByText(/in allen Größen ausverkauft/)
       ).not.toBeInTheDocument();
@@ -242,6 +289,7 @@ describe('look detail', () => {
       expect(
         screen.getByText(/nicht zum Setpreis kaufbar/)
       ).toBeInTheDocument();
+      expect(screen.getByText('ausverkauft: 36, 38')).toBeInTheDocument();
     });
 
     it('shows "Einheitsgröße" for a one-size piece', async () => {
@@ -253,7 +301,19 @@ describe('look detail', () => {
         api: seed({ pieces: [p1, buildPiece('p2')] }).api,
         path: '/a',
       });
-      expect(await screen.findByText('Einheitsgröße: 4')).toBeInTheDocument();
+      await screen.findByText('Teile (2)');
+      expect(tiles().getByText('Einheitsgröße')).toBeInTheDocument();
+    });
+
+    it('shows a tile named by its id for a piece whose product is not loaded', async () => {
+      renderLooks({
+        api: seed({ pieces: [buildPiece('p1')] }).api,
+        path: '/a',
+      });
+      await screen.findByText('Teile (2)');
+      expect(screen.getAllByRole('listitem')).toHaveLength(2);
+      expect(tiles().getByText('Piece p1')).toBeInTheDocument();
+      expect(tiles().getByText('p2')).toBeInTheDocument();
     });
   });
 
@@ -671,6 +731,115 @@ describe('look detail', () => {
       expect(await cell('EUR DE')).toBeDisabled();
       expect(await cell('GBP GB')).toBeDisabled();
       expect(percent('EUR FR')).toBeDisabled();
+    });
+  });
+
+  describe('set price with a relative discount', () => {
+    /** DE is a 15 % discount (relative), FR an absolute one; sums are 200 EUR. */
+    function seedRelative(options: { permyriad?: number } = {}) {
+      const prices = { 'EUR/DE': 10000, 'EUR/FR': 10000 };
+      const fake = createFakeLookApi({
+        objects: [
+          buildObject('a', ['p1', 'p2'], {
+            // The stored DE price is stale on purpose: it follows the sum.
+            setPrice: { 'EUR/DE': 1, 'EUR/FR': 19000 },
+            savingPercent: { 'EUR/DE': 15 },
+          }),
+        ],
+        discounts: [
+          buildDiscount('a', ['p1', 'p2'], {
+            country: 'DE',
+            amount: {},
+            permyriad: options.permyriad ?? 1500,
+          }),
+          buildDiscount('a-FR', ['p1', 'p2'], {
+            country: 'FR',
+            amount: { EUR: 1000 },
+          }),
+        ],
+        pieces: [buildPiece('p1', { prices }), buildPiece('p2', { prices })],
+      });
+      return fake;
+    }
+    const open = (fake: ReturnType<typeof seedRelative>) =>
+      renderLooks({ api: fake.api, path: '/a', currencies: ['EUR'] });
+    const kindOf = (key: string) =>
+      within(screen.getByTestId(`price-row-${key}`))
+        .getAllByRole('cell')
+        .at(-1);
+
+    it("loads percentage rows in percent mode with the price derived from today's sum", async () => {
+      open(seedRelative());
+      expect(await cell('EUR DE')).toHaveValue('170,00');
+      expect(percent('EUR DE')).toHaveValue('15');
+      expect(kindOf('EUR/DE')).toHaveTextContent('Prozent');
+      expect(kindOf('EUR/FR')).toHaveTextContent('Betrag');
+      expect(screen.queryByText('Setpreis weicht ab')).not.toBeInTheDocument();
+    });
+
+    it('writes nothing when nothing changed', async () => {
+      const fake = seedRelative();
+      open(fake);
+      await cell('EUR DE');
+      await savePrice();
+      expect(await screen.findByText('Keine Änderung')).toBeInTheDocument();
+      expect(fake.callsTo('updateCartDiscount')).toHaveLength(0);
+      expect(fake.callsTo('writeLookObject')).toHaveLength(0);
+    });
+
+    it('changes the permyriad when the percentage changes', async () => {
+      const fake = seedRelative();
+      open(fake);
+      await cell('EUR DE');
+      await userEvent.clear(percent('EUR DE'));
+      await userEvent.type(percent('EUR DE'), '20');
+      await userEvent.tab();
+      await savePrice();
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      expect(fake.discounts.get('disc-a')?.permyriad).toBe(2000);
+      expect(fake.objects.get('look-a')?.value.savingPercent).toEqual({
+        'EUR/DE': 20,
+      });
+    });
+
+    it('switches the row to an absolute discount when its price is edited', async () => {
+      const fake = seedRelative();
+      open(fake);
+      await enterPrices({ 'EUR DE': '160' });
+      expect(kindOf('EUR/DE')).toHaveTextContent('Betrag');
+      await savePrice();
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      expect(fake.discounts.get('disc-a')?.amount).toEqual({ EUR: 4000 });
+      expect(fake.discounts.get('disc-a')?.permyriad).toBeUndefined();
+      expect(fake.objects.get('look-a')?.value.savingPercent).toBeUndefined();
+    });
+
+    it('applies a global percentage: absolute rows become relative', async () => {
+      const fake = seedRelative();
+      open(fake);
+      await cell('EUR DE');
+      await userEvent.type(
+        screen.getByRole('textbox', { name: 'Prozent für alle Zeilen' }),
+        '10'
+      );
+      await userEvent.tab();
+      expect(kindOf('EUR/FR')).toHaveTextContent('Prozent');
+      await savePrice();
+      expect(
+        await screen.findAllByText('Setpreis gespeichert')
+      ).not.toHaveLength(0);
+      expect(fake.discounts.get('disc-a')?.permyriad).toBe(1000);
+      expect(fake.discounts.get('disc-a-FR')?.permyriad).toBe(1000);
+      expect(fake.discounts.get('disc-a-FR')?.amount).toEqual({});
+    });
+
+    it('shows the drift alert only when the permyriad mismatches', async () => {
+      open(seedRelative({ permyriad: 1000 }));
+      expect(await screen.findByText('Setpreis weicht ab')).toBeInTheDocument();
     });
   });
 

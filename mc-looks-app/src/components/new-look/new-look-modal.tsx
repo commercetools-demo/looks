@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FC } from 'react';
 import { useIntl } from 'react-intl';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 import {
@@ -38,6 +38,8 @@ import {
   useLookApi,
 } from '../../hooks/context';
 import { describeError } from '../common/describe-error';
+import type { PriceMode, PriceTableState } from '../common/set-price-table';
+import { percentOf, priceFromPercent } from '../../domain/price-table';
 import commonMessages from '../common/messages';
 import { BasicsStep } from './basics-step';
 import messages from './messages';
@@ -126,6 +128,11 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
   const [keyRace, setKeyRace] = useState(false);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [priceTexts, setPriceTexts] = useState<Record<string, string>>({});
+  const [priceModes, setPriceModes] = useState<Record<string, PriceMode>>({});
+  const onPriceChange = useCallback((next: PriceTableState) => {
+    setPriceTexts(next.texts);
+    setPriceModes(next.modes);
+  }, []);
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [activate, setActivate] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -184,10 +191,19 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
   const parsed = Object.fromEntries(
     filled.map((key) => [key, parseCents(priceTexts[key])])
   );
+  // Rows last edited as a percentage get a relative discount: the percentage
+  // is the row's (one decimal) and the price follows from it.
+  const savingPercent: Record<string, number> = {};
   const cents: Money = Object.fromEntries(
-    filled.flatMap((key) =>
-      parsed[key] === undefined ? [] : [[key, parsed[key]]]
-    )
+    filled.flatMap((key) => {
+      const typed = parsed[key];
+      if (typed === undefined) return [];
+      const percent =
+        priceModes[key] === 'percent' ? percentOf(sum[key], typed) : undefined;
+      if (percent === undefined) return [[key, typed]];
+      savingPercent[key] = percent;
+      return [[key, priceFromPercent(sum[key], percent)]];
+    })
   );
 
   function newLook(): NewLook {
@@ -199,6 +215,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
         : {}),
       componentProductIds: pieces.map((piece) => piece.id),
       setPrice: cents,
+      ...(Object.keys(savingPercent).length > 0 ? { savingPercent } : {}),
       sum,
     };
   }
@@ -384,6 +401,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
                   setPieces(next);
                   // Prices start at the sums of the new pieces.
                   setPriceTexts({});
+                  setPriceModes({});
                 }}
                 errors={messagesFor(['pieces'])}
                 isDisabled={isDisabled}
@@ -393,7 +411,8 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
               <SetPriceStep
                 pieces={pieces}
                 texts={priceTexts}
-                onTextsChange={setPriceTexts}
+                modes={priceModes}
+                onChange={onPriceChange}
                 errors={setPriceErrors}
                 generalErrors={errors
                   .filter(
@@ -411,6 +430,7 @@ export const NewLookModal: FC<NewLookModalProps> = ({ basePath, onSaved }) => {
                 pieces={pieces}
                 sum={sum}
                 setPrice={cents}
+                savingPercent={savingPercent}
                 activate={activate}
                 onActivateChange={setActivate}
                 isDisabled={isDisabled}

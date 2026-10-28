@@ -39,10 +39,6 @@ export default defineMessages({
     id: 'Looks.detail.piecesTitle',
     defaultMessage: 'Teile ({count})',
   },
-  previewTitle: {
-    id: 'Looks.detail.previewTitle',
-    defaultMessage: 'Vorschau im Shop',
-  },
   soldOutAlertTitle: {
     id: 'Looks.detail.soldOutAlertTitle',
     defaultMessage: '{piece} ist in allen Größen ausverkauft',
@@ -69,15 +65,6 @@ export default defineMessages({
     id: 'Looks.detail.missingCurrencyDescription',
     defaultMessage:
       'Bitte für jede Währung des Projekts einen Setpreis eingeben und speichern.',
-  },
-  stockOk: { id: 'Looks.detail.stockOk', defaultMessage: '{size}: {count}' },
-  stockLow: {
-    id: 'Looks.detail.stockLow',
-    defaultMessage: '{size}: nur noch {count}',
-  },
-  stockSoldOut: {
-    id: 'Looks.detail.stockSoldOut',
-    defaultMessage: '{sizes}: ausverkauft',
   },
   deleteTitle: {
     id: 'Looks.detail.deleteTitle',
@@ -117,18 +104,6 @@ export default defineMessages({
     id: 'Looks.detail.setPriceLabel',
     defaultMessage: 'Setpreis in {currency}',
   },
-  sumLine: {
-    id: 'Looks.detail.sumLine',
-    defaultMessage: 'Summe der Einzelpreise: {sum}',
-  },
-  savingLine: {
-    id: 'Looks.detail.savingLine',
-    defaultMessage: 'Ersparnis: {amount} ({percent} %)',
-  },
-  savingNone: {
-    id: 'Looks.detail.savingNone',
-    defaultMessage: 'Keine Ersparnis',
-  },
   setPriceSave: {
     id: 'Looks.detail.setPriceSave',
     defaultMessage: 'Setpreis speichern',
@@ -150,6 +125,16 @@ export default defineMessages({
   errNotPositive: {
     id: 'Looks.detail.errNotPositive',
     defaultMessage: 'Bitte einen Setpreis über 0 eingeben',
+  },
+  errPercent: {
+    id: 'Looks.detail.errPercent',
+    defaultMessage:
+      'Die Ersparnis muss größer als 0 % und kleiner als 100 % sein',
+  },
+  errModeMixed: {
+    id: 'Looks.detail.errModeMixed',
+    defaultMessage:
+      'Pro Land nutzt ein Look entweder Beträge oder einen einzigen Prozentwert',
   },
   errNotBelowSum: {
     id: 'Looks.detail.errNotBelowSum',

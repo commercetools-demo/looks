@@ -2,13 +2,18 @@ import type { FC } from 'react';
 import { useIntl } from 'react-intl';
 import { Stack, Text } from '@commercetools/nimbus';
 import type { Piece } from '../../domain/types';
-import { SetPriceTable } from '../common/set-price-table';
+import {
+  SetPriceTable,
+  type PriceMode,
+  type PriceTableState,
+} from '../common/set-price-table';
 import messages from './messages';
 
 type SetPriceStepProps = {
   pieces: Piece[];
   texts: Record<string, string>;
-  onTextsChange: (texts: Record<string, string>) => void;
+  modes: Record<string, PriceMode>;
+  onChange: (next: PriceTableState) => void;
   errors: Record<string, string | undefined>;
   /** Errors that belong to no row. */
   generalErrors: string[];
@@ -31,7 +36,8 @@ export const SetPriceStep: FC<SetPriceStepProps> = (props) => {
       <SetPriceTable
         pieces={props.pieces}
         texts={props.texts}
-        onTextsChange={props.onTextsChange}
+        modes={props.modes}
+        onChange={props.onChange}
         errors={props.errors}
         isDisabled={props.isDisabled}
       />

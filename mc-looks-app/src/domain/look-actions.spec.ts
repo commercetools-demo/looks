@@ -6,11 +6,18 @@ import {
   changeIsActiveAction,
   changeValueAction,
   countryPredicate,
+  discountHasValue,
+  groupValue,
   groupAmounts,
   groupPriceKeys,
+  buildRelativeValueInput,
   nameActions,
   setGroupActiveAction,
 } from './look-actions';
+
+type AbsoluteValue = {
+  absoluteCart: { money: Array<{ currencyCode: string; centAmount: number }> };
+};
 
 const look = {
   key: 'cozy-in-grey',
@@ -77,7 +84,9 @@ describe('look actions', () => {
       Array(3).fill({ typeId: 'discount-group', key: 'look-cozy-in-grey' })
     );
     expect(drafts.some((d) => 'sortOrder' in d)).toBe(false);
-    expect(drafts.map((d) => d.value.absoluteCart.money)).toEqual([
+    expect(
+      drafts.map((d) => (d.value as AbsoluteValue).absoluteCart.money)
+    ).toEqual([
       [{ currencyCode: 'EUR', centAmount: 3006 }],
       [{ currencyCode: 'EUR', centAmount: 3000 }],
       [{ currencyCode: 'GBP', centAmount: 3990 }],
@@ -121,7 +130,7 @@ describe('look actions', () => {
       { isActive: true }
     );
     expect(draft.isActive).toBe(true);
-    expect(draft.value.absoluteCart.money).toEqual([
+    expect((draft.value as AbsoluteValue).absoluteCart.money).toEqual([
       { currencyCode: 'EUR', centAmount: 3006 },
       { currencyCode: 'CHF', centAmount: 3300 },
     ]);
@@ -199,7 +208,9 @@ describe('look actions', () => {
     expect(changeIsActiveAction(true)).toEqual({
       changeIsActive: { isActive: true },
     });
-    expect(changeValueAction({ EUR: 3006 })).toEqual({
+    expect(
+      changeValueAction({ kind: 'absolute', amounts: { EUR: 3006 } })
+    ).toEqual({
       changeValue: {
         value: {
           absoluteCart: {
@@ -210,5 +221,81 @@ describe('look actions', () => {
       },
     });
     expect(nameActions({ de: 'A', en: 'B' })).toHaveLength(2);
+  });
+
+  it('builds a relative value and change action', () => {
+    expect(buildRelativeValueInput(1250)).toEqual({
+      relativeCart: {
+        permyriad: 1250,
+        applicationMode: 'IndividualApplication',
+      },
+    });
+    expect(changeValueAction({ kind: 'relative', permyriad: 1500 })).toEqual({
+      changeValue: {
+        value: {
+          relativeCart: {
+            permyriad: 1500,
+            applicationMode: 'IndividualApplication',
+          },
+        },
+      },
+    });
+  });
+});
+
+describe('relative and absolute country discounts', () => {
+  const mixed = {
+    ...look,
+    savingPercent: { 'EUR/DE': 12.5, 'GBP/GB': 12.5 },
+  };
+
+  it('is relative when every cell of the country is a percentage cell', () => {
+    expect(
+      groupValue(
+        { country: 'DE', keys: ['EUR/DE'] },
+        mixed.sum,
+        mixed.setPrice,
+        mixed.savingPercent
+      )
+    ).toEqual({ kind: 'relative', permyriad: 1250 });
+    expect(
+      groupValue(
+        { country: 'FR', keys: ['EUR/FR'] },
+        mixed.sum,
+        mixed.setPrice,
+        {
+          'EUR/DE': 10,
+        }
+      )
+    ).toEqual({ kind: 'absolute', amounts: { EUR: 3000 } });
+  });
+
+  it('drafts one relative and one absolute discount per country', () => {
+    const drafts = buildLookCartDiscountDrafts(mixed, { isActive: false });
+    expect(drafts.map((d) => d.value)).toEqual([
+      buildRelativeValueInput(1250),
+      buildDiscountValueInput({ EUR: 3000 }),
+      buildRelativeValueInput(1250),
+    ]);
+  });
+
+  it('compares a discount with the wanted value', () => {
+    const rel = { amount: {}, permyriad: 1250 };
+    const abs = { amount: { EUR: 3000 } };
+    expect(discountHasValue(rel, { kind: 'relative', permyriad: 1250 })).toBe(
+      true
+    );
+    expect(discountHasValue(rel, { kind: 'relative', permyriad: 1000 })).toBe(
+      false
+    );
+    expect(discountHasValue(rel, { kind: 'absolute', amounts: {} })).toBe(
+      false
+    );
+    expect(discountHasValue(abs, { kind: 'relative', permyriad: 1250 })).toBe(
+      false
+    );
+    expect(
+      discountHasValue(abs, { kind: 'absolute', amounts: { EUR: 3000 } })
+    ).toBe(true);
   });
 });

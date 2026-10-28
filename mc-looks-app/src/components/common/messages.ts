@@ -170,6 +170,22 @@ export default defineMessages({
     id: 'Looks.common.priceTablePercentLabel',
     defaultMessage: 'Ersparnis in Prozent {currency} {country}',
   },
+  priceTableGlobalPercent: {
+    id: 'Looks.common.priceTableGlobalPercent',
+    defaultMessage: 'Prozent für alle Zeilen',
+  },
+  priceTableDiscount: {
+    id: 'Looks.common.priceTableDiscount',
+    defaultMessage: 'Rabatt',
+  },
+  priceTableModePercent: {
+    id: 'Looks.common.priceTableModePercent',
+    defaultMessage: 'Prozent',
+  },
+  priceTableModeAmount: {
+    id: 'Looks.common.priceTableModeAmount',
+    defaultMessage: 'Betrag',
+  },
   priceTableHint: {
     id: 'Looks.common.priceTableHint',
     defaultMessage:

@@ -16,17 +16,18 @@ import commonMessages from '../common/messages';
 import { PieceImage } from '../common/piece-image';
 import messages from './messages';
 
-export type CardState = 'available' | 'in-look';
+/** `static`: the tile only shows the piece (the look detail), no action. */
+export type CardState = 'available' | 'in-look' | 'static';
 
 type PieceResultCardProps = {
   piece: Piece;
   state: CardState;
-  isDisabled: boolean;
-  onAdd: () => void;
+  isDisabled?: boolean;
+  onAdd?: () => void;
 };
 
-/** One search result: image, name, prices per currency and country, size chips
- *  with "nur noch N" and "ausverkauft", and the add action. */
+/** One product tile: image, name, size chips with "nur noch N" and
+ *  "ausverkauft", and the add action (not in the `static` state). */
 export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
   const intl = useIntl();
   const { piece } = props;
@@ -123,7 +124,7 @@ export const PieceResultCard: FC<PieceResultCardProps> = (props) => {
             )}
           </Stack>
           <Box flex="1" />
-          {props.state === 'in-look' ? (
+          {props.state === 'static' ? null : props.state === 'in-look' ? (
             <Flex
               alignItems="center"
               justifyContent="center"
