@@ -67,7 +67,7 @@ Decisions that the plan rests on. Each has Decision, Rationale, Alternatives. So
 
 ## R10. Configuration module and `.env` path
 
-- **Decision**: `src/config.ts` is the only reader of per-project values: `VARIANT_ATTRIBUTES` (default `size`), `SHOP_ORIGIN`. For now it exports typed defaults; the same file switches to `process.env` reads (`mc-scripts` inlines `${env:…}`/`process.env` at build) when the variables are introduced, with a committed `.env` of defaults and `.env.local` overrides, as is common for Merchant Center apps. A required value that is missing or empty throws at build/start-up naming the variable. A unit test fails if any other file reads `process.env`.
+- **Decision**: `src/config.ts` is the only reader of per-project values: `VARIANT_ATTRIBUTES` (default `size`). For now it exports typed defaults; the same file switches to `process.env` reads (`mc-scripts` inlines `${env:…}`/`process.env` at build) when the variables are introduced, with a committed `.env` of defaults and `.env.local` overrides, as is common for Merchant Center apps. A required value that is missing or empty throws at build/start-up naming the variable. A unit test fails if any other file reads `process.env`.
 - **Rationale**: FR-084/085 ("move to `.env` later without touching callers").
 - **Alternatives**: scatter `process.env` reads — rejected; fetching configuration at runtime from a Custom Object — over-engineering for a developer-only setting.
 

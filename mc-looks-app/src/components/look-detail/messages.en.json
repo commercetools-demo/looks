@@ -1,9 +1,5 @@
 {
   "Looks.detail.backToList": "Back to looks",
-  "Looks.detail.activeSwitchLabel": "Active",
-  "Looks.detail.viewInShop": "View in shop",
-  "Looks.detail.viewInShopTitle": "View in shop: {piece}",
-  "Looks.detail.shopUnavailable": "Shop address not configured",
   "Looks.detail.loadErrorTitle": "The look could not be loaded",
   "Looks.detail.notFoundTitle": "Look not found",
   "Looks.detail.notFoundDescription": "There is neither a look definition nor a set-price discount for the key \"{key}\".",
@@ -31,7 +27,6 @@
   "Looks.detail.completeAction": "Complete",
   "Looks.detail.completeName": "Look name",
   "Looks.detail.completed": "Look completed",
-  "Looks.detail.deleteTitle": "Delete look",
   "Looks.detail.deleteDescription": "Removes the look definition, the discounts of all countries and the discount group. This cannot be undone.",
   "Looks.detail.deleteButton": "Delete look",
   "Looks.detail.deleteConfirm": "Delete look “{name}” for good?",
@@ -39,5 +34,6 @@
   "Looks.detail.deleted": "Look “{name}” deleted",
   "Looks.detail.deleteActiveWarning": "The look is on: its discounts disappear from the shop at once.",
   "Looks.detail.errPercent": "The saving must be above 0% and below 100%",
-  "Looks.detail.errModeMixed": "Per country a look uses either amounts or one percentage"
+  "Looks.detail.errModeMixed": "Per country a look uses either amounts or one percentage",
+  "Looks.detail.statusLabel": "Status"
 }

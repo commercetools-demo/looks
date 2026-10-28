@@ -14,7 +14,7 @@ Technical approach, from [research.md](./research.md):
 - **Pure, unit-tested domain logic** (key derivation, validation, discount drafts, rank allocation, completeness, sales aggregation) is carried over from the source and lives in `src/domain/`, free of React and Apollo.
 - **Client-side paging and sorting** over the joined set of looks, in two loading tiers so the first page appears fast (see research R3).
 - **Currencies from the project**, **default inventory** for stock, **no brands, no seeding**.
-- **One configuration module** for everything per-project (variant attribute names, shop origin, application URLs), designed to move to `.env` (FR-084/085).
+- **One configuration module** for everything per-project (variant attribute names, application URLs), designed to move to `.env` (FR-084/085).
 - **Two deploy paths, one bundle**: Connect (`connect.yaml`, production) and Netlify (`netlify.toml`, development/preview).
 
 ## Technical Context

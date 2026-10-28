@@ -6,22 +6,7 @@ export default defineMessages({
     id: 'Looks.detail.backToList',
     defaultMessage: 'Zurück zu Looks',
   },
-  activeSwitchLabel: {
-    id: 'Looks.detail.activeSwitchLabel',
-    defaultMessage: 'Aktiv',
-  },
-  viewInShop: {
-    id: 'Looks.detail.viewInShop',
-    defaultMessage: 'Im Shop ansehen',
-  },
-  viewInShopTitle: {
-    id: 'Looks.detail.viewInShopTitle',
-    defaultMessage: 'Im Shop ansehen: {piece}',
-  },
-  shopUnavailable: {
-    id: 'Looks.detail.shopUnavailable',
-    defaultMessage: 'Shop-Adresse nicht konfiguriert',
-  },
+  statusLabel: { id: 'Looks.detail.statusLabel', defaultMessage: 'Status' },
   loadErrorTitle: {
     id: 'Looks.detail.loadErrorTitle',
     defaultMessage: 'Der Look konnte nicht geladen werden',
@@ -65,10 +50,6 @@ export default defineMessages({
     id: 'Looks.detail.missingCurrencyDescription',
     defaultMessage:
       'Bitte für jede Währung des Projekts einen Setpreis eingeben und speichern.',
-  },
-  deleteTitle: {
-    id: 'Looks.detail.deleteTitle',
-    defaultMessage: 'Look löschen',
   },
   deleteDescription: {
     id: 'Looks.detail.deleteDescription',

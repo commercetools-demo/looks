@@ -9,12 +9,10 @@ import {
   Flex,
   Grid,
   Heading,
-  Link,
   Skeleton,
   Stack,
   Text,
 } from '@commercetools/nimbus';
-import { config } from '../../config';
 import type { LookRow } from '../../domain/look-rows';
 import type { Piece } from '../../domain/types';
 import { useCanManage } from '../../hooks/context';
@@ -24,7 +22,7 @@ import { useLookTitle } from '../common/look-hooks';
 import { LookStatusSwitch } from '../common/look-status';
 import commonMessages from '../common/messages';
 import { CompleteLookPanel } from './complete-look-panel';
-import { DeleteLookPanel } from './delete-look-panel';
+import { DeleteLookButton } from './delete-look-button';
 import messages from './messages';
 import { PieceResultCard } from '../new-look/piece-result-card';
 import { SetPriceForm } from './set-price-form';
@@ -43,15 +41,9 @@ type LookDetailBodyProps = {
   row: LookRow;
   apply: ReturnType<typeof useLookDetail>['apply'];
   reload: () => void;
-  onDeleted: () => void;
 };
 
-const LookDetailBody: FC<LookDetailBodyProps> = ({
-  row,
-  apply,
-  reload,
-  onDeleted,
-}) => {
+const LookDetailBody: FC<LookDetailBodyProps> = ({ row, apply, reload }) => {
   const intl = useIntl();
   const complete = row.completeness === 'complete';
 
@@ -116,7 +108,6 @@ const LookDetailBody: FC<LookDetailBodyProps> = ({
           reload={reload}
         />
       )}
-      <DeleteLookPanel row={row} onDeleted={onDeleted} reload={reload} />
     </Stack>
   );
 };
@@ -137,7 +128,6 @@ const LookDetailPage: FC<LookDetailPageProps> = ({ basePath }) => {
   const history = useHistory();
   const { state, reload, apply } = useLookDetail(lookKey);
   const row = state.status === 'ready' ? state.row : undefined;
-  const firstPiece = row?.pieces[0];
 
   return (
     <DefaultPage.Root>
@@ -157,37 +147,26 @@ const LookDetailPage: FC<LookDetailPageProps> = ({ basePath }) => {
         <DefaultPage.Subtitle>{lookKey}</DefaultPage.Subtitle>
         {row && (
           <DefaultPage.Actions>
-            {config.shopOrigin ? (
-              <Link
-                href={`${config.shopOrigin}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={
-                  firstPiece
-                    ? intl.formatMessage(messages.viewInShopTitle, {
-                        piece: firstPiece.name,
-                      })
-                    : undefined
-                }
-              >
-                {intl.formatMessage(messages.viewInShop)}
-              </Link>
-            ) : (
-              <Flex alignItems="center" gap="200">
-                <Button size="xs" variant="outline" isDisabled>
-                  {intl.formatMessage(messages.viewInShop)}
-                </Button>
-                <Text fontSize="300" color="neutral.11">
-                  {intl.formatMessage(messages.shopUnavailable)}
-                </Text>
-              </Flex>
-            )}
             {row.completeness === 'complete' && (
-              <Flex alignItems="center" gap="200">
-                <Text>{intl.formatMessage(messages.activeSwitchLabel)}</Text>
+              <Flex alignItems="center" gap="300">
+                <Stack gap="0" alignItems="flex-end">
+                  <Text>{intl.formatMessage(messages.statusLabel)}</Text>
+                  <Text color="neutral.11">
+                    {intl.formatMessage(
+                      row.isActive
+                        ? commonMessages.statusActive
+                        : commonMessages.statusInactive
+                    )}
+                  </Text>
+                </Stack>
                 <LookStatusSwitch row={row} onChange={apply} />
               </Flex>
             )}
+            <DeleteLookButton
+              row={row}
+              onDeleted={() => history.push(`${basePath}${listSearch}`)}
+              reload={reload}
+            />
             {!canManage && (
               <Badge colorPalette="neutral">
                 {intl.formatMessage(commonMessages.viewOnly)}
@@ -223,14 +202,7 @@ const LookDetailPage: FC<LookDetailPageProps> = ({ basePath }) => {
             {intl.formatMessage(messages.notFoundDescription, { key: lookKey })}
           </Text>
         )}
-        {row && (
-          <LookDetailBody
-            row={row}
-            apply={apply}
-            reload={reload}
-            onDeleted={() => history.push(`${basePath}${listSearch}`)}
-          />
-        )}
+        {row && <LookDetailBody row={row} apply={apply} reload={reload} />}
       </DefaultPage.Content>
     </DefaultPage.Root>
   );

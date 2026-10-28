@@ -9,18 +9,14 @@ export interface AppConfig {
   /** Product-variant attributes that tell the variants of a product apart
    *  (for example size, finish colour, search colour), in display order. */
   variantAttributes: string[];
-  /** Shop address for the "Im Shop ansehen" link; empty disables the link. */
-  shopOrigin: string;
 }
 
 export const CONFIG_VARIABLES: Record<keyof AppConfig, string> = {
   variantAttributes: 'VARIANT_ATTRIBUTES',
-  shopOrigin: 'SHOP_ORIGIN',
 };
 
 const defaults: AppConfig = {
   variantAttributes: ['size'],
-  shopOrigin: '',
 };
 
 /** Raw values as read from the environment: every value is text, the list of
@@ -35,19 +31,14 @@ export function resolveConfig(source: ConfigSource = {}): AppConfig {
       .map((name) => name.trim())
       .filter(Boolean);
   }
-  if (source.shopOrigin !== undefined) {
-    merged.shopOrigin = source.shopOrigin.trim();
-  }
   const missing = (key: keyof AppConfig) =>
     new Error(
       `Missing configuration value ${CONFIG_VARIABLES[key]}: it must not be empty.`
     );
   if (merged.variantAttributes.length === 0) throw missing('variantAttributes');
-  merged.shopOrigin = merged.shopOrigin.replace(/\/+$/, '');
   return merged;
 }
 
 export const config: AppConfig = resolveConfig({
   variantAttributes: process.env.VARIANT_ATTRIBUTES,
-  shopOrigin: process.env.SHOP_ORIGIN,
 });

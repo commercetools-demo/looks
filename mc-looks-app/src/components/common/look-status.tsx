@@ -92,7 +92,7 @@ export const LookStatusSwitch: FC<LookStatusSwitchProps> = ({
 
   return (
     <Switch
-      size="sm"
+      size="md"
       isSelected={row.isActive}
       isDisabled={busy || !canManage}
       aria-label={intl.formatMessage(messages.switchLabel, { name })}

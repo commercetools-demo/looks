@@ -9,7 +9,6 @@ All per-project values are read in one module, `mc-looks-app/src/config.ts`, wit
 | Value | Variable | Default | Meaning |
 |---|---|---|---|
 | Variant attributes | `VARIANT_ATTRIBUTES` | `size` | Comma-separated product-variant attributes that tell the variants of a product apart, in display order, e.g. `searchColor,finishColor,size`. A variant is shown as the values joined with " / " (text, number, enum, localized or set values); variants without any value are listed by SKU, and a product with a single such variant is "one size" |
-| Shop origin | `SHOP_ORIGIN` | empty | The shop address "Im Shop ansehen" points to. Empty disables the link |
 
 Each look gets one Discount Group (`look-<key>`) that holds its country Cart Discounts; the app assumes the `view_cart_discounts` and `manage_cart_discounts` scopes also cover Discount Groups (not yet confirmed against a live project, task T021).
 

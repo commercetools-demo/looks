@@ -1,6 +1,5 @@
 import { fillLookName } from '../../test-utils/names';
 import userEvent from '@testing-library/user-event';
-import { config } from '../../config';
 import { createFakeLookApi } from '../../test-utils/fake-look-api';
 import {
   buildDiscount,
@@ -100,14 +99,8 @@ const savePrice = () =>
   userEvent.click(screen.getByRole('button', { name: 'Setpreis speichern' }));
 
 describe('look detail', () => {
-  const origin = config.shopOrigin;
-  afterEach(() => {
-    config.shopOrigin = origin;
-  });
-
   describe('header and layout', () => {
-    it('shows back link, title, key, active switch and the shop link', async () => {
-      config.shopOrigin = 'https://shop.example.com';
+    it('shows back link, title, key, status and the active switch', async () => {
       renderLooks({ api: seed().api, path: '/a' });
       expect(
         await screen.findByRole('heading', { name: 'a de' })
@@ -117,21 +110,12 @@ describe('look detail', () => {
         screen.getByRole('link', { name: 'Zurück zu Looks' })
       ).toBeInTheDocument();
       expect(screen.getByRole('switch', { name: 'a de aktiv' })).toBeChecked();
+      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getByText('Aktiv')).toBeInTheDocument();
       expect(
-        screen.getByRole('link', { name: 'Im Shop ansehen' })
-      ).toHaveAttribute('href', 'https://shop.example.com/');
+        screen.queryByRole('link', { name: 'Im Shop ansehen' })
+      ).not.toBeInTheDocument();
       expect(screen.queryByText('Nur Lesezugriff')).not.toBeInTheDocument();
-    });
-
-    it('disables the shop link with a hint when no shop origin is configured', async () => {
-      config.shopOrigin = '';
-      renderLooks({ api: seed().api, path: '/a' });
-      expect(
-        await screen.findByRole('button', { name: 'Im Shop ansehen' })
-      ).toBeDisabled();
-      expect(
-        screen.getByText('Shop-Adresse nicht konfiguriert')
-      ).toBeInTheDocument();
     });
 
     it('shows the name in the data locale', async () => {
@@ -950,7 +934,6 @@ describe('look detail', () => {
 
   describe('read-only access', () => {
     it('shows everything and disables every write control', async () => {
-      config.shopOrigin = 'https://shop.example.com';
       const fake = seed();
       renderLooks({ api: fake.api, path: '/a', canManage: false });
       expect(await screen.findByText('Nur Lesezugriff')).toBeInTheDocument();
@@ -1088,44 +1071,64 @@ describe('look detail', () => {
       });
       return fake;
     };
+    const warning =
+      'Der Look ist aktiv: Seine Rabatte verschwinden sofort aus dem Shop.';
+    const confirmTitle = 'Look „a de“ endgültig löschen?';
     const deleteButton = () =>
       screen.getByRole('button', { name: 'Look löschen' });
+    const findDeleteButton = () =>
+      screen.findByRole('button', { name: 'Look löschen' });
+    const dialog = () => screen.getByRole('dialog');
+    const confirm = () =>
+      userEvent.click(
+        within(dialog()).getByRole('button', { name: 'Endgültig löschen' })
+      );
+    const noDeleteCalls = (fake: ReturnType<typeof createFakeLookApi>) =>
+      fake.calls.filter((c) => c.method.startsWith('delete'));
 
-    it('always shows the card; the button is enabled for an active look', async () => {
+    it('shows the button in the page header next to the switch; enabled for an active look', async () => {
       renderLooks({ api: seed().api, path: '/a' });
+      const button = await findDeleteButton();
+      expect(button).toBeEnabled();
       expect(
-        await screen.findByRole('heading', { name: 'Look löschen' })
-      ).toBeInTheDocument();
-      expect(deleteButton()).toBeEnabled();
+        screen.queryByRole('heading', { name: 'Look löschen' })
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      // Header actions come before the page content (the pieces list).
+      const switchEl = screen.getByRole('switch');
+      const pieces = screen.getByRole('list', { name: /^Teile/ });
+      expect(
+        button.compareDocumentPosition(pieces) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        switchEl.compareDocumentPosition(button) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
     });
 
     it('warns in the confirmation of an active look, not of an inactive one', async () => {
-      const warning =
-        'Der Look ist aktiv: Seine Rabatte verschwinden sofort aus dem Shop.';
       const active = renderLooks({ api: seed().api, path: '/a' });
-      await screen.findByRole('heading', { name: 'Look löschen' });
+      await findDeleteButton();
       expect(screen.queryByText(warning)).not.toBeInTheDocument();
       await userEvent.click(deleteButton());
-      expect(screen.getByText(warning)).toBeInTheDocument();
+      expect(within(dialog()).getByText(confirmTitle)).toBeInTheDocument();
+      expect(within(dialog()).getByText(warning)).toBeInTheDocument();
       active.unmount();
 
       renderLooks({ api: inactiveSeed().api, path: '/a' });
-      await screen.findByRole('heading', { name: 'Look löschen' });
+      await findDeleteButton();
       await userEvent.click(deleteButton());
-      expect(
-        screen.getByText('Look „a de“ endgültig löschen?')
-      ).toBeInTheDocument();
+      expect(within(dialog()).getByText(confirmTitle)).toBeInTheDocument();
       expect(screen.queryByText(warning)).not.toBeInTheDocument();
     });
 
     it('deletes an active look after confirmation', async () => {
       const fake = seed();
       renderLooks({ api: fake.api, path: '/a' });
-      await screen.findByRole('heading', { name: 'Look löschen' });
+      await findDeleteButton();
       await userEvent.click(deleteButton());
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Endgültig löschen' })
-      );
+      await confirm();
       expect(
         await screen.findByRole('heading', { name: 'Looks', level: 1 })
       ).toBeInTheDocument();
@@ -1135,37 +1138,50 @@ describe('look detail', () => {
 
     it('disables the button without Manage permission but keeps it visible', async () => {
       renderLooks({ api: inactiveSeed().api, path: '/a', canManage: false });
-      await screen.findByRole('heading', { name: 'Look löschen' });
-      expect(deleteButton()).toBeDisabled();
+      expect(await findDeleteButton()).toBeDisabled();
     });
 
     it('enables the button for an inactive look and asks first; cancel writes nothing', async () => {
       const fake = inactiveSeed();
       renderLooks({ api: fake.api, path: '/a' });
-      await screen.findByRole('heading', { name: 'Look löschen' });
+      await findDeleteButton();
       expect(deleteButton()).toBeEnabled();
       await userEvent.click(deleteButton());
       expect(
-        screen.getByText('Look „a de“ endgültig löschen?')
+        within(dialog()).getByText(
+          'Entfernt die Look-Definition, alle Rabatte der Länder und die Rabattgruppe. Das lässt sich nicht rückgängig machen.'
+        )
       ).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
-      expect(
-        screen.queryByText('Look „a de“ endgültig löschen?')
-      ).not.toBeInTheDocument();
-      expect(deleteButton()).toBeEnabled();
-      expect(fake.calls.filter((c) => c.method.startsWith('delete'))).toEqual(
-        []
+      await userEvent.click(
+        within(dialog()).getByRole('button', { name: 'Abbrechen' })
       );
+      await waitFor(() =>
+        expect(screen.queryByText(confirmTitle)).not.toBeInTheDocument()
+      );
+      expect(deleteButton()).toBeEnabled();
+      expect(noDeleteCalls(fake)).toEqual([]);
+    });
+
+    it('cancels with Escape without writing', async () => {
+      const fake = inactiveSeed();
+      renderLooks({ api: fake.api, path: '/a' });
+      await findDeleteButton();
+      await userEvent.click(deleteButton());
+      expect(within(dialog()).getByText(confirmTitle)).toBeInTheDocument();
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(screen.queryByText(confirmTitle)).not.toBeInTheDocument()
+      );
+      expect(noDeleteCalls(fake)).toEqual([]);
+      expect(fake.objects.size).toBe(1);
     });
 
     it('deletes the look after confirmation and returns to the list', async () => {
       const fake = inactiveSeed();
       renderLooks({ api: fake.api, path: '/a' });
-      await screen.findByRole('heading', { name: 'Look löschen' });
+      await findDeleteButton();
       await userEvent.click(deleteButton());
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Endgültig löschen' })
-      );
+      await confirm();
       expect(
         await screen.findByRole('heading', { name: 'Looks', level: 1 })
       ).toBeInTheDocument();
@@ -1177,7 +1193,7 @@ describe('look detail', () => {
       ).toBeGreaterThan(0);
     });
 
-    it('shows the error, keeps the page and reloads what is left', async () => {
+    it('shows an error toast, keeps the page and reloads what is left', async () => {
       const fake = inactiveSeed();
       fake.failNext(
         'deleteDiscountGroup',
@@ -1186,17 +1202,17 @@ describe('look detail', () => {
         })
       );
       renderLooks({ api: fake.api, path: '/a' });
-      await screen.findByRole('heading', { name: 'Look löschen' });
+      await findDeleteButton();
       const fetchesBefore = fake.callsTo('getLookObject').length;
       await userEvent.click(deleteButton());
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Endgültig löschen' })
-      );
+      await confirm();
       expect(
-        await screen.findByText(
-          'Look löschen: Die Daten wurden inzwischen geändert. Bitte neu laden.'
-        )
-      ).toBeInTheDocument();
+        (
+          await screen.findAllByText(
+            'Look löschen: Die Daten wurden inzwischen geändert. Bitte neu laden.'
+          )
+        ).length
+      ).toBeGreaterThan(0);
       expect(
         screen.queryByRole('heading', { name: 'Looks', level: 1 })
       ).not.toBeInTheDocument();
@@ -1208,6 +1224,9 @@ describe('look detail', () => {
         )
       );
       await waitFor(() => expect(deleteButton()).toBeEnabled());
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
     });
   });
 });

@@ -14,7 +14,7 @@ A run and validation guide. Contracts: [operations.graphql](./contracts/operatio
 ```shell
 cd mc-looks-app
 npm install
-cp ../.env.example .env.local     # set INITIAL_PROJECT_KEY, CLOUD_IDENTIFIER, variant attributes, shop origin
+cp ../.env.example .env.local     # set INITIAL_PROJECT_KEY, CLOUD_IDENTIFIER, variant attributes
 npm run generate-types:ctp         # interactive browser login; do not run headless
 npm run extract-intl
 ```
@@ -54,8 +54,9 @@ cd mc-looks-app && npm start              # mc-scripts dev server on the configu
 6. **Past looks (US4)**: with orders that carry a look's discount, the card shows sets, orders, revenue per currency; best seller first with "Bester Look"; a look with no sale reads "Kein Set verkauft". Cut the `view_orders` scope or block the request: an error with "Erneut versuchen", cards still usable.
 7. **Detail (US5)**: opens from row or card; pieces show the same tiles as in the new-look flow, without the add action ("nur noch N", "ausverkauft" hints), sizeless pieces "Einheitsgröße"; change the set price and save; the cart price follows. Fail the object write after the discount write: "Setpreis im Shop noch nicht aktualisiert" with retry, list shows "Setpreis weicht ab". Change a product price: "Setpreis neu berechnen" realigns.
 8. **Repair (US6)**: delete a look's Custom Object (or its discount) in the sandbox: row shows "Unvollständig" and "Vervollständigen"; completing never switches the look on.
-9. **Read-only (US7)**: sign in with the View-only user: "Nur Lesezugriff" shown; "Neuer Look", switches, "Wieder aktivieren", set-price inputs are visible and disabled.
-10. **Language**: profile language en with data locale de: labels english, look and product names german.
+9. **Delete**: on the detail page, "Look löschen" in the header (next to the switch) opens a confirmation dialog; an active look adds a warning. "Abbrechen" or Escape writes nothing; "Endgültig löschen" removes discount, Discount Group and Custom Object, toasts and returns to the list.
+10. **Read-only (US7)**: sign in with the View-only user: "Nur Lesezugriff" shown; "Neuer Look", switches, "Wieder aktivieren", set-price inputs are visible and disabled.
+11. **Language**: profile language en with data locale de: labels english, look and product names german.
 
 ## Deploy checks
 

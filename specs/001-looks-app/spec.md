@@ -107,7 +107,7 @@ Below the list, the section "Frühere Looks" ("Ausgeschaltete Looks und wie sie 
 
 ### User Story 5 - Inspect a look and change its set price (Priority: P2)
 
-Opening a look shows its detail: back link "Zurück zu Looks", title and key, the "Aktiv" switch (or "Nur Lesezugriff" for view-only users), "Im Shop ansehen", the pieces as the same product tiles as in the new-look flow, without the add action (image, name, size chips, "nur noch N" and "ausverkauft" hints), and the set price with the saving. With Manage permission the user can enter new set prices (one per project currency) .
+Opening a look shows its detail: back link "Zurück zu Looks", title and key, the "Aktiv" switch (or "Nur Lesezugriff" for view-only users), the pieces as the same product tiles as in the new-look flow, without the add action (image, name, size chips, "nur noch N" and "ausverkauft" hints), and the set price with the saving. With Manage permission the user can enter new set prices (one per project currency) .
 
 **Why this priority**: Repricing and fixing a look after launch is a frequent follow-up task; creation (P1) comes first.
 
@@ -238,10 +238,11 @@ A user with View permission only sees the same list, section and details, but al
 - **FR-052**: A set-price change MUST validate as for a new look, then update the discount amount from today's live prices, then update the definition's set price using the object's current version. A failure between the two writes MUST be surfaced as in Story 5 scenario 4. "Setpreis neu berechnen" MUST perform the same with the unchanged price.
 - **FR-053**: ~~Look photo field on the detail~~ (removed: the photo is not used).
 - **FR-054**: "Vervollständigen" MUST follow Story 6; completing MUST never switch a discount on.
+- **FR-055**: The detail page header MUST offer "Look löschen" next to the active switch and the shop link (disabled, never hidden, without Manage). It MUST open a confirmation dialog titled with the look name, saying the definition, the country discounts and the Discount Group are removed irreversibly, with an extra warning for an active look. Cancel, the close button and Escape MUST write nothing. On success a toast confirms and the app returns to the list; on failure an error toast shows the error, the dialog closes and the page reloads what is left.
 
 #### Look detail
 
-- **FR-060**: The detail MUST show a back link "Zurück zu Looks"; the look name as title; the look key below; on the right the "Aktiv" switch (Manage) or the tag "Nur Lesezugriff"; and "Im Shop ansehen" (link to the first piece's product page on the shop).
+- **FR-060**: The detail MUST show a back link "Zurück zu Looks"; the look name as title; the look key below; on the right the "Aktiv" switch (Manage) or the tag "Nur Lesezugriff". The "Im Shop ansehen" link was removed.
 - **FR-061**: Below the alerts, the heading "Teile (n)" and the pieces as the same product tiles as in the new-look flow (`PieceResultCard`, state `static`: no add button, no "Im Look" marker), in a `role="list"` grid (auto-fill, minimum 150 px) with one `role="listitem"` per piece: image, name, size chips (sold-out sizes struck through), "Einheitsgröße" for sizeless pieces, "<size>: nur noch N" (1–3 left) and "ausverkauft: <sizes>". A piece whose product is not loaded shows a tile named by its product id. Then the set price with the saving.
 - **FR-061a**: ~~Price per currency and plain stock counts ("S: 5") on the piece cards, and a 280 px box with the first two piece images~~ (removed: the detail uses the creation tiles, which show neither).
 - **FR-062**: The detail MUST show a warning when a piece is sold out in every size, and the "Setpreis weicht ab" notice with "Setpreis neu berechnen" when drift exists.
@@ -263,7 +264,6 @@ A user with View permission only sees the same list, section and details, but al
 - **FR-083**: Seeding or demo-data tooling is not part of this feature.
 - **FR-084**: Everything that differs between projects MUST be a developer-set configuration value, defined in one place and never scattered as literals through the code. The values are:
   - **Variant attributes**: the names of the product-variant attributes that tell the variants of a product apart (for example search colour, finish colour and size), in display order; a variant is shown as the values of these attributes joined with " / " (text, number, enum, localized or set values), used for the variant choice, the preview dropdown and per-variant stock;
-  - **Shop origin**: the shop address "Im Shop ansehen" points to;
   - **Price country** (optional): the country whose price is used when a product has several country prices with different amounts in one currency (FR-008);
   - **Application ID** and **production URL** (FR-081).
 - **FR-085**: The configuration MUST be designed so it can move to environment variables (`.env`, with a committed example file listing every variable, a description and a default) without changing any code that reads it: all reads go through one configuration module. Until then the module holds the defaults. Missing or empty required values MUST fail loudly at start-up or build time with a message naming the variable, not silently at first use. A product that lacks the configured size attribute is shown as "Einheitsgröße" (one size).
@@ -302,7 +302,7 @@ A user with View permission only sees the same list, section and details, but al
 - **No brands**: looks are not tied to a brand. Product search covers the whole catalog; there is no brand filter, badge, brand-pure rule. Brands can be reintroduced later as a separate feature.
 - **Currencies**: from the project settings (FR-007). Percent saving is computed on the first currency.
 - **Stock**: sizes and stock come from the default inventory (inventory entries without a supply channel); no stock channel is configured. A variant has a size only if it has such an entry; when no variant of a product has one, all variants are listed as sold out so the sold-out warning still shows.
-- **Configuration**: the variant attributes and shop origin are developer-set (FR-084), initially in one configuration module and later in `.env` (FR-085). Default variant attribute: `size`. There is no admin UI for them; the person setting up the app is a developer.
+- **Configuration**: the variant attributes are developer-set (FR-084), initially in one configuration module and later in `.env` (FR-085). Default variant attribute: `size`. There is no admin UI for them; the person setting up the app is a developer.
 - **Seeding**: no seed, demo-data or reset tooling is built or maintained. Looks exist only through the app.
 - **Resolved source conflicts**:
   - Column widths: the later spec decision wins over the design board (Ersparnis 100 px, Status 120 px, Aktiv 88 px) because "Aktiv" broke across lines at 60 px. The Marke column is removed with brands.
@@ -310,7 +310,7 @@ A user with View permission only sees the same list, section and details, but al
   - Look and product names follow the data locale (not the UI language).
   - Design placeholder text (e.g. the step 2 error "Aktuell sind 6 gewählt") is an example; the built wording wins.
   - The detail's stock text in the design ("Größen … verfügbar") is a summary; the real app shows per-size stock from inventory.
-- **Not in scope**: pagination of "Frühere Looks"; an approval workflow (the inactive state is the review place); deleting looks; editing the pieces of an existing look; analytics beyond the "Frühere Looks" figures; the storefront; seeding; brands; drift snapshot tooling.
+- **Not in scope**: pagination of "Frühere Looks"; an approval workflow (the inactive state is the review place); deleting looks from the list (deleting is only offered on the detail page, see FR-055); editing the pieces of an existing look; analytics beyond the "Frühere Looks" figures; the storefront; seeding; brands; drift snapshot tooling.
 - **Platform limits relied on**: at most 100 active, store-independent, code-less Cart Discounts per project; a Cart Discount `sortOrder` must be unique and must not end in a zero; Custom Application entry-point paths are unique within a region.
 - **Developer setup**: a developer sets these values per project before first deploy; the setup checklist (FR-082) lists them for both deploy paths.
 - **Two deploy paths**: Netlify and Connect are both required (FR-081). Connect is production; Netlify is development, preview and fallback. Both serve the same bundle, so there is no code branch per host.

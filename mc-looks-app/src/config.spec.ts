@@ -4,22 +4,13 @@ import { CONFIG_VARIABLES, resolveConfig } from './config';
 
 describe('config', () => {
   it('has the documented defaults', () => {
-    expect(resolveConfig()).toEqual({
-      variantAttributes: ['size'],
-      shopOrigin: '',
-    });
+    expect(resolveConfig()).toEqual({ variantAttributes: ['size'] });
   });
 
-  it('takes overrides, trims them, and strips trailing slashes from the origin', () => {
+  it('takes overrides and trims them', () => {
     expect(
-      resolveConfig({
-        variantAttributes: ' searchColor , finishColor,size ',
-        shopOrigin: 'https://shop.example.com//',
-      })
-    ).toMatchObject({
-      variantAttributes: ['searchColor', 'finishColor', 'size'],
-      shopOrigin: 'https://shop.example.com',
-    });
+      resolveConfig({ variantAttributes: ' searchColor , finishColor,size ' })
+    ).toEqual({ variantAttributes: ['searchColor', 'finishColor', 'size'] });
   });
 
   it('fails loudly and names the variable when a required value is empty', () => {
@@ -29,10 +20,6 @@ describe('config', () => {
     expect(() => resolveConfig({ variantAttributes: ' , ' })).toThrow(
       'VARIANT_ATTRIBUTES'
     );
-  });
-
-  it('allows an empty shop origin (the shop link is then unavailable)', () => {
-    expect(() => resolveConfig({ shopOrigin: '' })).not.toThrow();
   });
 });
 
