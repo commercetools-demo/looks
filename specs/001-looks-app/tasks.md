@@ -283,3 +283,19 @@ Add US4 (past looks), US5 (detail and repricing), US7 (read-only audit), US6 (re
 - Do not skip T021: the discount's proportionate distribution must be verified against the live API before the save logic is relied on.
 - `[P]` tasks touch different files; commit per task or per logical group.
 - Constitution gates apply to every PR: View/Manage disabled-not-hidden, de/en completeness, version on every update, no API call on empty diff.
+
+## Changes after the first implementation
+
+The tasks above are the historical record of the first build and are not rewritten. Follow-up changes made afterwards (the code is the source of truth; spec, plan, research, data-model and contracts describe the current state):
+
+- **Per price cell**: prices, sums, set prices and discounts per currency and country (`EUR/DE`), master-variant list prices valid now; one set-price Cart Discount per country (`look-<key>`, `look-<key>-<COUNTRY>`/`-ALL`, country condition).
+- **Discount Groups**: one group `look-<key>` per look (name, description, the single rank 0.7 to 0.7999, `isActive`); save, switch and reprice flows reordered around it; the rank is unique among Cart Discounts and Discount Groups.
+- **Global percentage and relative discounts**: "Prozent für alle Zeilen", per-row mode, `relativeCart` discounts, `savingPercent` in the Custom Object, error `discount-mode-mixed`.
+- **Delete** on the detail page (header icon button, Nimbus `ConfirmationDialog`); the list no longer deletes.
+- **Optional look description** per language in step 1 (stored as the group's description).
+- **URL steps** for creation (`/new`, `/new/pieces`, `/new/price`, `/new/review`).
+- **Product search** over name, description, slug, search keywords, key, product id and variant SKU.
+- **Detail** tiles identical to the creation tiles without the add action; two-line status in the header.
+- **Removed**: look photo (and `SHOP_ORIGIN`, "Im Shop ansehen"), shop preview, colour settings, `PRICE_COUNTRY`, the maximum of 5 pieces (now at least 2, no maximum), prices on the piece tiles, the 280 px detail box. Configuration is reduced to `VARIANT_ATTRIBUTES`.
+
+Still open: **T021** (sandbox verification, including that the cart-discount scopes cover Discount Groups and that relative discounts apply as intended), **T022** (generate `schemas/ctp.json`, interactive login), **T074** (permissions check in a Merchant Center project), **T083** (manual quickstart scenarios and deploy checks), **T084** (`FEATURES.md` is still missing: the skill `features-doc-refresh` is not installed).

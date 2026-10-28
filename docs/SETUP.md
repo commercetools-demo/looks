@@ -4,13 +4,17 @@ Looks is a Merchant Center custom application. Registering it, installing it and
 
 ## 1. Developer configuration (once per project)
 
-All per-project values are read in one module, `mc-looks-app/src/config.ts`, with the defaults below. They will move to environment variables without any code change (see `.env.example`).
+All per-project values are read in one module, `mc-looks-app/src/config.ts`, which takes them from environment variables (see `.env.example`) and falls back to the defaults below. There is one value today.
 
 | Value | Variable | Default | Meaning |
 |---|---|---|---|
-| Variant attributes | `VARIANT_ATTRIBUTES` | `size` | Comma-separated product-variant attributes that tell the variants of a product apart, in display order, e.g. `searchColor,finishColor,size`. A variant is shown as the values joined with " / " (text, number, enum, localized or set values); variants without any value are listed by SKU, and a product with a single such variant is "one size" |
+| Variant attributes | `VARIANT_ATTRIBUTES` | `size` | Comma-separated product-variant attributes that tell the variants of a product apart, in display order, named exactly as in the product type, e.g. `search-color,search-finish,size`. A variant is shown as the values joined with " / " (text, number, enum, localized or set values); variants without any value are listed by SKU, and a product with a single such variant is "one size" |
 
-Each look gets one Discount Group (`look-<key>`) that holds its country Cart Discounts; the app assumes the `view_cart_discounts` and `manage_cart_discounts` scopes also cover Discount Groups (not yet confirmed against a live project, task T021).
+Each look gets one Discount Group (`look-<key>`) that holds its country Cart Discounts (one per country with set prices); the app assumes the `view_cart_discounts` and `manage_cart_discounts` scopes also cover Discount Groups (not yet confirmed against a live project, task T021).
+
+`VARIANT_ATTRIBUTES` is declared in the standard configuration of `connect.yaml` (optional, default `size`), so it can be set per Connect deployment; on Netlify set it as an environment variable (it is read at build time). Without a value the default `size` applies.
+
+Prices come from the list prices of the master variant (other variants only for currency and country combinations the master lacks), per currency and country, valid now; prices restricted to a customer group or channel are never used. Product search needs the project's Product Search index to be active.
 
 Product stock is read from the default inventory (inventory entries without a supply channel). Currencies and the languages of the look name are the project's currencies and languages (read from the project settings, hence the `view_project_settings` scope).
 
@@ -32,7 +36,7 @@ Switching between the two hosting paths changes only the Application URL in the 
 ## 3a. Deploy on Connect (production)
 
 1. The repository root holds `connect.yaml` with one application `mc-looks-app` of type `merchant-center-custom-application`; the folder `mc-looks-app/` matches that name.
-2. Create the Connect deployment for the repository with the standard configuration `CUSTOM_APPLICATION_ID`, `ENTRY_POINT_URI_PATH`, `INITIAL_PROJECT_KEY`, `CLOUD_IDENTIFIER`. Connect provides `APPLICATION_URL` itself.
+2. Create the Connect deployment for the repository with the standard configuration `CUSTOM_APPLICATION_ID`, `ENTRY_POINT_URI_PATH`, `INITIAL_PROJECT_KEY`, `CLOUD_IDENTIFIER` and, if your catalog needs more than `size`, `VARIANT_ATTRIBUTES`. Connect provides `APPLICATION_URL` itself.
 3. Use the URL Connect gives the application as the Application URL (step 2.3).
 
 ## 3b. Deploy on Netlify (development, preview)

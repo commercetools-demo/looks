@@ -17,3 +17,7 @@ deployAs:
           description: one of the following gcp-us, gcp-eu, aws-us, aws-eu
           required: true
           default: 'gcp-eu'
+        - key: VARIANT_ATTRIBUTES
+          description: Product-variant attributes that tell the variants of a product apart, comma-separated, in display order (for example search-color,search-finish,size)
+          required: false
+          default: 'size'

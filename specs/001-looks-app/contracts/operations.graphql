@@ -1,11 +1,12 @@
 # GraphQL operations of the Looks app, run through the Merchant Center `ctp` proxy.
-# Each operation was validated against the public commercetools schema with the
-# Knowledge MCP (`commercetools-graphql-validate`) on 2026-10-27. The project's
-# own schema is not checked by that tool; `schemas/ctp.json` in the app is.
+# They mirror the documents under `mc-looks-app/src/hooks/**/*.graphql` (names
+# differ slightly: fragments are called `Look...Fragment` there). Validated
+# against the public commercetools schema with the Knowledge MCP
+# (`commercetools-graphql-validate`); the project's own schema is checked by
+# `schemas/ctp.json` in the app.
 #
-# Fragment convention (constitution): a base fragment for the list, a detail
-# fragment extending it; mutations return the detail shape so the Apollo cache
-# updates in place.
+# Fragment convention (constitution): mutations return the same shape as the
+# reads so the Apollo cache updates in place.
 
 fragment LookDiscountBase on CartDiscount {
   id
@@ -13,15 +14,26 @@ fragment LookDiscountBase on CartDiscount {
   key
   isActive
   sortOrder
+  cartPredicate
   createdAt
   nameAllLocales { locale value }
   descriptionAllLocales { locale value }
   value {
     type
     ... on AbsoluteDiscountValue { money { currencyCode centAmount } }
+    ... on RelativeDiscountValue { permyriad }
+    ... on RelativeCartDiscountValue { permyriad applicationMode }
     ... on AbsoluteCartDiscountValue { applicationMode money { currencyCode centAmount } }
   }
   target { type ... on CartDiscountPatternTarget { targetPattern { ... on CountOnLineItemUnits { predicate minCount maxCount } } } }
+}
+
+fragment LookGroupBase on DiscountGroup {
+  id
+  version
+  key
+  sortOrder
+  isActive
 }
 
 fragment LookObjectBase on CustomObject {
@@ -47,7 +59,9 @@ query FetchLookObjects($limit: Int!, $offset: Int!) {
   }
 }
 
-# Filtered by the key prefix "look-" in the client (see research R3).
+# Filtered by the key prefix "look-" in the client (see research R3). The main
+# discount `look-<key>` and the country discounts `look-<key>-<COUNTRY>` are
+# both read here and joined to their look by key.
 query FetchCartDiscounts($limit: Int!, $offset: Int!) {
   cartDiscounts(limit: $limit, offset: $offset, sort: ["id asc"]) {
     total
@@ -63,6 +77,18 @@ query FetchLookObject($key: String!) {
   customObject(container: "look", key: $key) { ...LookObjectBase }
 }
 
+# Discount Groups: read to allocate the rank (unique among Cart Discounts and
+# Discount Groups) and to find a look's group by key.
+query FetchLookDiscountGroups($limit: Int, $offset: Int) {
+  discountGroups(limit: $limit, offset: $offset) {
+    results { ...LookGroupBase }
+  }
+}
+
+query FetchLookDiscountGroup($id: String, $key: String) {
+  discountGroup(id: $id, key: $key) { ...LookGroupBase }
+}
+
 # --- Pieces (tier 2 and search) ---------------------------------------------
 
 fragment PieceVariant on ProductVariant {
@@ -71,6 +97,8 @@ fragment PieceVariant on ProductVariant {
   prices {
     value { currencyCode centAmount }
     country
+    validFrom
+    validUntil
     customerGroupRef { id }
     channelRef { id }
   }
@@ -93,8 +121,11 @@ query FetchPieces($where: String!, $acceptLanguage: [Locale!]) {
   products(where: $where, limit: 100) { results { ...PieceProduct } }
 }
 
-# `query` is a SearchQueryInput; for text `*term*` in the data locale:
-# { wildcard: { field: "name", language: $language, value: $pattern, caseInsensitive: true } }
+# `query` is a SearchQueryInput built by `buildPieceSearchQuery`
+# (`search-query.ts`): for a text, `or` of case-insensitive `*term*` wildcards on
+# name, description, slug, searchKeywords (with `language`, the data locale),
+# key, id and variants.sku; for an empty text `exists` on name. Meta title and
+# meta description are not searchable in the product search.
 query SearchPieces($query: SearchQueryInput, $acceptLanguage: [Locale!]) {
   productsSearch(query: $query, limit: 20, offset: 0) {
     total
@@ -102,17 +133,22 @@ query SearchPieces($query: SearchQueryInput, $acceptLanguage: [Locale!]) {
   }
 }
 
-# Fallback if availability.noChannel is empty for a project (research R4).
-query FetchDefaultInventory($where: String!) {
-  inventoryEntries(where: $where, limit: 500) { results { sku availableQuantity } }
+# --- Writes ------------------------------------------------------------------
+
+mutation CreateLookDiscountGroup($draft: DiscountGroupDraft!) {
+  createDiscountGroup(draft: $draft) { ...LookGroupBase }
 }
 
-# --- Writes ------------------------------------------------------------------
+# Actions: setIsActive.
+mutation UpdateLookDiscountGroup($id: String!, $version: Long!, $actions: [DiscountGroupUpdateAction!]!) {
+  updateDiscountGroup(id: $id, version: $version, actions: $actions) { ...LookGroupBase }
+}
 
 mutation CreateLookDiscount($draft: CartDiscountDraft!) {
   createCartDiscount(draft: $draft) { ...LookDiscountBase }
 }
 
+# Actions: changeIsActive, changeValue, changeName, setDescription.
 mutation UpdateLookDiscount($id: String!, $version: Long!, $actions: [CartDiscountUpdateAction!]!) {
   updateCartDiscount(id: $id, version: $version, actions: $actions) { ...LookDiscountBase }
 }
@@ -120,6 +156,21 @@ mutation UpdateLookDiscount($id: String!, $version: Long!, $actions: [CartDiscou
 # Create (no version) or update (with the object's current version).
 mutation WriteLookObject($draft: CustomObjectDraft!) {
   createOrUpdateCustomObject(draft: $draft) { ...LookObjectBase }
+}
+
+# --- Delete (detail page) ----------------------------------------------------
+# Order: country discounts, main discount, group, Custom Object last.
+
+mutation DeleteLookDiscount($id: String!, $version: Long!) {
+  deleteCartDiscount(id: $id, version: $version) { id }
+}
+
+mutation DeleteLookDiscountGroup($id: String!, $version: Long!) {
+  deleteDiscountGroup(id: $id, version: $version) { id }
+}
+
+mutation DeleteLookObject($container: String!, $key: String!, $version: Long) {
+  deleteCustomObject(container: $container, key: $key, version: $version) { id }
 }
 
 # --- Sales of past looks -----------------------------------------------------

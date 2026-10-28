@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build **Looks**, a Merchant Center custom application (React 19, Nimbus, `@commercetools-frontend` application shell) in which merchandisers list, create, switch, reprice and retire looks (2–5 products sold at a set price). A look is a pair of project resources sharing the key `look-<lookKey>`: a Custom Object (container `look`) holding the definition, and a Cart Discount holding the set price; the discount's `isActive` decides what shoppers pay.
+Build **Looks**, a Merchant Center custom application (React 19, Nimbus, `@commercetools-frontend` application shell) in which merchandisers list, create, switch, reprice, delete and retire looks (at least 2 products sold at a set price). A look is three kinds of project resources sharing the key `look-<lookKey>`: a Custom Object (container `look`) holding the definition, one Discount Group (name = look name, description, the single rank `sortOrder`, the `isActive` switch) and one Cart Discount per country with set prices (main `look-<lookKey>`, others `look-<lookKey>-<COUNTRY>`/`-ALL`); the main discount's `isActive` decides what shoppers pay. Prices are per price cell (currency and country); percentages give relative discounts.
 
 Technical approach, from [research.md](./research.md):
 
@@ -14,7 +14,7 @@ Technical approach, from [research.md](./research.md):
 - **Pure, unit-tested domain logic** (key derivation, validation, discount drafts, rank allocation, completeness, sales aggregation) is carried over from the source and lives in `src/domain/`, free of React and Apollo.
 - **Client-side paging and sorting** over the joined set of looks, in two loading tiers so the first page appears fast (see research R3).
 - **Currencies from the project**, **default inventory** for stock, **no brands, no seeding**.
-- **One configuration module** for everything per-project (variant attribute names, application URLs), designed to move to `.env` (FR-084/085).
+- **One configuration module** for everything per-project (`VARIANT_ATTRIBUTES`; application URLs come from the deployment variables), designed to move to `.env` (FR-084/085).
 - **Two deploy paths, one bundle**: Connect (`connect.yaml`, production) and Netlify (`netlify.toml`, development/preview).
 
 ## Technical Context
@@ -35,7 +35,7 @@ Technical approach, from [research.md](./research.md):
 
 **Constraints**: View/Manage permission model (disable, never hide); every UI string in de + en; no hard-coded currency, attribute name or host; minimum OAuth scopes (FR-080); app folder one level below `connect.yaml` with no npm workspaces; constitution rule that mutations carry the current `version`
 
-**Scale/Scope**: up to ~1,000 looks, up to 5 pieces each; 3 screens (list with past looks, new-look flow, detail), ~40 components, ~120 message ids
+**Scale/Scope**: up to ~1,000 looks, at least 2 pieces each, no maximum; 3 screens (list with past looks, four-step new-look flow at `/new/:step?`, detail with delete), ~40 components
 
 ## Constitution Check
 
@@ -46,9 +46,9 @@ Technical approach, from [research.md](./research.md):
 | I | Nimbus-first UI | PASS | Nimbus components only; custom compositions from `Box/Flex/Stack/Grid` marked in code; no UIKit. |
 | II | MC platform constraints | PASS | MC app shell, `dataLocale`, MC notifications, **GraphQL via the `ctp` proxy** (R1). No REST client. |
 | III | View/Manage (NON-NEGOTIABLE) | PASS | `PERMISSIONS.View` gates the route; every write control is rendered disabled without `PERMISSIONS.Manage`, never hidden (R8). |
-| IV | Localization completeness | PASS | `defineMessages` per component; flat `src/i18n/data/{core,en,de}.json`; extract script excludes `.d.ts`; automated key/placeholder parity test (SC-009). Data-level: names are required in de and en; empty translations omitted. |
+| IV | Localization completeness | PASS | `defineMessages` per component; flat `src/i18n/data/{core,en,de}.json`; extract script excludes `.d.ts`; automated key/placeholder parity test (SC-009). Data-level: one name is enough, empty translations omitted. |
 | V | Optimistic concurrency, minimal updates | PASS | Every update sends the current `version`; conflicts surface and the user reloads (R7). Set-price save computes a diff and make **no call when nothing changed**. |
-| VI | Shared key rule | PASS | Look keys are derived (`look-` + ASCII slug), match `^[a-zA-Z0-9-_]+$`, 2–256 chars (≥6, ≤45), trimmed; immutable (never written after create). Derived, not typed. |
+| VI | Shared key rule | PASS | Look keys are derived (`look-` + ASCII slug) or typed in step 1, match `^[a-zA-Z0-9-_]+$`, at most 256 chars with the prefix, trimmed, must not end in `-XX`/`-ALL`; immutable (read-only after create). |
 | VII | Feedback and error handling | PASS | `graphQLErrorHandler` + MC notifications; raw GraphQL errors mapped to readable text naming the operation; loading and error states with retry on every list/detail. |
 | VIII | List conventions | PASS | Paginated, sortable, empty state, row-click navigation (FR-013a, FR-015). "Frühere Looks" is a card section exempt by spec. |
 | — | Data Layer Conventions | PASS with note | Connector-hook layout kept; base/detail fragment split kept; update mutations return the detail shape; no manual `refetch()` after same-entity update. **Note**: the REST→GraphQL action bridge is not used; see Complexity Tracking. |
@@ -59,8 +59,8 @@ Technical approach, from [research.md](./research.md):
 
 | Deviation | Why needed | Simpler alternative rejected because |
 |---|---|---|
-| Hand-built GraphQL update actions instead of `calculate*UpdateActions` + `createGraphQlUpdateActions` | Looks only ever sends five fixed actions (`changeIsActive`, `changeValue`, `changeName`/`setDescription` on completion, and Custom Object upserts, which are not update actions). `@commercetools/sync-actions` has no Custom Object support and would add a diff layer to compare two money arrays | Routing five actions through REST-shaped sync-actions and converting back adds a dependency and a translation step for no gain. The constitution's rule exists to avoid special-casing *call sites*; here all actions are built in one module (`src/domain/look-actions.ts`) and unit-tested. |
-| Component specs inject a `LookApi` instead of mocking GraphQL with `msw` | The domain flows have many failure points (three-step save, two-step reprice); an in-memory port with versions and failure injection tests them deterministically and fast | Reproducing 409s and partial failures with `msw` handlers per test is slow and obscures intent. The GraphQL layer is still covered by `msw` specs of `createLookApi` (variables, paging, error mapping), so a wrong query shape is caught. |
+| Hand-built GraphQL update actions instead of `calculate*UpdateActions` + `createGraphQlUpdateActions` | Looks only ever sends a few fixed actions (`changeIsActive`, `changeValue`, `changeName`/`setDescription` on completion, group `setIsActive`, and Custom Object upserts, which are not update actions). `@commercetools/sync-actions` has no Custom Object support and would add a diff layer to compare two money arrays | Routing five actions through REST-shaped sync-actions and converting back adds a dependency and a translation step for no gain. The constitution's rule exists to avoid special-casing *call sites*; here all actions are built in one module (`src/domain/look-actions.ts`) and unit-tested. |
+| Component specs inject a `LookApi` instead of mocking GraphQL with `msw` | The domain flows have many failure points (four-step save, two-step reprice, delete); an in-memory port with versions and failure injection tests them deterministically and fast | Reproducing 409s and partial failures with `msw` handlers per test is slow and obscures intent. The GraphQL layer is still covered by `msw` specs of `createLookApi` (variables, paging, error mapping), so a wrong query shape is caught. |
 | Client-side paging/sorting | Summe, Ersparnis and Status derive from live prices plus discount state; no API sorts by them | Server-side paging would sort only by fields the API knows (name, key) and make the other sortable columns lie. |
 
 ## Platform Skills Resolution (commercetools)
@@ -107,26 +107,27 @@ mc-looks-app/                            # the app; folder name == connect.yaml 
 │   ├── config.ts                 # THE configuration module (FR-084/085), fails loudly
 │   ├── constants.ts              # entryPointUriPath, PERMISSIONS, container/prefix
 │   ├── domain/                   # pure logic, unit-tested, no React/Apollo
-│   │   ├── keys.ts  sort-order.ts  prices.ts  names.ts  validate.ts
-│   │   ├── look-value.ts  look-actions.ts  look-rows.ts  completeness.ts
+│   │   ├── keys.ts  sort-order.ts  prices.ts  price-table.ts  names.ts  validate.ts
+│   │   ├── look-value.ts  look-actions.ts  look-group.ts  look-rows.ts
+│   │   ├── save-look.ts  look-writes.ts  look-api.ts (port)
 │   │   ├── pieces.ts  stock.ts  past-looks.ts  sorting.ts  paging.ts
-│   │   └── errors.ts
+│   │   └── errors.ts  limits.ts  format.ts
 │   ├── hooks/
-│   │   ├── shared/{mc-api-context,error-handling,graphql-helpers}.ts
-│   │   ├── use-looks-connector/        # fetch-all, fetch, create, update, fragments/
-│   │   ├── use-pieces-connector/       # search, by-ids, inventory
+│   │   ├── context.tsx  use-look-detail.ts  use-looks-overview.ts  use-past-look-sales.ts
+│   │   ├── shared/mc-api-context.ts
+│   │   ├── use-looks-connector/        # look-api.ts, search-query.ts, conversion.ts, *.graphql (objects, discounts, discount groups; fetch/create/update/delete), fragments/
+│   │   ├── use-pieces-connector/       # fetch by ids, productsSearch
 │   │   ├── use-orders-connector/       # recent orders for past looks
 │   │   └── use-project-settings/
 │   ├── components/
-│   │   ├── entry-point/  looks-list/  past-looks/  new-look/
-│   │   ├── look-detail/  common/
+│   │   ├── entry-point/  looks-app.tsx (routes)  looks-list/  past-looks/
+│   │   ├── new-look/  look-detail/  common/ (set-price table, product tile pieces)
 │   ├── i18n/data/{core,en,de}.json  messages per component
 │   ├── routes.tsx  index.tsx  test-utils/
-├── docs/                          # screenshots for README (optional)
 specs/  .specify/  CLAUDE.md  README.md  docs/SETUP.md
 ```
 
-**Structure Decision**: `connect.yaml` at the repository root, the app in a sibling folder named after `deployAs[].name`; Connect clones the repo and runs `npm install` and `build` from inside `mc-looks-app/`, so the app is self-contained and the root is only a tooling hub (R9). Pure domain logic is separated from React/Apollo so most rules are covered by fast unit specs, and component specs mock the GraphQL layer with `msw` per the constitution.
+**Structure Decision**: `connect.yaml` at the repository root, the app in a sibling folder named after `deployAs[].name`; Connect clones the repo and runs `npm install` and `build` from inside `mc-looks-app/`, so the app is self-contained and the root is only a tooling hub (R9). Pure domain logic is separated from React/Apollo so most rules are covered by fast unit specs, and component specs inject an in-memory `LookApi` (the GraphQL layer is covered by `msw` specs; see Complexity Tracking).
 
 ## Phase outputs
 
