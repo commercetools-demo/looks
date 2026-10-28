@@ -10,6 +10,7 @@ A look is three kinds of project resources that share the key `look-<lookKey>`:
 
 Prices are handled per price cell (currency and country, for example `EUR/DE`), taken from the master variant's list prices that are valid now. A percentage gives a relative discount, a set price an absolute one. A look is created in four steps (`/new`, `/new/pieces`, `/new/price`, `/new/review`) and can be deleted from its detail page.
 
+- What the app can do: [`FEATURES.md`](./FEATURES.md)
 - Specification, plan and tasks: [`specs/001-looks-app/`](./specs/001-looks-app/)
 - Setup, registration and both deploy paths: [`docs/SETUP.md`](./docs/SETUP.md)
 - The app lives in [`mc-looks-app/`](./mc-looks-app/), its own npm project (Connect requires the folder name to match `connect.yaml`).

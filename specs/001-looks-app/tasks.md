@@ -230,7 +230,7 @@ description: "Task list for the Looks Merchant Center app"
 - [X] T081 [P] Run `npm run extract-intl`, skim the diff, and make `messages.spec.ts` pass (SC-009); confirm German and English columns, headers and the 1440 px no-wrap check
 - [X] T082 Run the full automated check set from the quickstart (`npm run typecheck && npm run lint && npm test && npm run build`) and fix findings
 - [ ] T083 Run all quickstart manual scenarios and the Connect and Netlify deploy checks in a sandbox; record outcomes in `specs/001-looks-app/quickstart.md` _(OPEN: manual scenarios and deploy checks need a sandbox)_
-- [ ] T084 [P] Update `CLAUDE.md` and `README.md` with the final commands, structure and the setup checklist link; create `FEATURES.md` from the implemented code once everything above passes _(OPEN: `CLAUDE.md` and `README.md` are written; `FEATURES.md` is created after the manual checks)_
+- [X] T084 [P] Update `CLAUDE.md` and `README.md` with the final commands, structure and the setup checklist link; create `FEATURES.md` from the implemented code once everything above passes _(`CLAUDE.md`, `README.md` and `FEATURES.md` are written; `FEATURES.md` was written by hand because the skill `features-doc-refresh` is not installed; refresh it after the manual checks T021 and T083)_
 
 ---
 
@@ -298,4 +298,4 @@ The tasks above are the historical record of the first build and are not rewritt
 - **Detail** tiles identical to the creation tiles without the add action; two-line status in the header.
 - **Removed**: look photo (and `SHOP_ORIGIN`, "Im Shop ansehen"), shop preview, colour settings, `PRICE_COUNTRY`, the maximum of 5 pieces (now at least 2, no maximum), prices on the piece tiles, the 280 px detail box. Configuration is reduced to `VARIANT_ATTRIBUTES`.
 
-Still open: **T021** (sandbox verification, including that the cart-discount scopes cover Discount Groups and that relative discounts apply as intended), **T022** (generate `schemas/ctp.json`, interactive login), **T074** (permissions check in a Merchant Center project), **T083** (manual quickstart scenarios and deploy checks), **T084** (`FEATURES.md` is still missing: the skill `features-doc-refresh` is not installed).
+Still open: **T021** (sandbox verification, including that the cart-discount scopes cover Discount Groups and that relative discounts apply as intended), **T022** (generate `schemas/ctp.json`, interactive login), **T074** (permissions check in a Merchant Center project), **T083** (manual quickstart scenarios and deploy checks). `FEATURES.md` now exists (T084), written by hand.
